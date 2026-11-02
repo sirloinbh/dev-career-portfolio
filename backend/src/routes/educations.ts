@@ -44,6 +44,13 @@ const educationInput = z
         message: '졸업일은 입학일보다 빠를 수 없습니다',
       });
     }
+    if (input.status === 'enrolled' && input.endDate !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endDate'],
+        message: '재학 중이면 졸업일을 비워 주세요',
+      });
+    }
     if ((input.gpa === null) !== (input.gpaScale === null)) {
       ctx.addIssue({
         code: 'custom',

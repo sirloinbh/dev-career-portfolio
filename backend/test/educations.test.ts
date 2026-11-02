@@ -41,6 +41,42 @@ test('an impossible calendar date is refused', async () => {
   );
 });
 
+test('year 0000 is refused in Korean because PostgreSQL cannot store it', async () => {
+  await expectRefused(
+    { ...valid, startDate: '0000-01-01', endDate: null },
+    '입학일은(는) 0001-01-01 이후여야 합니다',
+  );
+});
+
+test('a bad date reports only its own error, not a false ordering error', async () => {
+  await expectRefused(
+    { ...valid, startDate: '2020-13-45', endDate: '2020-01-01' },
+    '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다',
+  );
+});
+
+test('an enrolled course cannot have a graduation date', async () => {
+  await expectRefused(
+    { ...valid, status: 'enrolled', endDate: '2019-02-20' },
+    '재학 중이면 졸업일을 비워 주세요',
+  );
+});
+
+test('the gpa scale stops at 100', async () => {
+  await expectRefused({ ...valid, gpa: 90, gpaScale: 100.01 }, '만점은(는) 100 이하여야 합니다');
+});
+
+test('an update is validated the same way as a create', async () => {
+  await withApi(refusingPool(), async (call) => {
+    const { status, data } = await call('/api/educations/1', {
+      method: 'PUT',
+      body: { ...valid, endDate: '2015-03-01' },
+    });
+    assert.equal(status, 400);
+    assert.equal(data.error, '졸업일은 입학일보다 빠를 수 없습니다');
+  });
+});
+
 test('a blank school name is refused', async () => {
   await expectRefused({ ...valid, school: '   ' }, '학교명을(를) 입력해 주세요');
 });

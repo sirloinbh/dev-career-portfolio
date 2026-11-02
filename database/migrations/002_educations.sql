@@ -16,8 +16,9 @@ CREATE TABLE IF NOT EXISTS educations (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT educations_period CHECK (end_date IS NULL OR end_date >= start_date),
+  CONSTRAINT educations_enrolled_open CHECK (status <> 'enrolled' OR end_date IS NULL),
   CONSTRAINT educations_gpa_pair CHECK ((gpa IS NULL) = (gpa_scale IS NULL)),
   CONSTRAINT educations_gpa_range CHECK (
-    gpa IS NULL OR (gpa >= 0 AND gpa_scale > 0 AND gpa <= gpa_scale)
+    gpa IS NULL OR (gpa >= 0 AND gpa_scale > 0 AND gpa_scale <= 100 AND gpa <= gpa_scale)
   )
 );
