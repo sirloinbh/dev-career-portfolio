@@ -88,7 +88,8 @@ const notFoundError = () => new HttpError(404, '학력을 찾을 수 없습니�
 export function registerEducationRoutes(app: Express, pool: Pool) {
   app.get('/api/educations', async (_req, res) => {
     const { rows } = await pool.query<EducationRow>(
-      `SELECT ${columns} FROM educations ORDER BY start_date DESC, id DESC`,
+      // educations.id, not id: a bare name would pick the text output column and sort "10" before "9".
+      `SELECT ${columns} FROM educations ORDER BY start_date DESC, educations.id DESC`,
     );
     res.json({ educations: rows.map(toEducation) });
   });

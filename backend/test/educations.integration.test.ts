@@ -102,6 +102,30 @@ test(
   },
 );
 
+test(
+  'a same-day tie lists the later row first, even across ids 9 and 10',
+  { skip: !url },
+  async (t) => {
+    const pool = new Pool({ connectionString: url });
+    t.after(() => pool.end());
+    await pool.query('DELETE FROM educations');
+    await pool.query("SELECT setval(pg_get_serial_sequence('educations', 'id'), 8)");
+    await withApi(pool, async (call) => {
+      const schools = ['가', '나', '다'];
+      for (const school of schools) {
+        const { status } = await call('/api/educations', {
+          method: 'POST',
+          body: { school, degree: 'other', status: 'graduated', startDate: '2020-01-02' },
+        });
+        assert.equal(status, 201, school);
+      }
+      const list = await call('/api/educations');
+      const listed = (list.data.educations as { school: string }[]).map((row) => row.school);
+      assert.deepEqual(listed, ['다', '나', '가']);
+    });
+  },
+);
+
 test('the database itself refuses rows the API would refuse', { skip: !url }, async (t) => {
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
