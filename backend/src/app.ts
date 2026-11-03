@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import { types } from 'pg';
 
 import { apiRateLimit, type RateLimitOptions } from './rate-limit.js';
+import { registerCareerRoutes } from './routes/careers.js';
 import { registerEducationRoutes } from './routes/educations.js';
 import { errorHandler, notFound, serviceDate } from './standard/http.js';
 
@@ -24,6 +25,7 @@ export function createApp(
     res.json({ ok: true, service: 'dev-career-portfolio', today: today() });
   });
   registerEducationRoutes(app, pool);
+  registerCareerRoutes(app, pool);
   app.use('/api', notFound);
   app.use(errorHandler);
   return app;

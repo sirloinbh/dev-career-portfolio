@@ -1,0 +1,47 @@
+# #32 이력(경력) 저장 API와 테이블
+
+이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/32>
+
+## 목적
+
+이력(경력)을 저장하는 테이블과 조회·등록·수정·삭제 API를 만듭니다. #31에서 정한 백엔드 구조를 그대로 따릅니다. 입력 항목은 추천안대로 확정했고 [이슈 코멘트](https://github.com/sirloinbh/dev-career-portfolio/issues/32#issuecomment-6617988778)에 기록했습니다.
+
+## 변경
+
+- `database/migrations/003_careers.sql`: `careers` 테이블. 퇴사일이 입사일보다 빠른 행과 목록 밖의 고용 형태를 DB 제약으로도 막습니다.
+- `backend/src/routes/careers.ts`: `GET`·`POST /api/careers`, `PUT`·`DELETE /api/careers/:id`.
+- `backend/src/app.ts`: 이력 경로 등록.
+- `backend/test/careers.test.ts`: DB 없이 입력 검증. `backend/test/careers.integration.test.ts`: `career_test` DB 통합.
+
+## API
+
+| 항목      | 이름             | 규칙                                                                                                |
+| --------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| 회사명    | `company`        | 필수, 100자 이하, 앞뒤 공백 제거                                                                    |
+| 부서      | `department`     | 선택, 100자 이하                                                                                    |
+| 직책      | `position`       | 선택, 100자 이하                                                                                    |
+| 고용 형태 | `employmentType` | 필수. `full_time`(정규직), `contract`(계약직), `intern`(인턴), `freelance`(프리랜서), `other`(기타) |
+| 입사일    | `startDate`      | 필수, `YYYY-MM-DD`                                                                                  |
+| 퇴사일    | `endDate`        | 선택. 비어 있으면(`null`) 재직 중. 입사일보다 빠를 수 없음                                          |
+| 담당 업무 | `duties`         | 선택, 2000자 이하                                                                                   |
+| 주요 성과 | `achievements`   | 선택, 2000자 이하                                                                                   |
+
+- 응답은 `{ "careers": [...] }`, `{ "career": {...} }`입니다. 생성은 201, 삭제는 204, 없는 대상은 404 "이력을 찾을 수 없습니다"입니다.
+- 목록은 입사일 최신순이고, 같은 날이면 나중에 등록한 것이 먼저입니다.
+- 빈 선택 칸은 빈 문자열이 아니라 `null`로 저장합니다.
+
+## 판단한 내용
+
+- **상태 칸을 두지 않았습니다.** 학력과 달리 이력은 "재직 중"과 "퇴사" 둘뿐이라, 퇴사일이 비어 있는지로 충분합니다. 칸을 두면 "재직 중인데 퇴사일 있음" 같은 모순을 따로 막아야 합니다.
+- **부서 이동·승진은 별도 이력입니다**(이슈 결정). 한 회사 안의 여러 시기를 묶는 구조는 실제로 필요해지면 새 이슈로 다룹니다.
+- **마이그레이션 번호:** `003`을 예약했습니다. 남은 API 카드(#33~#37)는 착수 순서대로 다음 번호를 씁니다.
+
+## 검증
+
+- `npm run check`: 통과. 백엔드 34건 통과·건너뜀 0건(임시 PostgreSQL 17의 `career_test`, DB 통합 테스트 포함), 프론트엔드 86건 통과·2건 건너뜀(기존 테마 조건부 테스트).
+- `npm run knip`: 통과.
+- `003_careers.sql` 2회 적용: 두 번째는 `already exists, skipping` 알림만 있고 오류 없음.
+
+## 한계
+
+Docker를 쓸 수 없는 PC(BIOS 가상화 꺼짐)라 Compose 실행은 확인하지 못했습니다. Docker 이미지 빌드는 CI 결과로 확인합니다. 화면은 #40(목록), #41(등록·수정·삭제)에서 만듭니다.
