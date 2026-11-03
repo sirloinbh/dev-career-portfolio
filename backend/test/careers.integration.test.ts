@@ -133,6 +133,8 @@ test(
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
     await pool.query('DELETE FROM careers');
+    // The next ids are 9 to 13, so a text sort ("10" before "9") would show on any database.
+    await pool.query("SELECT setval(pg_get_serial_sequence('careers', 'id'), 8)");
     await withApi(pool, async (call) => {
       const types = ['full_time', 'contract', 'intern', 'freelance', 'other'];
       for (const employmentType of types) {

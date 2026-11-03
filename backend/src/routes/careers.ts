@@ -47,7 +47,8 @@ const notFoundError = () => new HttpError(404, '이력을 찾을 수 없습니�
 export function registerCareerRoutes(app: Express, pool: Pool) {
   app.get('/api/careers', async (_req, res) => {
     const { rows } = await pool.query<CareerRow>(
-      `SELECT ${columns} FROM careers ORDER BY start_date DESC, id DESC`,
+      // careers.id, not id: a bare name would pick the text output column and sort "10" before "9".
+      `SELECT ${columns} FROM careers ORDER BY start_date DESC, careers.id DESC`,
     );
     res.json({ careers: rows.map(toCareer) });
   });
