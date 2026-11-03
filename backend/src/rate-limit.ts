@@ -2,8 +2,9 @@ import { rateLimit } from 'express-rate-limit';
 
 import type { ApiError } from './standard/http.js';
 
-// Request limit inside the API (issue #31). frontend/nginx.conf limits first at 10 requests a second with
-// bursts of 40; this looser limit is the second line, so normal use through nginx never reaches it.
+// Request limit inside the API (issue #31). frontend/nginx.conf limits each client first at 10 requests a
+// second with bursts of 40. The API does not trust proxies, so every request through nginx shares one
+// bucket: this is a global limit sized for a single-owner app, not a per-client limit.
 
 export type RateLimitOptions = { limit?: number; windowMs?: number };
 

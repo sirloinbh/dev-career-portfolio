@@ -29,8 +29,19 @@ test(
     await pool.query('DELETE FROM educations');
 
     await withApi(pool, async (call) => {
+      // Start dates go 2019, 2024, 2015 in insertion order, so neither id order matches the expected list.
+      const middle = await call('/api/educations', {
+        method: 'POST',
+        body: {
+          school: '한국고등학교',
+          degree: 'high_school',
+          status: 'graduated',
+          startDate: '2019-03-02',
+        },
+      });
+      assert.equal(middle.status, 201);
+
       // Still enrolled: the end date stays NULL and the optional fields stay NULL too.
-      // Inserted first with the later start date, so the list order proves it sorts by date, not id.
       const enrolled = await call('/api/educations', {
         method: 'POST',
         body: {
@@ -66,7 +77,7 @@ test(
       const list = await call('/api/educations');
       assert.equal(list.status, 200);
       const schools = (list.data.educations as { school: string }[]).map((row) => row.school);
-      assert.deepEqual(schools, ['대학원', '한국대학교']);
+      assert.deepEqual(schools, ['대학원', '한국고등학교', '한국대학교']);
 
       const updated = await call(`/api/educations/${String(education.id)}`, {
         method: 'PUT',
@@ -80,7 +91,7 @@ test(
       const removed = await call(`/api/educations/${String(education.id)}`, { method: 'DELETE' });
       assert.equal(removed.status, 204);
       const after = await call('/api/educations');
-      assert.equal((after.data.educations as unknown[]).length, 1);
+      assert.equal((after.data.educations as unknown[]).length, 2);
 
       for (const request of [{ method: 'PUT', body: university }, { method: 'DELETE' }]) {
         const missing = await call(`/api/educations/${String(education.id)}`, request);
