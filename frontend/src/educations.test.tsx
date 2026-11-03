@@ -69,8 +69,9 @@ test('educations are listed in the order the API gives, not re-sorted', async ()
   serve({ status: 200, body: { educations: [university, graduate] } });
   openEducations();
   const list = await screen.findByRole('list', { name: '학력 목록' });
+  expect(screen.getByRole('status')).toHaveTextContent('학력 2건');
   const items = within(list).getAllByRole('listitem');
-  expect(items.map((item) => within(item).getByRole('heading').textContent)).toEqual([
+  expect(items.map((item) => within(item).getByRole('heading', { level: 2 }).textContent)).toEqual([
     '한빛대학교',
     '한빛대학원',
   ]);
@@ -150,6 +151,9 @@ test('period and grade text', () => {
     '2024-03-04 ~',
   );
   // Finished without a recorded end: no open "~" that would read as still going.
+  expect(periodText({ status: 'graduated', startDate: '2012-03-02', endDate: null })).toBe(
+    '2012-03-02',
+  );
   expect(periodText({ status: 'dropped_out', startDate: '2019-03-02', endDate: null })).toBe(
     '2019-03-02',
   );

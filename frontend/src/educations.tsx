@@ -23,14 +23,15 @@ function EducationItem({ education }: { education: Education }) {
   return (
     <li aria-labelledby={titleId} className="flex flex-col gap-2 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id={titleId} className="text-body font-semibold break-keep">
+        {/* break-keep keeps Korean words whole; wrap-anywhere still breaks a long unspaced name at 390px. */}
+        <h2 id={titleId} className="text-body font-semibold wrap-anywhere break-keep">
           {education.school}
         </h2>
         <Badge variant={education.status === 'enrolled' ? 'default' : 'secondary'}>
           {statusLabels[education.status]}
         </Badge>
       </div>
-      <p className="text-body-sm break-keep">
+      <p className="text-body-sm wrap-break-word break-keep">
         {degreeLabels[education.degree]}
         {education.major ? ` · ${education.major}` : ''}
       </p>
@@ -40,7 +41,7 @@ function EducationItem({ education }: { education: Education }) {
         {gpa ? ` · ${gpa}` : ''}
       </p>
       {education.memo ? (
-        <p className="text-caption break-keep whitespace-pre-line text-muted-foreground">
+        <p className="text-caption wrap-break-word break-keep whitespace-pre-line text-muted-foreground">
           {education.memo}
         </p>
       ) : null}
@@ -53,20 +54,23 @@ export function EducationList() {
   const educations = loaded.state === 'ok' ? loaded.data.educations : [];
 
   return (
-    <section aria-labelledby="page-title" className="flex flex-col gap-6">
+    <section
+      aria-labelledby="page-title"
+      aria-busy={loaded.state === 'loading'}
+      className="flex flex-col gap-6"
+    >
       <header className="flex flex-col gap-2">
         <h1 id="page-title">학력</h1>
         <p className="text-body break-keep text-muted-foreground">
           학교와 전공, 재학 기간을 최근 입학 순으로 봅니다.
         </p>
+        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
+        <p role="status" className="sr-only">
+          {loaded.state === 'loading' ? '학력을 불러오는 중' : ''}
+          {loaded.state === 'ok' ? `학력 ${educations.length}건` : ''}
+        </p>
       </header>
-      {loaded.state === 'loading' ? (
-        // A named live region; a plain div cannot carry aria-label (ARIA 1.2 generic role).
-        <div role="status">
-          <span className="sr-only">학력을 불러오는 중</span>
-          <SkeletonList rows={3} />
-        </div>
-      ) : null}
+      {loaded.state === 'loading' ? <SkeletonList rows={3} /> : null}
       {loaded.state === 'error' ? (
         // Say what failed first: a proxy error without a server message only carries the generic text.
         <Notice
