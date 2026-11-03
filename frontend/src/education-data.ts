@@ -1,9 +1,20 @@
+import { toNumber } from './form-fields';
 import { requestJson } from './lib/api';
 
-// Education history (#31 API, #38 list): API calls and display rules. The screens are in educations.tsx.
+// Education history (#31 API, #38 list, #39 form): API calls and display rules. The screens are in
+// educations.tsx.
 
-type Degree = 'high_school' | 'associate' | 'bachelor' | 'master' | 'doctorate' | 'other';
-type EducationStatus = 'graduated' | 'enrolled' | 'on_leave' | 'dropped_out';
+export const degrees = [
+  'high_school',
+  'associate',
+  'bachelor',
+  'master',
+  'doctorate',
+  'other',
+] as const;
+export const statuses = ['graduated', 'enrolled', 'on_leave', 'dropped_out'] as const;
+type Degree = (typeof degrees)[number];
+type EducationStatus = (typeof statuses)[number];
 
 export type Education = {
   id: number;
@@ -16,6 +27,18 @@ export type Education = {
   gpa: number | null;
   gpaScale: number | null;
   memo: string | null;
+};
+
+/** What the form sends. Numbers that are not numbers go as text so the server explains in Korean. */
+type EducationInput = Omit<Education, 'id' | 'gpa' | 'gpaScale'> & {
+  gpa: number | string | null;
+  gpaScale: number | string | null;
+};
+
+export type EducationPaths = {
+  list: string;
+  create: string;
+  edit: (id: number) => string;
 };
 
 export const degreeLabels: Record<Degree, string> = {
@@ -50,6 +73,106 @@ export function gpaText(education: Pick<Education, 'gpa' | 'gpaScale'>) {
   return `학점 ${education.gpa} / ${education.gpaScale}`;
 }
 
+/** The form keeps every field as the text in its input. */
+export type EducationForm = {
+  school: string;
+  major: string;
+  degree: Degree;
+  status: EducationStatus;
+  startDate: string;
+  endDate: string;
+  gpa: string;
+  gpaScale: string;
+  memo: string;
+};
+
+export const emptyEducationForm: EducationForm = {
+  school: '',
+  major: '',
+  degree: 'bachelor',
+  status: 'graduated',
+  startDate: '',
+  endDate: '',
+  gpa: '',
+  gpaScale: '',
+  memo: '',
+};
+
+export function toEducationForm(education: Education): EducationForm {
+  return {
+    school: education.school,
+    major: education.major ?? '',
+    degree: education.degree,
+    status: education.status,
+    startDate: education.startDate,
+    endDate: education.endDate ?? '',
+    gpa: education.gpa === null ? '' : String(education.gpa),
+    gpaScale: education.gpaScale === null ? '' : String(education.gpaScale),
+    memo: education.memo ?? '',
+  };
+}
+
+/**
+ * Blank optional fields become null. A blank start date goes as '' so the server answers with its
+ * Korean date message; the form does not repeat the server's rules.
+ */
+export function toEducationInput(form: EducationForm): EducationInput {
+  return {
+    school: form.school,
+    major: form.major,
+    degree: form.degree,
+    status: form.status,
+    startDate: form.startDate,
+    endDate: form.endDate === '' ? null : form.endDate,
+    gpa: toNumber(form.gpa),
+    gpaScale: toNumber(form.gpaScale),
+    memo: form.memo,
+  };
+}
+
+// The server answers one Korean message that starts with the field's label (backend/src/routes/
+// educations.ts). Longer labels come first so "졸업일" is not read as another field.
+const fieldLabels: [string, keyof EducationForm][] = [
+  ['재학 중이면 졸업일', 'endDate'],
+  ['학교명', 'school'],
+  ['전공', 'major'],
+  ['학위', 'degree'],
+  ['상태', 'status'],
+  ['입학일', 'startDate'],
+  ['졸업일', 'endDate'],
+  ['학점', 'gpa'],
+  ['만점', 'gpaScale'],
+  ['메모', 'memo'],
+];
+
+/** The field a server validation message is about, so the screen can show it under that input. */
+function errorField(message: string): keyof EducationForm | undefined {
+  return fieldLabels.find(([label]) => message.startsWith(label))?.[1];
+}
+
+/**
+ * The server joins several messages with ", " (backend/src/standard/http.ts). A message can hold
+ * commas itself ("고등학교, 전문학사, …"), so a piece that names no field stays with the one before.
+ * Pieces about the same field are joined again. The order is the server's, so the first is focused.
+ */
+export function fieldErrors(message: string) {
+  const pieces: { field: keyof EducationForm | undefined; message: string }[] = [];
+  for (const piece of message.split(', ')) {
+    const field = errorField(piece);
+    const last = pieces.at(-1);
+    if (last && (field === undefined || field === last.field)) last.message += `, ${piece}`;
+    else pieces.push({ field, message: piece });
+  }
+  return pieces;
+}
+
+const base = '/api/educations';
+
 export const educationApi = {
-  list: () => requestJson<{ educations: Education[] }>('/api/educations'),
+  list: () => requestJson<{ educations: Education[] }>(base),
+  create: (input: EducationInput) =>
+    requestJson<{ education: Education }>(base, { method: 'POST', body: input }),
+  update: (id: number, input: EducationInput) =>
+    requestJson<{ education: Education }>(`${base}/${id}`, { method: 'PUT', body: input }),
+  remove: (id: number) => requestJson<undefined>(`${base}/${id}`, { method: 'DELETE' }),
 };
