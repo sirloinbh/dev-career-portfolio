@@ -1,0 +1,51 @@
+# #33 프로젝트 저장 API와 테이블
+
+이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/33>
+
+## 목적
+
+프로젝트를 저장하는 테이블과 조회·등록·수정·삭제 API를 만듭니다. #31에서 정한 백엔드 구조를 따릅니다. 입력 항목은 추천안대로 확정했고 [이슈 코멘트](https://github.com/sirloinbh/dev-career-portfolio/issues/33#issuecomment-6618198926)에 기록했습니다.
+
+## 변경
+
+- `database/migrations/004_projects.sql`: `projects` 테이블. 기간 순서, 사용 기술 30개 한도, 링크 주소 형식을 DB 제약으로도 막습니다.
+- `backend/src/routes/projects.ts`: `GET`·`POST /api/projects`, `PUT`·`DELETE /api/projects/:id`.
+- `backend/src/routes/shared.ts`: 링크 검증 도우미 `optionalLink`. 이후 자격증·활동 항목도 씁니다.
+- `backend/src/app.ts`: 프로젝트 경로 등록.
+- `backend/test/projects.test.ts`: DB 없이 입력 검증. `backend/test/projects.integration.test.ts`: `career_test` DB 통합.
+
+## API
+
+| 항목        | 이름            | 규칙                                                                                                   |
+| ----------- | --------------- | ------------------------------------------------------------------------------------------------------ |
+| 프로젝트명  | `name`          | 필수, 100자 이하, 앞뒤 공백 제거                                                                       |
+| 소속        | `organization`  | 선택, 100자 이하. 이력과 연결하지 않고 글자로 입력                                                     |
+| 시작일      | `startDate`     | 필수, `YYYY-MM-DD`                                                                                     |
+| 종료일      | `endDate`       | 선택. 비어 있으면(`null`) 진행 중. 시작일보다 빠를 수 없음                                             |
+| 역할        | `role`          | 선택, 100자 이하                                                                                       |
+| 요약        | `summary`       | 선택, 500자 이하                                                                                       |
+| 기여와 성과 | `contributions` | 선택, 2000자 이하                                                                                      |
+| 사용 기술   | `technologies`  | 문자열 목록, 기본값 `[]`. 항목당 50자, 최대 30개. 앞뒤 공백 제거, 빈 항목과 중복(대소문자 무시)은 거절 |
+| 저장소 링크 | `repositoryUrl` | 선택, 500자 이하, `http://`·`https://` 주소만                                                          |
+| 서비스 링크 | `serviceUrl`    | 선택, 500자 이하, `http://`·`https://` 주소만                                                          |
+
+- 응답은 `{ "projects": [...] }`, `{ "project": {...} }`입니다. 생성은 201, 삭제는 204, 없는 대상은 404 "프로젝트를 찾을 수 없습니다"입니다.
+- 목록은 시작일 최신순이고, 같은 날이면 나중에 등록한 것이 먼저입니다.
+- 빈 선택 칸은 `null`로 저장합니다. 사용 기술은 입력 순서를 그대로 보존합니다.
+
+## 판단한 내용
+
+- **링크는 http(s)만 받습니다.** 화면에서 링크로 열 값이므로 `javascript:`, `file:` 같은 주소가 저장되지 않게 서버와 DB 양쪽에서 막습니다. 주소 해석은 Node의 `URL`로 하고, 호스트가 없는 `https://`도 거절합니다. DB 제약은 대소문자를 구별하지 않아(`~*`) 서버가 받은 `HTTPS://…`를 DB가 500으로 거절하는 일이 없습니다.
+- **사용 기술은 `text[]`입니다.** 스킬 항목과 연결하지 않기로 해서(이슈 결정) 별도 테이블 대신 한 열에 목록으로 둡니다. 화면에서 순서대로 보여 주므로 입력 순서를 보존합니다.
+- **정렬:** #32에서 찾은 문제대로 `ORDER BY`에 `projects.id`를 써서 id를 숫자로 비교합니다. 통합 테스트가 id 시퀀스를 8로 맞춰 9→10을 넘는 경우를 확인합니다.
+- **마이그레이션 번호:** `004`를 예약했습니다.
+
+## 검증
+
+- `npm run check`: 통과. 백엔드 46건 통과·건너뜀 0건(임시 PostgreSQL 17의 `career_test`, DB 통합 테스트 포함), 프론트엔드 86건 통과·2건 건너뜀(기존 테마 조건부 테스트).
+- `npm run knip`: 통과.
+- `004_projects.sql` 2회 적용: 두 번째는 `already exists, skipping` 알림만 있고 오류 없음.
+
+## 한계
+
+Docker를 쓸 수 없는 PC(BIOS 가상화 꺼짐)라 Compose 실행은 확인하지 못했습니다. Docker 이미지 빌드는 CI 결과로 확인합니다. 화면은 #42(목록), #43(등록·수정·삭제)에서 만듭니다.

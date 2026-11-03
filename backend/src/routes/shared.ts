@@ -32,5 +32,28 @@ export const optionalText = (label: string, max: number) =>
     .default(null)
     .transform((value) => (value === '' ? null : value));
 
+const isWebAddress = (value: string) => {
+  if (!URL.canParse(value)) return false;
+  const { protocol, hostname } = new URL(value);
+  return (protocol === 'http:' || protocol === 'https:') && hostname !== '';
+};
+
+/**
+ * Optional web link: only http(s) addresses, so a stored link never opens javascript: or a local
+ * file. A missing or blank value is stored as NULL.
+ */
+export const optionalLink = (label: string) =>
+  z
+    .string({ error: `${label}은(는) 문자열이어야 합니다` })
+    .trim()
+    .max(500, `${label}은(는) 500자 이하여야 합니다`)
+    .refine(
+      (value) => value === '' || isWebAddress(value),
+      `${label}은(는) http:// 또는 https://로 시작하는 주소여야 합니다`,
+    )
+    .nullable()
+    .default(null)
+    .transform((value) => (value === '' ? null : value));
+
 /** The body must be a JSON object; express.json() also accepts arrays and bare values. */
 export const objectBodyError = { error: '요청 본문은 JSON 객체여야 합니다' };
