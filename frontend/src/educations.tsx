@@ -227,6 +227,7 @@ function EducationFields({
   const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof EducationForm, string>>>({});
   const notice = useNotice();
+  const submitButton = useRef<HTMLButtonElement>(null);
   const id = useId();
   const fieldId = (field: keyof EducationForm) => `${id}-${field}`;
   const set = (field: keyof EducationForm) => (value: string) =>
@@ -261,7 +262,11 @@ function EducationFields({
       const first = pieces.find((piece) => piece.field)?.field;
       const unplaced = pieces.length ? pieces.filter((piece) => !piece.field) : [{ message }];
       if (unplaced.length) notice.error(unplaced.map((piece) => piece.message).join(', '));
-      if (!first) return;
+      if (!first) {
+        // The disabled button dropped focus; give it back so keyboard users stay in the form.
+        requestAnimationFrame(() => submitButton.current?.focus());
+        return;
+      }
       // Show each Korean message under its input and move to the first, so it is read with the field.
       setErrors(byField);
       requestAnimationFrame(() => document.getElementById(fieldId(first))?.focus());
@@ -434,7 +439,12 @@ function EducationFields({
       </div>
       <Notice notice={notice.notice} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
+        <Button
+          ref={submitButton}
+          type="submit"
+          disabled={pending}
+          aria-busy={pending || undefined}
+        >
           {pending ? <Spinner size="sm" label="저장하는 중" /> : null}
           {submitLabel}
         </Button>

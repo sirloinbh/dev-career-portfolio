@@ -145,6 +145,19 @@ const fieldLabels: [string, keyof EducationForm][] = [
   ['메모', 'memo'],
 ];
 
+// The order the inputs appear on screen (educations.tsx EducationFields).
+const formOrder: (keyof EducationForm)[] = [
+  'school',
+  'major',
+  'degree',
+  'status',
+  'startDate',
+  'endDate',
+  'gpa',
+  'gpaScale',
+  'memo',
+];
+
 /** The field a server validation message is about, so the screen can show it under that input. */
 function errorField(message: string): keyof EducationForm | undefined {
   return fieldLabels.find(([label]) => message.startsWith(label))?.[1];
@@ -154,8 +167,8 @@ function errorField(message: string): keyof EducationForm | undefined {
  * The server joins several messages with ", " (backend/src/standard/http.ts). A message can hold
  * commas itself ("고등학교, 전문학사, …"), so a piece that names no field stays with the one before.
  * Messages about the same field are joined even when another field's message sits between them
- * (zod reports per-field issues before the cross-field ones). The first field in the server's order
- * comes first, so the screen focuses it.
+ * (zod reports per-field issues before the cross-field ones). Fields come in screen order, so the
+ * screen focuses the topmost one; a piece that names no field goes last.
  */
 export function fieldErrors(message: string) {
   const pieces: { field: keyof EducationForm | undefined; message: string }[] = [];
@@ -173,7 +186,9 @@ export function fieldErrors(message: string) {
     if (same) same.message += `, ${piece.message}`;
     else grouped.push(piece);
   }
-  return grouped;
+  const order = (field: keyof EducationForm | undefined) =>
+    field === undefined ? formOrder.length : formOrder.indexOf(field);
+  return grouped.sort((a, b) => order(a.field) - order(b.field));
 }
 
 const base = '/api/educations';

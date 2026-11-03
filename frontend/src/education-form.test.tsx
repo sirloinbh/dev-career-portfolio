@@ -299,12 +299,38 @@ test('several joined messages are split per field, keeping commas inside one mes
       '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다, 학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, 외 2개',
     ),
   ).toEqual([
-    { field: 'startDate', message: '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다' },
+    // Screen order: 학위 sits above 입학일.
     {
       field: 'degree',
       message: '학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, 외 2개',
     },
+    { field: 'startDate', message: '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다' },
   ]);
+});
+
+test('focus goes to the topmost field with a message, not the first one the server named', async () => {
+  const api = fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  // zod reports per-field issues before cross-field ones, so 학점 comes before 졸업일.
+  api.refuseNext(
+    '학점은(는) 소수 둘째 자리까지 입력해 주세요, 졸업일은 입학일보다 빠를 수 없습니다, 학점은 만점보다 클 수 없습니다',
+  );
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await waitFor(() => expect(field('졸업일')).toHaveFocus());
+  expect(field('학점')).toHaveAccessibleDescription(
+    /학점은\(는\) 소수 둘째 자리까지 입력해 주세요, 학점은 만점보다 클 수 없습니다$/,
+  );
+});
+
+test('after a message that names no field, focus returns to the submit button', async () => {
+  const api = fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  api.refuseNext('입력에 사용할 수 없는 문자(NUL)가 있습니다');
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('alert');
+  await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
 });
 
 test('two messages about one field are kept even with another field between them', () => {
@@ -341,6 +367,14 @@ test('form values become the API input and back', () => {
     gpa: 3.5,
     // Not a number: sent as typed so the server explains in Korean.
     gpaScale: 'abc',
+  });
+  // Number() would read these, and JSON turns Infinity into null (saved without a GPA).
+  for (const text of ['Infinity', '-Infinity', '0x4', '1e1', '3..5']) {
+    expect(toEducationInput({ ...emptyEducationForm, gpa: text }).gpa).toBe(text);
+  }
+  expect(toEducationInput({ ...emptyEducationForm, gpa: '.5', gpaScale: '4.' })).toMatchObject({
+    gpa: 0.5,
+    gpaScale: 4,
   });
   expect(toEducationForm({ ...university, major: null, gpa: null, gpaScale: null })).toMatchObject({
     major: '',
