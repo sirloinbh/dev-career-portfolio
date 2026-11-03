@@ -1,18 +1,20 @@
-import { LayoutDashboard, Settings2 } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, Settings2 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 
 import { AppShell, type NavItem } from './components/layout/app-shell';
 import { EmptyState } from './components/ui/empty-state';
 import { Toaster } from './components/ui/sonner';
+import { EducationList } from './educations';
 import { type Health, healthText } from './health';
 
 // Every page URL lives here (central docs/directory-rules.md).
-const pages = { overview: '/', settings: '/settings' } as const;
+const pages = { overview: '/', educations: '/educations', settings: '/settings' } as const;
 
 // Main menu (LNB) items, in display order.
 const nav: NavItem[] = [
   { to: pages.overview, label: '대시보드', icon: LayoutDashboard },
+  { to: pages.educations, label: '학력', icon: GraduationCap },
   { to: pages.settings, label: '설정', icon: Settings2 },
 ];
 
@@ -85,6 +87,7 @@ export function App() {
               />
             }
           />
+          <Route path={pages.educations} element={<EducationList />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}
