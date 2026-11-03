@@ -64,24 +64,35 @@ test('the main menu leads to the education list', async () => {
   expect(within(menu).getByRole('link', { name: '학력' })).toHaveAttribute('aria-current', 'page');
 });
 
-test('educations are listed in the order the API gives, enrolled ones as 재학 중', async () => {
-  serve({ status: 200, body: { educations: [graduate, university] } });
+test('educations are listed in the order the API gives, not re-sorted', async () => {
+  // Deliberately not newest first: the screen must keep the server's order.
+  serve({ status: 200, body: { educations: [university, graduate] } });
   openEducations();
   const list = await screen.findByRole('list', { name: '학력 목록' });
   const items = within(list).getAllByRole('listitem');
   expect(items.map((item) => within(item).getByRole('heading').textContent)).toEqual([
-    '한빛대학원',
     '한빛대학교',
+    '한빛대학원',
   ]);
+});
+
+/** The status badge text next to a school name. */
+const badgeOf = (item: HTMLElement) => item.querySelector('[data-slot="badge"]')?.textContent;
+
+test('each education shows its status, degree, period, grade and memo', async () => {
+  serve({ status: 200, body: { educations: [graduate, university] } });
+  openEducations();
+  const list = await screen.findByRole('list', { name: '학력 목록' });
 
   const enrolled = within(list).getByRole('listitem', { name: '한빛대학원' });
-  expect(enrolled).toHaveTextContent('재학 중');
+  expect(badgeOf(enrolled)).toBe('재학 중');
   expect(enrolled).toHaveTextContent('석사 · 소프트웨어공학');
   expect(enrolled).toHaveTextContent('2024-03-04 ~');
   expect(enrolled).not.toHaveTextContent('학점');
 
   const done = within(list).getByRole('listitem', { name: '한빛대학교' });
-  expect(done).toHaveTextContent('졸업');
+  expect(badgeOf(done)).toBe('졸업');
+  expect(done).not.toHaveTextContent('재학 중');
   expect(done).toHaveTextContent('2015-03-02 ~ 2019-02-20 · 학점 3.75 / 4.5');
   expect(done).toHaveTextContent('졸업 작품: 일정 관리 앱');
 });
@@ -92,7 +103,7 @@ test('a placeholder shows while the list loads', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openEducations();
-  expect(screen.getByLabelText('학력을 불러오는 중')).toHaveAttribute('aria-busy', 'true');
+  expect(screen.getByRole('status')).toHaveTextContent('학력을 불러오는 중');
 });
 
 test('an empty list explains what will appear', async () => {
@@ -129,10 +140,19 @@ test('an unreachable server is shown in Korean', async () => {
 });
 
 test('period and grade text', () => {
-  expect(periodText({ startDate: '2015-03-02', endDate: '2019-02-20' })).toBe(
+  expect(periodText({ status: 'graduated', startDate: '2015-03-02', endDate: '2019-02-20' })).toBe(
     '2015-03-02 ~ 2019-02-20',
   );
-  expect(periodText({ startDate: '2024-03-04', endDate: null })).toBe('2024-03-04 ~');
+  expect(periodText({ status: 'enrolled', startDate: '2024-03-04', endDate: null })).toBe(
+    '2024-03-04 ~',
+  );
+  expect(periodText({ status: 'on_leave', startDate: '2024-03-04', endDate: null })).toBe(
+    '2024-03-04 ~',
+  );
+  // Finished without a recorded end: no open "~" that would read as still going.
+  expect(periodText({ status: 'dropped_out', startDate: '2019-03-02', endDate: null })).toBe(
+    '2019-03-02',
+  );
   expect(gpaText({ gpa: 95, gpaScale: 100 })).toBe('학점 95 / 100');
   expect(gpaText({ gpa: null, gpaScale: null })).toBe('');
 });

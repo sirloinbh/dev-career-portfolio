@@ -61,7 +61,9 @@ export function EducationList() {
         </p>
       </header>
       {loaded.state === 'loading' ? (
-        <div aria-busy="true" aria-label="학력을 불러오는 중">
+        // A named live region; a plain div cannot carry aria-label (ARIA 1.2 generic role).
+        <div role="status">
+          <span className="sr-only">학력을 불러오는 중</span>
           <SkeletonList rows={3} />
         </div>
       ) : null}

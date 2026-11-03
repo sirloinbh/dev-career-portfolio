@@ -34,9 +34,14 @@ export const statusLabels: Record<EducationStatus, string> = {
   dropped_out: '중퇴',
 };
 
-/** "2015-03-02 ~ 2019-02-20", or an open end while the period has not finished. */
-export function periodText(education: Pick<Education, 'startDate' | 'endDate'>) {
-  return `${education.startDate} ~ ${education.endDate ?? ''}`.trimEnd();
+/**
+ * "2015-03-02 ~ 2019-02-20". Without an end date, enrolled and on-leave periods are still running
+ * ("2024-03-04 ~"); a finished one with no recorded end shows only its start.
+ */
+export function periodText(education: Pick<Education, 'status' | 'startDate' | 'endDate'>) {
+  if (education.endDate) return `${education.startDate} ~ ${education.endDate}`;
+  const running = education.status === 'enrolled' || education.status === 'on_leave';
+  return running ? `${education.startDate} ~` : education.startDate;
 }
 
 /** "학점 3.75 / 4.5", or nothing when no grade was entered. */
