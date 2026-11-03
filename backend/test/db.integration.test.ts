@@ -3,9 +3,9 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { withApi } from './helpers.js';
+import { testDatabaseUrl, withApi } from './helpers.js';
 
-const url = process.env.TEST_DATABASE_URL;
+const url = testDatabaseUrl();
 
 // Requires a dedicated test DB with database/migrations applied. Skipped (not passed) without it.
 test(
