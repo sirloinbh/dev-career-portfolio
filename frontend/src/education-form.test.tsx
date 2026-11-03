@@ -42,6 +42,7 @@ function fakeApi(rows: Education[]) {
   const store = [...rows];
   const calls: Call[] = [];
   let refuse: string | undefined;
+  let deleteFails: { status: number; error: string } | undefined;
   let nextId = 100;
   const json = (body: unknown, status = 200) =>
     Promise.resolve(new Response(JSON.stringify(body), { status }));
@@ -71,6 +72,8 @@ function fakeApi(rows: Education[]) {
         store[index] = { ...(body as Education), id };
         return json({ education: store[index] });
       }
+      if (method === 'DELETE' && deleteFails)
+        return json({ error: deleteFails.error }, deleteFails.status);
       store.splice(index, 1);
       return Promise.resolve(new Response(null, { status: 204 }));
     }),
@@ -80,6 +83,9 @@ function fakeApi(rows: Education[]) {
     calls,
     refuseNext: (message: string) => {
       refuse = message;
+    },
+    failDeletes: (status: number, error: string) => {
+      deleteFails = { status, error };
     },
   };
 }
@@ -172,8 +178,8 @@ test('an education is edited with its saved values filled in', async () => {
   expect(await screen.findByRole('heading', { level: 1, name: '학력 수정' })).toBeInTheDocument();
   expect(window.location.pathname).toBe('/educations/1/edit');
   expect(field('학교명')).toHaveValue('한빛대학교');
-  expect(field('학점')).toHaveValue(3.75);
-  expect(field('만점')).toHaveValue(4.5);
+  expect(field('학점')).toHaveValue('3.75');
+  expect(field('만점')).toHaveValue('4.5');
 
   type('전공', '소프트웨어공학');
   fireEvent.click(screen.getByRole('button', { name: '저장' }));
@@ -217,6 +223,64 @@ test('confirming the delete removes the education and moves focus to the page ti
   );
 });
 
+test('a failed delete keeps the dialog open and the row on screen', async () => {
+  const api = fakeApi([university]);
+  api.failDeletes(503, '데이터베이스에 연결할 수 없습니다');
+  open('/educations');
+  fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
+  const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
+  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  expect(
+    await screen.findByText('학력을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('dialog', { name: '학력을 지울까요?' })).toBeInTheDocument();
+  expect(screen.getByRole('listitem', { hidden: true, name: '한빛대학교' })).toBeInTheDocument();
+});
+
+test('a row that is already gone (404) counts as deleted', async () => {
+  const api = fakeApi([university]);
+  api.failDeletes(404, '학력을 찾을 수 없습니다');
+  open('/educations');
+  await screen.findByRole('listitem', { name: '한빛대학교' });
+  // Someone else deleted it after the list loaded.
+  api.store.splice(0, 1);
+  fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
+  const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
+  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(screen.queryByRole('listitem', { name: '한빛대학교' })).not.toBeInTheDocument();
+});
+
+test('text that is not a number reaches the server as typed', async () => {
+  const api = fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  type('학점', '3..5');
+  type('만점', '4.5');
+  api.refuseNext('학점은(는) 숫자여야 합니다');
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await waitFor(() =>
+    expect(field('학점')).toHaveAccessibleDescription(/학점은\(는\) 숫자여야 합니다/),
+  );
+  expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
+    gpa: '3..5',
+    gpaScale: 4.5,
+  });
+});
+
+test('choosing 재학 중 also clears a message about the graduation date', async () => {
+  const api = fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  type('졸업일', '2015-02-20');
+  api.refuseNext('졸업일은 입학일보다 빠를 수 없습니다');
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await waitFor(() => expect(field('졸업일')).toHaveAttribute('aria-invalid', 'true'));
+  fireEvent.change(field('상태'), { target: { value: 'enrolled' } });
+  expect(field('졸업일')).not.toHaveAttribute('aria-invalid');
+  expect(screen.queryByText('졸업일은 입학일보다 빠를 수 없습니다')).not.toBeInTheDocument();
+});
+
 test('server messages map to the field they start with', () => {
   const fieldOf = (message: string) => fieldErrors(message)[0]?.field;
   expect(fieldOf('학교명을(를) 입력해 주세요')).toBe('school');
@@ -240,6 +304,20 @@ test('several joined messages are split per field, keeping commas inside one mes
       field: 'degree',
       message: '학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, 외 2개',
     },
+  ]);
+});
+
+test('two messages about one field are kept even with another field between them', () => {
+  expect(
+    fieldErrors(
+      '학점은(는) 소수 둘째 자리까지 입력해 주세요, 만점은(는) 소수 둘째 자리까지 입력해 주세요, 학점은 만점보다 클 수 없습니다',
+    ),
+  ).toEqual([
+    {
+      field: 'gpa',
+      message: '학점은(는) 소수 둘째 자리까지 입력해 주세요, 학점은 만점보다 클 수 없습니다',
+    },
+    { field: 'gpaScale', message: '만점은(는) 소수 둘째 자리까지 입력해 주세요' },
   ]);
 });
 

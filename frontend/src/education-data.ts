@@ -153,17 +153,27 @@ function errorField(message: string): keyof EducationForm | undefined {
 /**
  * The server joins several messages with ", " (backend/src/standard/http.ts). A message can hold
  * commas itself ("고등학교, 전문학사, …"), so a piece that names no field stays with the one before.
- * Pieces about the same field are joined again. The order is the server's, so the first is focused.
+ * Messages about the same field are joined even when another field's message sits between them
+ * (zod reports per-field issues before the cross-field ones). The first field in the server's order
+ * comes first, so the screen focuses it.
  */
 export function fieldErrors(message: string) {
   const pieces: { field: keyof EducationForm | undefined; message: string }[] = [];
-  for (const piece of message.split(', ')) {
-    const field = errorField(piece);
-    const last = pieces.at(-1);
-    if (last && (field === undefined || field === last.field)) last.message += `, ${piece}`;
-    else pieces.push({ field, message: piece });
+  for (const text of message.split(', ')) {
+    const field = errorField(text);
+    if (field === undefined && pieces.length > 0) {
+      pieces[pieces.length - 1].message += `, ${text}`;
+    } else {
+      pieces.push({ field, message: text });
+    }
   }
-  return pieces;
+  const grouped: typeof pieces = [];
+  for (const piece of pieces) {
+    const same = piece.field && grouped.find((item) => item.field === piece.field);
+    if (same) same.message += `, ${piece.message}`;
+    else grouped.push(piece);
+  }
+  return grouped;
 }
 
 const base = '/api/educations';

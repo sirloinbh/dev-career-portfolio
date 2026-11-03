@@ -327,14 +327,17 @@ function EducationFields({
             id={fieldId('status')}
             className={cn(controlClass, 'h-9')}
             value={form.status}
-            // Enrolled has no graduation date yet, so the date is cleared rather than sent and refused.
-            onChange={(e) =>
+            // Enrolled has no graduation date yet, so the date (and any message about it) is cleared
+            // rather than sent and refused.
+            onChange={(e) => {
+              const enrolledNow = e.target.value === 'enrolled';
               setForm((current) => ({
                 ...current,
                 status: e.target.value as EducationForm['status'],
-                endDate: e.target.value === 'enrolled' ? '' : current.endDate,
-              }))
-            }
+                endDate: enrolledNow ? '' : current.endDate,
+              }));
+              if (enrolledNow) setErrors((current) => ({ ...current, endDate: undefined }));
+            }}
             {...describe('status')}
           >
             {statuses.map((value) => (
@@ -384,10 +387,10 @@ function EducationFields({
           <Label htmlFor={fieldId('gpa')}>학점</Label>
           <Input
             id={fieldId('gpa')}
-            type="number"
+            // Text, not type="number": a number input empties text it cannot read ("3..5"), so the
+            // server would never see it and explain in Korean.
             inputMode="decimal"
-            step="0.01"
-            min={0}
+            autoComplete="off"
             value={form.gpa}
             onChange={(e) => set('gpa')(e.target.value)}
             placeholder="예: 3.75"
@@ -399,10 +402,8 @@ function EducationFields({
           <Label htmlFor={fieldId('gpaScale')}>만점</Label>
           <Input
             id={fieldId('gpaScale')}
-            type="number"
             inputMode="decimal"
-            step="0.01"
-            min={0}
+            autoComplete="off"
             value={form.gpaScale}
             onChange={(e) => set('gpaScale')(e.target.value)}
             placeholder="예: 4.5"
@@ -504,6 +505,8 @@ export function EditEducation({ paths }: { paths: EducationPaths }) {
       ) : null}
       {education ? (
         <EducationFields
+          // A new id starts a fresh form instead of keeping the previous row's typing.
+          key={education.id}
           initial={toEducationForm(education)}
           submitLabel="저장"
           cancelTo={paths.list}
