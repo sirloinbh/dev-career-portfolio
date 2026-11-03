@@ -72,12 +72,30 @@ test('careers are stored, listed newest first, updated and deleted', { skip: !ur
 
     const updated = await call(`/api/careers/${String(career.id)}`, {
       method: 'PUT',
-      body: { ...startup, position: '팀장', endDate: null },
+      body: {
+        company: '한빛소프트',
+        department: '결제팀',
+        position: '팀장',
+        employmentType: 'freelance',
+        startDate: '2019-03-05',
+        endDate: null,
+        duties: '결제 API 개발',
+        achievements: '장애 50% 감소',
+      },
     });
     assert.equal(updated.status, 200);
-    const changed = updated.data.career as Record<string, unknown>;
-    assert.equal(changed.position, '팀장');
-    assert.equal(changed.endDate, null);
+    // Every column changes, so a column left out of SET or two swapped parameters would show here.
+    assert.deepEqual(updated.data.career, {
+      id: career.id,
+      company: '한빛소프트',
+      department: '결제팀',
+      position: '팀장',
+      employmentType: 'freelance',
+      startDate: '2019-03-05',
+      endDate: null,
+      duties: '결제 API 개발',
+      achievements: '장애 50% 감소',
+    });
 
     const removed = await call(`/api/careers/${String(career.id)}`, { method: 'DELETE' });
     assert.equal(removed.status, 204);
@@ -105,3 +123,34 @@ test('the database itself refuses rows the API would refuse', { skip: !url }, as
   await assert.rejects(insert('회사', 'part_time', null), /careers_employment_type_check/);
   await assert.rejects(insert('', 'full_time', null), /careers_company_check/);
 });
+
+test(
+  'every employment type the API accepts is stored, and a same-day tie lists the later row first',
+  {
+    skip: !url,
+  },
+  async (t) => {
+    const pool = new Pool({ connectionString: url });
+    t.after(() => pool.end());
+    await pool.query('DELETE FROM careers');
+    await withApi(pool, async (call) => {
+      const types = ['full_time', 'contract', 'intern', 'freelance', 'other'];
+      for (const employmentType of types) {
+        const { status } = await call('/api/careers', {
+          method: 'POST',
+          // Same start date for all, and a one-day job (end date equal to the start date).
+          body: {
+            company: employmentType,
+            employmentType,
+            startDate: '2020-01-02',
+            endDate: '2020-01-02',
+          },
+        });
+        assert.equal(status, 201, employmentType);
+      }
+      const list = await call('/api/careers');
+      const companies = (list.data.careers as { company: string }[]).map((row) => row.company);
+      assert.deepEqual(companies, [...types].reverse());
+    });
+  },
+);

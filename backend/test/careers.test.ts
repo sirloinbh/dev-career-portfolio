@@ -44,7 +44,11 @@ test('a blank company name is refused', async () => {
   await expectRefused({ ...valid, company: '   ' }, '회사명을(를) 입력해 주세요');
 });
 
-test('an unknown employment type is refused', async () => {
+test('a missing or unknown employment type is refused', async () => {
+  await expectRefused(
+    { ...valid, employmentType: undefined },
+    '고용 형태는 정규직, 계약직, 인턴, 프리랜서, 기타 중 하나여야 합니다',
+  );
   await expectRefused(
     { ...valid, employmentType: 'part_time' },
     '고용 형태는 정규직, 계약직, 인턴, 프리랜서, 기타 중 하나여야 합니다',
