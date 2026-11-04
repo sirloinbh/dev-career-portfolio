@@ -33,9 +33,9 @@ export const optionalText = (label: string, max: number) =>
     .transform((value) => (value === '' ? null : value));
 
 // The prefix check matches the DB constraint: URL alone repairs "https:example.com" into a valid
-// address, and it silently drops tabs and line breaks, so the raw text is checked before parsing.
+// address, so the raw text is checked before parsing.
 const isWebAddress = (value: string) => {
-  if (!/^https?:\/\//i.test(value) || /\s/.test(value)) return false;
+  if (!/^https?:\/\//i.test(value)) return false;
   if (!URL.canParse(value)) return false;
   const { protocol, hostname } = new URL(value);
   return (protocol === 'http:' || protocol === 'https:') && hostname !== '';
@@ -50,10 +50,19 @@ export const optionalLink = (label: string) =>
     .string({ error: `${label}은(는) 문자열이어야 합니다` })
     .trim()
     .max(500, `${label}은(는) 500자 이하여야 합니다`)
-    .refine(
-      (value) => value === '' || isWebAddress(value),
-      `${label}은(는) http:// 또는 https://로 시작하는 주소여야 합니다`,
-    )
+    .superRefine((value, ctx) => {
+      if (value === '') return;
+      // URL silently drops tabs and line breaks, so the stored text would differ from the opened
+      // link. Spaces get their own message because the address may already start with https://.
+      if (/\s/.test(value)) {
+        ctx.addIssue({ code: 'custom', message: `${label}에는 공백을 넣을 수 없습니다` });
+      } else if (!isWebAddress(value)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${label}은(는) http:// 또는 https://로 시작하는 주소여야 합니다`,
+        });
+      }
+    })
     .nullable()
     .default(null)
     .transform((value) => (value === '' ? null : value));

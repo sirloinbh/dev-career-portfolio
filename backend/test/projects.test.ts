@@ -56,12 +56,18 @@ test('links must be http or https addresses', async () => {
     'https:example.com',
     'https:/example.com',
     'https:\\\\example.com',
-    // URL drops tabs and line breaks silently, so the stored text would differ from the opened link.
-    'http://exa\tmple.com',
-    'https://example.com/a\nb',
-    'https://example.com/a b',
   ]) {
     await expectRefused({ ...valid, repositoryUrl }, message);
+  }
+  // URL drops tabs and line breaks silently, so the stored text would differ from the opened link.
+  // The message names the space, since these addresses already start with http(s)://.
+  for (const repositoryUrl of [
+    'http://exa\tmple.com',
+    'https://example.com/a\nb',
+    'https://example.com/my file',
+    'https://example.com/a　b',
+  ]) {
+    await expectRefused({ ...valid, repositoryUrl }, '저장소 링크에는 공백을 넣을 수 없습니다');
   }
   await expectRefused(
     { ...valid, serviceUrl: 'mailto:someone@example.com' },
@@ -98,7 +104,7 @@ test('an update is validated the same way as a create', async () => {
   await withApi(refusingPool(), async (call) => {
     const { status, data } = await call('/api/projects/1', {
       method: 'PUT',
-      body: { ...valid, repositoryUrl: 'not a link' },
+      body: { ...valid, repositoryUrl: 'not-a-link' },
     });
     assert.equal(status, 400);
     assert.equal(data.error, '저장소 링크은(는) http:// 또는 https://로 시작하는 주소여야 합니다');
