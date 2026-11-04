@@ -5,8 +5,11 @@ import { afterEach, vi } from 'vitest';
 
 // findBy* and waitFor give up after 1 second by default. A role query over the whole page takes
 // 50-250 ms on its own and several seconds when the PC is busy (#57), so screen tests failed at
-// random. The wait stays under vitest's testTimeout (15 s) so a real failure still shows the page.
-configure({ asyncUtilTimeout: 10_000 });
+// random. 8 s covers the slowest wait measured (8.1 s with three suites at once) and leaves about
+// 7 s of vitest's testTimeout (15 s) for the rest of the test, so a real failure usually ends with
+// Testing Library's message and the page. A test that has already run long can still hit
+// testTimeout first (#60).
+configure({ asyncUtilTimeout: 8_000 });
 
 // jsdom has no matchMedia; the toaster and drawer read it to follow the system theme.
 window.matchMedia ??= (query: string) =>
