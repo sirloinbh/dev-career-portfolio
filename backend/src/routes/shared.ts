@@ -32,7 +32,10 @@ export const optionalText = (label: string, max: number) =>
     .default(null)
     .transform((value) => (value === '' ? null : value));
 
+// The prefix check matches the DB constraint: URL alone repairs "https:example.com" into a valid
+// address, and it silently drops tabs and line breaks, so the raw text is checked before parsing.
 const isWebAddress = (value: string) => {
+  if (!/^https?:\/\//i.test(value) || /\s/.test(value)) return false;
   if (!URL.canParse(value)) return false;
   const { protocol, hostname } = new URL(value);
   return (protocol === 'http:' || protocol === 'https:') && hostname !== '';

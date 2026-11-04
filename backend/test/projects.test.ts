@@ -51,6 +51,15 @@ test('links must be http or https addresses', async () => {
     'ftp://example.com/repo',
     'file:///C:/repo',
     'https://',
+    // Node's URL parser repairs these into https://example.com/, but the DB check would reject the
+    // raw text with a 500, so the server must refuse them first.
+    'https:example.com',
+    'https:/example.com',
+    'https:\\\\example.com',
+    // URL drops tabs and line breaks silently, so the stored text would differ from the opened link.
+    'http://exa\tmple.com',
+    'https://example.com/a\nb',
+    'https://example.com/a b',
   ]) {
     await expectRefused({ ...valid, repositoryUrl }, message);
   }
