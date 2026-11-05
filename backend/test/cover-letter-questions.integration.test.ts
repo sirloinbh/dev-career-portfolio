@@ -147,6 +147,57 @@ test(
   },
 );
 
+// A list save holds the application row lock until it commits. A single delete must wait for it;
+// otherwise it can remove a question between the save's check and its UPDATE, and the save returns
+// 200 with that question's edits silently lost (1st review of PR #76).
+test(
+  'a single delete waits while a list save of the same application holds it',
+  { skip: !url },
+  async (t) => {
+    await lockApplications(t);
+    const pool = new Pool({ connectionString: url });
+    t.after(() => pool.end());
+    await pool.query('DELETE FROM applications');
+
+    await withApi(pool, async (call) => {
+      const created = await call('/api/applications', {
+        method: 'POST',
+        body: { companyName: '한국소프트', status: 'drafting' },
+      });
+      const path = `/api/applications/${String((created.data.application as { id: number }).id)}`;
+      const saved = await call(`${path}/questions`, {
+        method: 'PUT',
+        body: { questions: [{ question: '지원 동기' }, { question: '입사 후 포부' }] },
+      });
+      const [, plan] = saved.data.questions as Question[];
+
+      // Stands in for a list save that is still running: the same lock, not yet committed.
+      const holder = await pool.connect();
+      try {
+        await holder.query('BEGIN');
+        await holder.query('SELECT 1 FROM applications WHERE id = $1 FOR UPDATE', [
+          (created.data.application as { id: number }).id,
+        ]);
+        let settled = false;
+        const deleting = call(`${path}/questions/${String(plan.id)}`, { method: 'DELETE' }).then(
+          (response) => {
+            settled = true;
+            return response;
+          },
+        );
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        assert.equal(settled, false, 'the delete must wait for the save to finish');
+        await holder.query('COMMIT');
+        assert.equal((await deleting).status, 204);
+      } finally {
+        // After a failed assertion the lock is still held; this ends it (after COMMIT it is a no-op).
+        await holder.query('ROLLBACK');
+        holder.release();
+      }
+    });
+  },
+);
+
 test('the database itself refuses rows the API would refuse', { skip: !url }, async (t) => {
   await lockApplications(t);
   const pool = new Pool({ connectionString: url });

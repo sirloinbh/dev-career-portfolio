@@ -82,6 +82,15 @@ async function listQuestions(db: Pool | PoolClient, applicationId: number) {
   return rows.map(toQuestion);
 }
 
+// Every write to one application's questions takes this row lock first, so list saves and single
+// deletes of the same application run one after another. Deleting the application waits for it too.
+async function lockApplication(client: PoolClient, applicationId: number) {
+  const found = await client.query('SELECT 1 FROM applications WHERE id = $1 FOR UPDATE', [
+    applicationId,
+  ]);
+  if (found.rowCount === 0) throw applicationNotFound();
+}
+
 async function inTransaction<T>(pool: Pool, run: (client: PoolClient) => Promise<T>) {
   const client = await pool.connect();
   let broken = false;
@@ -117,14 +126,12 @@ export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
     const applicationId = parseId(req.params.id, '지원 기업');
     const { questions } = parseQuestions(req.body);
     const saved = await inTransaction(pool, async (client) => {
-      // The lock makes a parallel save or delete of the same application wait for this one.
-      const found = await client.query('SELECT 1 FROM applications WHERE id = $1 FOR UPDATE', [
-        applicationId,
-      ]);
-      if (found.rowCount === 0) throw applicationNotFound();
+      await lockApplication(client, applicationId);
 
+      // FOR UPDATE as well: even a writer that skipped the application lock could not delete a
+      // question between this read and the UPDATE below, which would silently drop its edits.
       const existing = await client.query<{ id: string }>(
-        'SELECT id::text AS id FROM cover_letter_questions WHERE application_id = $1',
+        'SELECT id::text AS id FROM cover_letter_questions WHERE application_id = $1 FOR UPDATE',
         [applicationId],
       );
       const known = new Set(existing.rows.map((row) => Number(row.id)));
@@ -167,12 +174,16 @@ export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
   app.delete('/api/applications/:id/questions/:questionId', async (req, res) => {
     const applicationId = parseId(req.params.id, '지원 기업');
     const questionId = parseId(req.params.questionId, '자기소개서 문항');
-    // The order of the questions left keeps its gap, which still sorts the same way.
-    const { rowCount } = await pool.query(
-      'DELETE FROM cover_letter_questions WHERE id = $1 AND application_id = $2',
-      [questionId, applicationId],
-    );
-    if (rowCount === 0) throw new HttpError(404, '자기소개서 문항을 찾을 수 없습니다');
+    await inTransaction(pool, async (client) => {
+      // Waits for a list save of the same application, so it never lands in the middle of one.
+      await lockApplication(client, applicationId);
+      // The order of the questions left keeps its gap, which still sorts the same way.
+      const { rowCount } = await client.query(
+        'DELETE FROM cover_letter_questions WHERE id = $1 AND application_id = $2',
+        [questionId, applicationId],
+      );
+      if (rowCount === 0) throw new HttpError(404, '자기소개서 문항을 찾을 수 없습니다');
+    });
     res.status(204).end();
   });
 }
