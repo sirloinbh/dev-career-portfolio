@@ -1,5 +1,5 @@
-import { ArrowLeft, GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react';
-import { type FormEvent, type ReactNode, type RefObject, useId, useRef, useState } from 'react';
+import { GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react';
+import { type FormEvent, useId, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { Badge } from './components/ui/badge';
@@ -32,43 +32,10 @@ import { controlClass } from './form-fields';
 import { RequestError } from './lib/api';
 import { errorText, useNotice } from './lib/use-notice';
 import { cn } from './lib/utils';
+import { BackLink, PageHeader } from './page-header';
 import { useLoad, useReloading } from './use-load';
 
 const loadEducations = () => educationApi.list();
-
-function PageHeader({
-  title,
-  description,
-  headingRef,
-  children,
-}: {
-  title: string;
-  description: string;
-  headingRef?: RefObject<HTMLHeadingElement | null>;
-  children?: ReactNode;
-}) {
-  return (
-    <header className="flex flex-col gap-2">
-      {/* tabIndex -1 lets the page move focus here after the focused row is deleted. */}
-      <h1 id="page-title" ref={headingRef} tabIndex={headingRef ? -1 : undefined}>
-        {title}
-      </h1>
-      <p className="text-body break-keep text-muted-foreground">{description}</p>
-      {children}
-    </header>
-  );
-}
-
-function BackLink({ to }: { to: string }) {
-  return (
-    <Button asChild variant="ghost" size="sm" className="w-fit">
-      <Link to={to}>
-        <ArrowLeft aria-hidden />
-        학력 목록
-      </Link>
-    </Button>
-  );
-}
 
 function EducationItem({
   education,
@@ -465,7 +432,7 @@ export function NewEducation({ paths }: { paths: EducationPaths }) {
   };
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} />
+      <BackLink to={paths.list} label="학력 목록" />
       <PageHeader
         title="학력 추가"
         description="학교명, 학위, 상태, 입학일만 있으면 됩니다. 나머지는 비워 둘 수 있습니다."
@@ -500,7 +467,7 @@ export function EditEducation({ paths }: { paths: EducationPaths }) {
       aria-busy={loaded.state === 'loading'}
       className="flex flex-col gap-6"
     >
-      <BackLink to={paths.list} />
+      <BackLink to={paths.list} label="학력 목록" />
       <PageHeader title="학력 수정" description="바꿀 내용을 고친 뒤 저장합니다." />
       {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
       {loaded.state === 'error' ? (
