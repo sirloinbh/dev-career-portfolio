@@ -240,7 +240,7 @@ function SkillFields({
         </select>
         {errorFor('category')}
       </div>
-      {/* Native radios: arrow keys move between steps, and each step's criterion is in its label. */}
+      {/* Native radios: arrow keys move between steps; each is named by its step, described by its criterion. */}
       <fieldset className="flex flex-col gap-2" aria-describedby={proficiency['aria-describedby']}>
         <legend className="mb-2 text-body-sm font-medium">숙련도</legend>
         <p

@@ -12,7 +12,7 @@
 - `frontend/src/skill-data.ts`: 숙련도 단계 `proficiencyLevels`와 `proficiencyName`, 폼 상태 타입과 변환(`toSkillForm`, `toSkillInput`), 서버 오류 문구를 칸별로 나누는 `skillFieldErrors`, `skillApi.create/update/remove`. 분류 목록 `skillCategories`는 폼이 쓰므로 다시 내보냅니다.
 - `frontend/src/form-state.tsx`: 400과 함께 409도 칸별로 나눕니다. 409 "이미 등록된 스킬입니다"를 스킬명 칸 아래에 보이기 위해서입니다. 다른 API도 DB 고유 제약에 걸리면 일반 409 "이미 등록된 항목입니다"를 낼 수 있지만(`backend/src/standard/http.ts`), 이 문구는 어느 칸 이름과도 맞지 않아 전처럼 폼 아래 안내로 갑니다. 지금 고유 제약은 스킬명뿐입니다.
 - `frontend/src/app.tsx`: `/skills/new`, `/skills/:id/edit` 경로와 `skillPaths`.
-- `frontend/src/skill-form.test.tsx`: 메모리 안의 가짜 API로 등록·수정·삭제·오류 표시를 검사합니다(12건). `skills.test.tsx`는 단계 이름이 붙은 숙련도 문장에 맞췄습니다.
+- `frontend/src/skill-form.test.tsx`: 메모리 안의 가짜 API로 등록·수정·삭제·오류 표시를 검사합니다(처음 12건, 1차 리뷰 반영 뒤 13건). `skills.test.tsx`는 단계 이름이 붙은 숙련도 문장에 맞췄습니다.
 
 ## 판단한 내용
 
@@ -67,3 +67,7 @@
 
 - 실제 브라우저(390×844)에서 키보드 흐름을 다시 돌려 결과가 같음을 확인했습니다. 스킬 폼 테스트는 13건이 됐습니다.
 - `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과. 백엔드 78건 통과·건너뜀 0건, 프론트엔드 166건 통과·2건 건너뜀, 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
+
+## 2차 리뷰 결과
+
+1차 지적이 맞게 반영됐는지 확인했습니다. 라디오마다 id가 `useId`로 겹치지 않고, 오류 id는 오류 문구가 보일 때만 묶이며, 라벨을 눌러 고르는 동작도 그대로입니다. 최종 전체 diff에서 정확성·회귀·접근성 지적은 없었습니다. 변경 절의 테스트 수(13건)와 라디오 주석만 고쳤습니다. 오류가 묶음과 라디오 양쪽에서 두 번 읽힐 수 있는 점은 포커스한 칸만 읽는 낭독기를 위해 받아들였습니다. 리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
