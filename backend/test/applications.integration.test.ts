@@ -137,7 +137,7 @@ test(
         memo: '최종 결과 대기',
       });
 
-      // A deadline can also be added or moved by an update.
+      // An update can move a deadline to another date.
       const moved = await call(`/api/applications/${String(earlySubmitted.id)}`, {
         method: 'PUT',
         body: { companyName: '제출회사', status: 'submitted', deadline: '2026-04-15' },
