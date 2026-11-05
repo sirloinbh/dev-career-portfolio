@@ -200,6 +200,7 @@ function SkillFields({
   const set = (field: keyof SkillForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
   const proficiency = describe('proficiency', `${fieldId('proficiency')}-hint`);
+  const invalid = proficiency['aria-invalid'] === true;
 
   return (
     // The server checks every rule and answers in Korean, so the browser's own checks are off.
@@ -253,6 +254,14 @@ function SkillFields({
             // The first radio carries the field id, so a message about the field moves focus here.
             const id =
               index === 0 ? fieldId('proficiency') : `${fieldId('proficiency')}-${level.value}`;
+            // Named by the step alone, so each arrow-key move reads "4점 · 숙련" first; the criterion and
+            // any message about the field follow as its description.
+            const describedBy = [
+              `${id}-criterion`,
+              invalid ? `${fieldId('proficiency')}-error` : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
             return (
               <label
                 key={level.value}
@@ -266,11 +275,16 @@ function SkillFields({
                   value={String(level.value)}
                   checked={form.proficiency === String(level.value)}
                   onChange={(e) => set('proficiency')(e.target.value)}
+                  aria-labelledby={`${id}-title`}
+                  aria-describedby={describedBy}
                   className="mt-1 size-4 shrink-0 accent-primary"
                 />
                 <span className="flex flex-col text-body-sm font-medium">
-                  {`${level.value}점 · ${level.name}`}
-                  <span className="font-normal break-keep text-muted-foreground">
+                  <span id={`${id}-title`}>{`${level.value}점 · ${level.name}`}</span>
+                  <span
+                    id={`${id}-criterion`}
+                    className="font-normal break-keep text-muted-foreground"
+                  >
                     {level.criterion}
                   </span>
                 </span>

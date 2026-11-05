@@ -124,10 +124,11 @@ test('the five steps each say what they mean, and none is chosen for a new skill
   const radios = within(group).getAllByRole('radio');
   expect(radios.map((radio) => radio.getAttribute('value'))).toEqual(['1', '2', '3', '4', '5']);
   expect(radios.every((radio) => !(radio as HTMLInputElement).checked)).toBe(true);
+  // Each step is named by its title and described by its criterion.
   for (const step of proficiencyLevels) {
     expect(
-      within(group).getByRole('radio', { name: `${step.value}점 · ${step.name}${step.criterion}` }),
-    ).toBeInTheDocument();
+      within(group).getByRole('radio', { name: `${step.value}점 · ${step.name}` }),
+    ).toHaveAccessibleDescription(step.criterion);
   }
 });
 
@@ -145,6 +146,10 @@ test('no proficiency chosen: the server message is tied to the steps and focus g
   expect(screen.getByRole('group', { name: '숙련도' })).toHaveAccessibleDescription(
     expect.stringContaining('숙련도는 1~5 사이의 정수여야 합니다'),
   );
+  // The focused radio carries the message too, for readers that announce only the control.
+  expect(level(/^1점/)).toHaveAccessibleDescription(
+    '예제를 따라 해 봤습니다 숙련도는 1~5 사이의 정수여야 합니다',
+  );
   expect(field('스킬명')).toHaveValue('Rust');
 });
 
@@ -160,6 +165,18 @@ test('a taken name (409) is shown under the name field, not as a general error',
   expect(field('스킬명')).toHaveAttribute('aria-invalid', 'true');
   expect(field('스킬명')).toHaveAccessibleDescription('이미 등록된 스킬입니다');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+test('a 409 that names no field still goes below the form', async () => {
+  const api = fakeApi([]);
+  open('/skills/new');
+  await screen.findByRole('heading', { level: 1, name: '스킬 추가' });
+  // The generic unique-violation answer (backend/src/standard/http.ts).
+  api.refuseNext(409, '이미 등록된 항목입니다');
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('이미 등록된 항목입니다');
+  await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
+  expect(field('스킬명')).not.toHaveAttribute('aria-invalid');
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {

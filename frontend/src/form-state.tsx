@@ -22,7 +22,7 @@ export function typedDate(input: HTMLInputElement | null, value: string) {
 }
 
 /**
- * Form state for one item form. `split` turns the server's 400 message into per-field messages
+ * Form state for one item form. `split` turns the server's 400 or 409 message into per-field messages
  * (see field-errors.ts). `submit(save)` runs the save, and on failure shows each message under its
  * field and focuses the topmost one; a message that names no field goes in the notice below the form.
  */
