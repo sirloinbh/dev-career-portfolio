@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, expect, test, vi } from 'vitest';
 
 import { App } from './app';
@@ -311,9 +312,40 @@ test('a row that is already gone (404) counts as deleted', async () => {
   expect(screen.queryByText(/지우지 못했습니다/)).not.toBeInTheDocument();
 });
 
-// jsdom has no real Tab or Enter handling, so this checks what keyboard use depends on: native
-// controls one after another in screen order, and a real submit button inside the form, which is
-// what lets Enter in a text input submit. The keys themselves were tried in Chrome (see the doc).
+test('the form can be filled and saved with Tab and Enter alone', async () => {
+  const api = fakeApi([]);
+  const user = userEvent.setup();
+  open('/certifications/new');
+  await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
+  // Start from the back link just above the form, as a keyboard user would.
+  screen.getByRole('link', { name: '자격증 목록' }).focus();
+  await user.tab();
+  expect(field('자격증명')).toHaveFocus();
+  await user.keyboard('SQLD');
+  await user.tab();
+  expect(field('발급 기관')).toHaveFocus();
+  await user.keyboard('한국데이터산업진흥원');
+  await user.tab();
+  expect(field('취득일')).toHaveFocus();
+  await user.keyboard('2023-06-23');
+  await user.tab();
+  expect(field('만료일')).toHaveFocus();
+  await user.tab();
+  expect(field('점수·등급')).toHaveFocus();
+  await user.keyboard('합격{Enter}');
+
+  expect(await screen.findByRole('heading', { level: 1, name: '자격증' })).toBeInTheDocument();
+  expect(api.calls.find((call) => call.method === 'POST')?.body).toEqual({
+    name: 'SQLD',
+    issuer: '한국데이터산업진흥원',
+    acquiredDate: '2023-06-23',
+    expiryDate: null,
+    score: '합격',
+    memo: '',
+  });
+});
+
+// What the Tab and Enter test relies on, checked directly so a failure says which part broke.
 test('the form is built for keyboard use: native controls in order and a submit button', async () => {
   fakeApi([]);
   open('/certifications/new');
