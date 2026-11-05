@@ -19,7 +19,8 @@ import { EditEducation, EducationList, NewEducation } from './educations';
 import { type Health, healthText } from './health';
 import type { ProjectPaths } from './project-data';
 import { EditProject, NewProject, ProjectList } from './projects';
-import { SkillList } from './skills';
+import type { SkillPaths } from './skill-data';
+import { EditSkill, NewSkill, SkillList } from './skills';
 
 // Every page URL lives here (central docs/directory-rules.md).
 const pages = {
@@ -34,6 +35,8 @@ const pages = {
   newProject: '/projects/new',
   editProject: '/projects/:id/edit',
   skills: '/skills',
+  newSkill: '/skills/new',
+  editSkill: '/skills/:id/edit',
   settings: '/settings',
 } as const;
 
@@ -41,6 +44,12 @@ const educationPaths: EducationPaths = {
   list: pages.educations,
   create: pages.newEducation,
   edit: (id) => generatePath(pages.editEducation, { id: String(id) }),
+};
+
+const skillPaths: SkillPaths = {
+  list: pages.skills,
+  create: pages.newSkill,
+  edit: (id) => generatePath(pages.editSkill, { id: String(id) }),
 };
 
 const projectPaths: ProjectPaths = {
@@ -143,7 +152,9 @@ export function App() {
           <Route path={pages.projects} element={<ProjectList paths={projectPaths} />} />
           <Route path={pages.newProject} element={<NewProject paths={projectPaths} />} />
           <Route path={pages.editProject} element={<EditProject paths={projectPaths} />} />
-          <Route path={pages.skills} element={<SkillList />} />
+          <Route path={pages.skills} element={<SkillList paths={skillPaths} />} />
+          <Route path={pages.newSkill} element={<NewSkill paths={skillPaths} />} />
+          <Route path={pages.editSkill} element={<EditSkill paths={skillPaths} />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}

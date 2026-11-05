@@ -82,11 +82,11 @@ test('a skill shows its proficiency as dots, a short count and a full sentence',
   serve({ status: 200, body: { skills: [typescript, go] } });
   openSkills();
   const item = await screen.findByRole('listitem', { name: 'TypeScript' });
-  expect(within(item).getByText('숙련도 5점 중 5점')).toHaveClass('sr-only');
+  expect(within(item).getByText('숙련도 5점 중 5점, 전문')).toHaveClass('sr-only');
   // The short count is for the eye only; a screen reader hears the sentence alone.
-  expect(within(item).getByText('5/5')).toHaveAttribute('aria-hidden', 'true');
+  expect(within(item).getByText('5/5 · 전문')).toHaveAttribute('aria-hidden', 'true');
   const weaker = screen.getByRole('listitem', { name: 'Go' });
-  expect(within(weaker).getByText('숙련도 5점 중 3점')).toBeInTheDocument();
+  expect(within(weaker).getByText('숙련도 5점 중 3점, 실무')).toBeInTheDocument();
   // Three of the five dots are filled.
   const dots = weaker.querySelectorAll('[aria-hidden] > span');
   expect(dots).toHaveLength(5);
@@ -153,5 +153,5 @@ test('grouping keeps the API order within a group', () => {
   expect(groups.map((group) => group.category)).toEqual(['language', 'database']);
   // The API sends the strongest first; the screen does not re-sort.
   expect(groups[0].skills.map((item) => item.name)).toEqual(['Go', 'TypeScript']);
-  expect(proficiencyText(1)).toBe('숙련도 5점 중 1점');
+  expect(proficiencyText(1)).toBe('숙련도 5점 중 1점, 입문');
 });
