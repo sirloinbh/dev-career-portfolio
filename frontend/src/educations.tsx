@@ -1,5 +1,5 @@
 import { GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react';
-import { type FormEvent, useId, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { Badge } from './components/ui/badge';
@@ -11,7 +11,7 @@ import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
-import { Spinner } from './components/ui/spinner';
+import { deleteItem } from './delete-item';
 import {
   degreeLabels,
   degrees,
@@ -29,8 +29,8 @@ import {
   toEducationInput,
 } from './education-data';
 import { controlClass } from './form-fields';
-import { RequestError } from './lib/api';
-import { errorText, useNotice } from './lib/use-notice';
+import { useServerForm } from './form-state';
+import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
 import { useLoad, useReloading } from './use-load';
@@ -108,17 +108,11 @@ export function EducationList({ paths }: { paths: EducationPaths }) {
   const firstLoad = loaded.state === 'loading' && data === undefined;
 
   const remove = async (education: Education) => {
-    try {
-      await educationApi.remove(education.id);
-    } catch (error) {
-      // Already gone counts as deleted; anything else keeps the dialog open with the reason.
-      if (!(error instanceof RequestError && error.status === 404)) {
-        // The open dialog covers the page, so the reason goes in a toast above it.
-        toast.error(`학력을 지우지 못했습니다. ${errorText(error)}`);
-        throw error;
-      }
-    }
-    toast.success(`'${education.school}' 학력을 지웠습니다`);
+    await deleteItem({
+      remove: () => educationApi.remove(education.id),
+      noun: '학력',
+      name: education.school,
+    });
     reload((current) => ({
       educations: current.educations.filter((item) => item.id !== education.id),
     }));
@@ -191,61 +185,17 @@ function EducationFields({
   onSubmit: (form: EducationForm) => Promise<unknown>;
 }) {
   const [form, setForm] = useState(initial);
-  const [pending, setPending] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof EducationForm, string>>>({});
-  const notice = useNotice();
-  const submitButton = useRef<HTMLButtonElement>(null);
-  const id = useId();
-  const fieldId = (field: keyof EducationForm) => `${id}-${field}`;
+  const { fieldId, describe, errorFor, clearError, submit, actions, pending } =
+    useServerForm(fieldErrors);
   const set = (field: keyof EducationForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
-
-  /** aria props that tie a field to its hint and to the server's message about it. */
-  const describe = (field: keyof EducationForm, hint?: string) => {
-    const invalid = errors[field] !== undefined;
-    const ids = [hint, invalid ? `${fieldId(field)}-error` : undefined].filter(Boolean).join(' ');
-    return { 'aria-invalid': invalid || undefined, 'aria-describedby': ids || undefined };
-  };
-  const errorFor = (field: keyof EducationForm) =>
-    errors[field] !== undefined ? (
-      <p id={`${fieldId(field)}-error`} className="text-body-sm break-keep text-destructive">
-        {errors[field]}
-      </p>
-    ) : null;
-
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPending(true);
-    setErrors({});
-    notice.clear();
-    onSubmit(form).catch((error: unknown) => {
-      setPending(false);
-      const message = errorText(error, '저장하지 못했습니다');
-      const pieces =
-        error instanceof RequestError && error.status === 400 ? fieldErrors(message) : [];
-      const byField = Object.fromEntries(
-        pieces.flatMap((piece) => (piece.field ? [[piece.field, piece.message]] : [])),
-      ) as Partial<Record<keyof EducationForm, string>>;
-      const first = pieces.find((piece) => piece.field)?.field;
-      const unplaced = pieces.length ? pieces.filter((piece) => !piece.field) : [{ message }];
-      if (unplaced.length) notice.error(unplaced.map((piece) => piece.message).join(', '));
-      if (!first) {
-        // The disabled button dropped focus; give it back so keyboard users stay in the form.
-        requestAnimationFrame(() => submitButton.current?.focus());
-        return;
-      }
-      // Show each Korean message under its input and move to the first, so it is read with the field.
-      setErrors(byField);
-      requestAnimationFrame(() => document.getElementById(fieldId(first))?.focus());
-    });
-  };
 
   const enrolled = form.status === 'enrolled';
   return (
     // The server checks every rule and answers in Korean, so the browser's own checks are off.
     <form
       noValidate
-      onSubmit={submit}
+      onSubmit={submit(() => onSubmit(form))}
       className="flex max-w-2xl flex-col gap-5"
       aria-busy={pending || undefined}
     >
@@ -308,7 +258,7 @@ function EducationFields({
                 status: e.target.value as EducationForm['status'],
                 endDate: enrolledNow ? '' : current.endDate,
               }));
-              if (enrolledNow) setErrors((current) => ({ ...current, endDate: undefined }));
+              if (enrolledNow) clearError('endDate');
             }}
             {...describe('status')}
           >
@@ -366,7 +316,7 @@ function EducationFields({
             value={form.gpa}
             onChange={(e) => set('gpa')(e.target.value)}
             placeholder="예: 3.75"
-            {...describe('gpa', `${id}-gpa-hint`)}
+            {...describe('gpa', `${fieldId('gpa')}-hint`)}
           />
           {errorFor('gpa')}
         </div>
@@ -379,12 +329,12 @@ function EducationFields({
             value={form.gpaScale}
             onChange={(e) => set('gpaScale')(e.target.value)}
             placeholder="예: 4.5"
-            {...describe('gpaScale', `${id}-gpa-hint`)}
+            {...describe('gpaScale', `${fieldId('gpa')}-hint`)}
           />
           {errorFor('gpaScale')}
         </div>
         <p
-          id={`${id}-gpa-hint`}
+          id={`${fieldId('gpa')}-hint`}
           className="text-caption break-keep text-muted-foreground sm:col-span-2"
         >
           학점과 만점은 함께 넣거나 함께 비워 둡니다. 소수 둘째 자리까지 넣을 수 있습니다.
@@ -404,21 +354,7 @@ function EducationFields({
         />
         {errorFor('memo')}
       </div>
-      <Notice notice={notice.notice} />
-      <div className="flex flex-wrap gap-2">
-        <Button
-          ref={submitButton}
-          type="submit"
-          disabled={pending}
-          aria-busy={pending || undefined}
-        >
-          {pending ? <Spinner size="sm" label="저장하는 중" /> : null}
-          {submitLabel}
-        </Button>
-        <Button asChild variant="outline">
-          <Link to={cancelTo}>취소</Link>
-        </Button>
-      </div>
+      {actions({ submitLabel, cancelTo })}
     </form>
   );
 }

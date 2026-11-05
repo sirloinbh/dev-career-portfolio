@@ -2,7 +2,8 @@ import { Briefcase, GraduationCap, LayoutDashboard, Settings2 } from 'lucide-rea
 import { type ReactNode, useEffect, useState } from 'react';
 import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-router';
 
-import { CareerList } from './careers';
+import type { CareerPaths } from './career-data';
+import { CareerList, EditCareer, NewCareer } from './careers';
 import { AppShell, type NavItem } from './components/layout/app-shell';
 import { EmptyState } from './components/ui/empty-state';
 import { Toaster } from './components/ui/sonner';
@@ -17,6 +18,8 @@ const pages = {
   newEducation: '/educations/new',
   editEducation: '/educations/:id/edit',
   careers: '/careers',
+  newCareer: '/careers/new',
+  editCareer: '/careers/:id/edit',
   settings: '/settings',
 } as const;
 
@@ -24,6 +27,12 @@ const educationPaths: EducationPaths = {
   list: pages.educations,
   create: pages.newEducation,
   edit: (id) => generatePath(pages.editEducation, { id: String(id) }),
+};
+
+const careerPaths: CareerPaths = {
+  list: pages.careers,
+  create: pages.newCareer,
+  edit: (id) => generatePath(pages.editCareer, { id: String(id) }),
 };
 
 // Main menu (LNB) items, in display order.
@@ -106,7 +115,9 @@ export function App() {
           <Route path={pages.educations} element={<EducationList paths={educationPaths} />} />
           <Route path={pages.newEducation} element={<NewEducation paths={educationPaths} />} />
           <Route path={pages.editEducation} element={<EditEducation paths={educationPaths} />} />
-          <Route path={pages.careers} element={<CareerList />} />
+          <Route path={pages.careers} element={<CareerList paths={careerPaths} />} />
+          <Route path={pages.newCareer} element={<NewCareer paths={careerPaths} />} />
+          <Route path={pages.editCareer} element={<EditCareer paths={careerPaths} />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}

@@ -1,3 +1,4 @@
+import { splitFieldErrors } from './field-errors';
 import { toNumber } from './form-fields';
 import { requestJson } from './lib/api';
 
@@ -158,38 +159,8 @@ const formOrder: (keyof EducationForm)[] = [
   'memo',
 ];
 
-/** The field a server validation message is about, so the screen can show it under that input. */
-function errorField(message: string): keyof EducationForm | undefined {
-  return fieldLabels.find(([label]) => message.startsWith(label))?.[1];
-}
-
-/**
- * The server joins several messages with ", " (backend/src/standard/http.ts). A message can hold
- * commas itself ("고등학교, 전문학사, …"), so a piece that names no field stays with the one before.
- * Messages about the same field are joined even when another field's message sits between them
- * (zod reports per-field issues before the cross-field ones). Fields come in screen order, so the
- * screen focuses the topmost one; a piece that names no field goes last.
- */
-export function fieldErrors(message: string) {
-  const pieces: { field: keyof EducationForm | undefined; message: string }[] = [];
-  for (const text of message.split(', ')) {
-    const field = errorField(text);
-    if (field === undefined && pieces.length > 0) {
-      pieces[pieces.length - 1].message += `, ${text}`;
-    } else {
-      pieces.push({ field, message: text });
-    }
-  }
-  const grouped: typeof pieces = [];
-  for (const piece of pieces) {
-    const same = piece.field && grouped.find((item) => item.field === piece.field);
-    if (same) same.message += `, ${piece.message}`;
-    else grouped.push(piece);
-  }
-  const order = (field: keyof EducationForm | undefined) =>
-    field === undefined ? formOrder.length : formOrder.indexOf(field);
-  return grouped.sort((a, b) => order(a.field) - order(b.field));
-}
+/** The server's message split per field, topmost field first (see field-errors.ts). */
+export const fieldErrors = (message: string) => splitFieldErrors(message, fieldLabels, formOrder);
 
 const base = '/api/educations';
 
