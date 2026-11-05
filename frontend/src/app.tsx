@@ -1,7 +1,8 @@
-import { GraduationCap, LayoutDashboard, Settings2 } from 'lucide-react';
+import { Briefcase, GraduationCap, LayoutDashboard, Settings2 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-router';
 
+import { CareerList } from './careers';
 import { AppShell, type NavItem } from './components/layout/app-shell';
 import { EmptyState } from './components/ui/empty-state';
 import { Toaster } from './components/ui/sonner';
@@ -15,6 +16,7 @@ const pages = {
   educations: '/educations',
   newEducation: '/educations/new',
   editEducation: '/educations/:id/edit',
+  careers: '/careers',
   settings: '/settings',
 } as const;
 
@@ -28,6 +30,7 @@ const educationPaths: EducationPaths = {
 const nav: NavItem[] = [
   { to: pages.overview, label: '대시보드', icon: LayoutDashboard },
   { to: pages.educations, label: '학력', icon: GraduationCap },
+  { to: pages.careers, label: '이력', icon: Briefcase },
   { to: pages.settings, label: '설정', icon: Settings2 },
 ];
 
@@ -103,6 +106,7 @@ export function App() {
           <Route path={pages.educations} element={<EducationList paths={educationPaths} />} />
           <Route path={pages.newEducation} element={<NewEducation paths={educationPaths} />} />
           <Route path={pages.editEducation} element={<EditEducation paths={educationPaths} />} />
+          <Route path={pages.careers} element={<CareerList />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}
