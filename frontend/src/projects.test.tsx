@@ -88,9 +88,9 @@ test('projects are listed in the order the API gives, not re-sorted', async () =
   ).toEqual(['사내 위키 검색', '주문 정산 자동화']);
 });
 
-/** The badge text next to a project name, if any. */
-const badgeOf = (item: HTMLElement) =>
-  item.querySelector('h2')?.parentElement?.querySelector('[data-slot="badge"]')?.textContent;
+/** The "진행 중" badge in a row, if any (the technology tags are badges too, so match the text). */
+const runningBadge = (item: HTMLElement) =>
+  within(item).queryByText('진행 중', { selector: '[data-slot="badge"]' });
 
 test('a running project shows "진행 중" and every block that was filled in', async () => {
   serve({ status: 200, body: { projects: [running, finished] } });
@@ -98,7 +98,7 @@ test('a running project shows "진행 중" and every block that was filled in', 
   const list = await screen.findByRole('list', { name: '프로젝트 목록' });
 
   const item = within(list).getByRole('listitem', { name: '주문 정산 자동화' });
-  expect(badgeOf(item)).toBe('진행 중');
+  expect(runningBadge(item)).toBeInTheDocument();
   expect(item).toHaveTextContent('한빛소프트 · 백엔드 개발');
   expect(item).toHaveTextContent('2024-05-01 ~ 진행 중');
   // Each label is the term of its own block, so a screen reader can tell the blocks apart.
@@ -133,7 +133,7 @@ test('a finished project with only the required fields shows no empty labels', a
   openProjects();
   const list = await screen.findByRole('list', { name: '프로젝트 목록' });
   const item = within(list).getByRole('listitem', { name: '사내 위키 검색' });
-  expect(badgeOf(item)).toBeUndefined();
+  expect(runningBadge(item)).not.toBeInTheDocument();
   expect(item).not.toHaveTextContent('진행 중');
   expect(item).toHaveTextContent('2021-03-02 ~ 2021-08-31');
   expect(within(item).queryByRole('term')).not.toBeInTheDocument();
@@ -196,6 +196,27 @@ test('an unreachable server is shown in Korean', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent(
     '프로젝트를 불러오지 못했습니다. 서버에 연결할 수 없습니다',
   );
+});
+
+test('each link is checked on its own: a valid one is shown, an invalid one is not', async () => {
+  serve({
+    status: 200,
+    body: {
+      projects: [
+        {
+          ...finished,
+          repositoryUrl: 'https://github.com/example/wiki',
+          serviceUrl: 'javascript:alert(1)',
+        },
+      ],
+    },
+  });
+  openProjects();
+  const item = await screen.findByRole('listitem', { name: '사내 위키 검색' });
+  const links = within(item).getAllByRole('link');
+  expect(links).toHaveLength(1);
+  expect(links[0]).toHaveAccessibleName('사내 위키 검색 저장소 (새 탭에서 열림)');
+  expect(links[0]).toHaveAttribute('href', 'https://github.com/example/wiki');
 });
 
 test('period, role and link rules', () => {
