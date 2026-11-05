@@ -14,6 +14,9 @@ export type FieldError<F extends string> = { field: F | undefined; message: stri
  * `labels` maps a message start to its field; put longer labels first so "재학 중이면 졸업일" is not
  * read as another field. `order` is the order the inputs appear on screen.
  */
+/** The count the server adds when it shows only the first ten issues (backend/src/standard/http.ts). */
+const overflow = /, 외 \d+개$/;
+
 export function splitFieldErrors<F extends string>(
   message: string,
   labels: readonly (readonly [string, F])[],
@@ -33,9 +36,13 @@ export function splitFieldErrors<F extends string>(
   for (const piece of pieces) {
     const same = piece.field && grouped.find((item) => item.field === piece.field);
     if (same) {
+      // The server ends a long list with "외 N개", which arrives stuck to the last message; keep it
+      // even when that message is already shown.
+      const message = piece.message.replace(overflow, '');
+      const rest = piece.message.slice(message.length);
       // Compared with the separators around it, since a message can hold ", " itself.
-      const shown = `, ${same.message}, `.includes(`, ${piece.message}, `);
-      if (!shown) same.message += `, ${piece.message}`;
+      const shown = `, ${same.message}, `.includes(`, ${message}, `);
+      same.message += shown ? rest : `, ${piece.message}`;
     } else grouped.push(piece);
   }
   const position = (field: F | undefined) =>

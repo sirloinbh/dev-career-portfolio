@@ -199,6 +199,14 @@ test('a repeated message about technologies is shown once, topmost field focused
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
+test('a long list of the same message keeps the count of the ones not shown', () => {
+  const message = '사용 기술 항목은 50자 이하여야 합니다';
+  // Ten issues, then the count of the rest; as backend/src/standard/http.ts joins them.
+  expect(projectFieldErrors([...Array<string>(10).fill(message), '외 1개'].join(', '))).toEqual([
+    { field: 'technologies', message: `${message}, 외 1개` },
+  ]);
+});
+
 test('a half-typed end date is sent as text the server refuses, not as running', async () => {
   const api = fakeApi([]);
   open('/projects/new');
@@ -250,6 +258,34 @@ test('a project is edited with its saved values filled in', async () => {
   expect(item).toHaveTextContent('Redis');
   // The cleared link is gone from the list.
   expect(within(item).queryByRole('link', { name: /저장소/ })).not.toBeInTheDocument();
+});
+
+test('a refused edit shows the message under its field and stays on the form', async () => {
+  const api = fakeApi([past]);
+  open('/projects/1/edit');
+  await screen.findByRole('heading', { level: 1, name: '프로젝트 수정' });
+  type('시작일', '2022-01-03');
+  api.refuseNext('종료일은 시작일보다 빠를 수 없습니다');
+  fireEvent.click(screen.getByRole('button', { name: '저장' }));
+  await waitFor(() => expect(field('종료일')).toHaveFocus());
+  expect(field('종료일')).toHaveAccessibleDescription(
+    expect.stringContaining('종료일은 시작일보다 빠를 수 없습니다'),
+  );
+  expect(api.calls.find((call) => call.method === 'PUT')?.url).toBe('/api/projects/1');
+  expect(field('시작일')).toHaveValue('2022-01-03');
+  expect(window.location.pathname).toBe('/projects/1/edit');
+});
+
+test('saving a project deleted after the form opened says it is gone', async () => {
+  const api = fakeApi([past]);
+  open('/projects/1/edit');
+  await screen.findByRole('heading', { level: 1, name: '프로젝트 수정' });
+  // Someone else deleted it after the form loaded.
+  api.store.splice(0, 1);
+  fireEvent.click(screen.getByRole('button', { name: '저장' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('프로젝트를 찾을 수 없습니다');
+  await waitFor(() => expect(screen.getByRole('button', { name: '저장' })).toHaveFocus());
+  expect(window.location.pathname).toBe('/projects/1/edit');
 });
 
 test('clearing the end date of a finished project makes it 진행 중', async () => {
