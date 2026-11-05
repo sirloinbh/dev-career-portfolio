@@ -60,7 +60,11 @@ export function useServerForm<F extends string>(split: (message: string) => Fiel
     save().catch((error: unknown) => {
       setPending(false);
       const message = errorText(error, '저장하지 못했습니다');
-      const pieces = error instanceof RequestError && error.status === 400 ? split(message) : [];
+      // 400 is a rule an input broke; 409 is a value taken by another row (a skill name). Both can be
+      // about one field, so both are split; any other failure goes in the notice.
+      const aboutInput =
+        error instanceof RequestError && (error.status === 400 || error.status === 409);
+      const pieces = aboutInput ? split(message) : [];
       const byField = Object.fromEntries(
         pieces.flatMap((piece) => (piece.field ? [[piece.field, piece.message]] : [])),
       ) as Partial<Record<F, string>>;
