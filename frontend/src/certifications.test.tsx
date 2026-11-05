@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, expect, test, vi } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
 import {
@@ -55,15 +55,14 @@ function serve(result: { status: number; body: object } | 'offline') {
   );
 }
 
-/** 2026-11-05 00:30 in Seoul, which is still 2026-11-04 in UTC. Only Date is faked. */
+/**
+ * 2026-11-05 00:30 in Seoul, which is still 2026-11-04 in UTC (the tests run with TZ=UTC). Only
+ * Date is faked; src/test/setup.ts restores real timers after each test.
+ */
 function setSeoulJustAfterMidnight() {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-04T15:30:00Z'));
 }
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 function openCertifications() {
   window.history.replaceState(null, '', '/certifications');
