@@ -6,6 +6,7 @@ import { apiRateLimit, type RateLimitOptions } from './rate-limit.js';
 import { registerCareerRoutes } from './routes/careers.js';
 import { registerEducationRoutes } from './routes/educations.js';
 import { registerProjectRoutes } from './routes/projects.js';
+import { registerSkillRoutes } from './routes/skills.js';
 import { errorHandler, notFound, serviceDate } from './standard/http.js';
 
 // DATE columns stay YYYY-MM-DD strings so the service time zone never shifts them.
@@ -28,6 +29,7 @@ export function createApp(
   registerEducationRoutes(app, pool);
   registerCareerRoutes(app, pool);
   registerProjectRoutes(app, pool);
+  registerSkillRoutes(app, pool);
   app.use('/api', notFound);
   app.use(errorHandler);
   return app;
