@@ -31,7 +31,8 @@ function Proficiency({ value }: { value: number }) {
           <span
             key={index}
             className={cn(
-              'size-2.5 rounded-full border border-foreground/40',
+              // 60% keeps an empty dot's outline at 3:1 or more on the white card, not only the dark one.
+              'size-2.5 rounded-full border border-foreground/60',
               index < value ? 'bg-foreground' : 'bg-transparent',
             )}
           />
@@ -91,24 +92,23 @@ export function SkillList() {
       ) : null}
       {groupSkills(skills).map((group) => {
         const label = skillCategoryLabels[group.category];
-        const headingId = `skill-group-${group.category}`;
         return (
-          <section key={group.category} aria-labelledby={headingId} className="flex flex-col gap-3">
-            <h2 id={headingId} className="flex items-baseline gap-2">
+          // A plain group, not a landmark: six category regions would crowd the landmark list, and
+          // the heading already lets a screen reader jump between categories.
+          <div key={group.category} className="flex flex-col gap-3">
+            <h2 className="flex items-baseline gap-2">
               {label}{' '}
               <span className="text-body-sm font-normal text-muted-foreground">
                 {group.skills.length}건
               </span>
             </h2>
-            <ul
-              aria-label={`${label} 스킬`}
-              className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
-            >
+            {/* Unnamed: the heading just above names it, and the list itself says how many items. */}
+            <ul className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm">
               {group.skills.map((skill) => (
                 <SkillItem key={skill.id} skill={skill} />
               ))}
             </ul>
-          </section>
+          </div>
         );
       })}
     </section>
