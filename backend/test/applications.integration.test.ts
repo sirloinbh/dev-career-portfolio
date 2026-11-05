@@ -71,6 +71,9 @@ test(
         status: 'submitted',
         memo: '1차 서류',
       });
+      // Dates come back as the same YYYY-MM-DD text, the past one included.
+      assert.equal(closed.deadline, '2025-01-10');
+      assert.equal(lateSubmitted.deadline, '2026-03-01');
       assert.equal(lateSubmitted.postingUrl, 'https://careers.example.com/jobs/12');
       const farDraft = await add({
         companyName: '먼회사',
@@ -133,6 +136,14 @@ test(
         status: 'closed',
         memo: '최종 결과 대기',
       });
+
+      // A deadline can also be added or moved by an update.
+      const moved = await call(`/api/applications/${String(earlySubmitted.id)}`, {
+        method: 'PUT',
+        body: { companyName: '제출회사', status: 'submitted', deadline: '2026-04-15' },
+      });
+      assert.equal(moved.status, 200);
+      assert.equal((moved.data.application as Application).deadline, '2026-04-15');
 
       // An update the database itself refuses (NUL is valid JSON but not PostgreSQL text) is a
       // 400 and leaves the row as it was.
