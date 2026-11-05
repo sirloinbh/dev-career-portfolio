@@ -1,4 +1,4 @@
-import { Briefcase, GraduationCap, LayoutDashboard, Settings2 } from 'lucide-react';
+import { Briefcase, FolderKanban, GraduationCap, LayoutDashboard, Settings2 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-router';
 
@@ -10,6 +10,7 @@ import { Toaster } from './components/ui/sonner';
 import type { EducationPaths } from './education-data';
 import { EditEducation, EducationList, NewEducation } from './educations';
 import { type Health, healthText } from './health';
+import { ProjectList } from './projects';
 
 // Every page URL lives here (central docs/directory-rules.md).
 const pages = {
@@ -20,6 +21,7 @@ const pages = {
   careers: '/careers',
   newCareer: '/careers/new',
   editCareer: '/careers/:id/edit',
+  projects: '/projects',
   settings: '/settings',
 } as const;
 
@@ -40,6 +42,7 @@ const nav: NavItem[] = [
   { to: pages.overview, label: '대시보드', icon: LayoutDashboard },
   { to: pages.educations, label: '학력', icon: GraduationCap },
   { to: pages.careers, label: '이력', icon: Briefcase },
+  { to: pages.projects, label: '프로젝트', icon: FolderKanban },
   { to: pages.settings, label: '설정', icon: Settings2 },
 ];
 
@@ -118,6 +121,7 @@ export function App() {
           <Route path={pages.careers} element={<CareerList paths={careerPaths} />} />
           <Route path={pages.newCareer} element={<NewCareer paths={careerPaths} />} />
           <Route path={pages.editCareer} element={<EditCareer paths={careerPaths} />} />
+          <Route path={pages.projects} element={<ProjectList />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}
