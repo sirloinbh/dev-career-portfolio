@@ -77,10 +77,15 @@ test('skills are stored, listed by category, updated and deleted', { skip: !url 
     assert.ok(docker);
     const taken = await call(`/api/skills/${String(docker.id)}`, {
       method: 'PUT',
-      body: { name: 'react', category: 'tool', proficiency: 3 },
+      body: { name: 'react', category: 'framework', proficiency: 1, memo: '바뀌면 안 됨' },
     });
     assert.equal(taken.status, 409);
     assert.equal(taken.data.error, '이미 등록된 스킬입니다');
+    const kept = await call('/api/skills');
+    assert.deepEqual(
+      (kept.data.skills as Skill[]).find((skill) => skill.id === docker.id),
+      docker,
+    );
 
     // A skill may change the case of its own name, and every column changes.
     const updated = await call(`/api/skills/${String(typescript.id)}`, {

@@ -39,7 +39,8 @@ test('the category must be one of the six', async () => {
 });
 
 test('proficiency is a whole number from 1 to 5', async () => {
-  for (const proficiency of [0, 6, 2.5, -1, '3', null, undefined]) {
+  // 1e16 is past the safe integer range, where a chain of checks would report the same message twice.
+  for (const proficiency of [0, 6, 2.5, -1, 1e16, -1e16, '3', null, undefined]) {
     await expectRefused({ ...valid, proficiency }, '숙련도는 1~5 사이의 정수여야 합니다');
   }
 });

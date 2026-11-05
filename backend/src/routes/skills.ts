@@ -24,12 +24,11 @@ const skillInput = z.object(
       error:
         '분류는 언어, 프레임워크·라이브러리, 데이터베이스, 인프라·클라우드, 도구, 기타 중 하나여야 합니다',
     }),
-    // A JSON number only: "3" is refused rather than converted, like every other field.
+    // A JSON number only: "3" is refused rather than converted, like every other field. One check,
+    // not .int().min().max(): past the safe integer range those each fail and repeat the message.
     proficiency: z
       .number({ error: proficiencyError })
-      .int(proficiencyError)
-      .min(1, proficiencyError)
-      .max(5, proficiencyError),
+      .refine((value) => Number.isInteger(value) && value >= 1 && value <= 5, proficiencyError),
     memo: optionalText('메모', 2000),
   },
   objectBodyError,
