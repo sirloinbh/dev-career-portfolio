@@ -334,8 +334,11 @@ test('the form can be filled and saved with Tab and Enter alone', async () => {
   expect(field('점수·등급')).toHaveFocus();
   await user.keyboard('합격{Enter}');
 
+  // Checked first, so a broken Enter fails here ("no POST") rather than as a missing heading.
+  const posts = () => api.calls.filter((call) => call.method === 'POST');
+  await waitFor(() => expect(posts()).toHaveLength(1));
   expect(await screen.findByRole('heading', { level: 1, name: '자격증' })).toBeInTheDocument();
-  expect(api.calls.find((call) => call.method === 'POST')?.body).toEqual({
+  expect(posts()[0].body).toEqual({
     name: 'SQLD',
     issuer: '한국데이터산업진흥원',
     acquiredDate: '2023-06-23',
