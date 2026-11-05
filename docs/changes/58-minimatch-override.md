@@ -59,6 +59,16 @@
 - override가 실제로 적용되는지: 새 `package.json`과 main의 잠금 파일(10.2.6)로 `npm ci --dry-run`을 실행하면 `Invalid: lock file's minimatch@10.2.6 does not satisfy minimatch@11.0.4`로 거절됩니다.
 - `npm run check`: 통과(종료 코드 0, 위와 같은 건수). `npm run standards:check` 통과, 하위 잠금 파일이 루트와 같음.
 
+## 2차 리뷰 결과
+
+보완점이 없다는 결과였습니다. 1차 지적은 모두 반영됐고, 범위를 좁힌 override가 네 패키지를 모두 덮는다는 것을 따로 확인했습니다.
+
+- `@eslint/config-array`는 `eslint`에서만, `@typescript-eslint/typescript-estree`는 `typescript-eslint`를 거쳐서만 닿고, 세 범위 밖에서 minimatch를 쓰는 패키지는 없습니다.
+- npm 11.19.0의 의존성 계산(`buildIdealTree`, 설치하지 않음)으로 잠금 파일 그대로, minimatch 항목을 지워 다시 계산, `npm update minimatch`에 해당하는 경우를 모두 돌려 하나뿐인 `node_modules/minimatch@11.0.4`가 유지됐습니다. 같은 조건에서 main의 `package.json`은 10.2.6으로 계산돼, 이후 `npm install`·`npm update`도 11.0.4를 지킵니다.
+- 참고: 정확한 판 고정 때문에 11.0.4에 새 권고가 나오면 override를 손으로 올려야 합니다. #62에 적었습니다.
+
+리뷰는 2회까지이므로 추가 리뷰는 하지 않습니다. 이 커밋은 기록만 더했습니다(`npm run format:check` 통과).
+
 ## 한계
 
 - `npm run knip`을 이 PC에서 실행하지 못했습니다. `oxc-resolver@11.24.2`의 Windows 네이티브 모듈 파일은 있지만 `The specified module could not be found`로 불러오지 못합니다(같은 계열의 `oxc-parser`는 불러옴). `oxc-resolver`는 2026-10-29(967c082)부터 잠금 파일에서 바뀌지 않았고 `minimatch`와 관계가 없어 이 PC 환경 문제로 봅니다. knip은 CI `verify`에서 통과했습니다.
