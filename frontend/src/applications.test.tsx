@@ -110,9 +110,12 @@ test('the posting link opens in a new tab and names its company', async () => {
   expect(link).toHaveAttribute('href', 'https://careers.example.com/jobs/12');
   expect(link).toHaveAttribute('target', '_blank');
   expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-  // No link stored: no link shown. No position: no empty line.
-  expect(within(item('새벽커머스')).queryByRole('link')).not.toBeInTheDocument();
-  expect(within(item('새벽커머스')).queryByRole('term')).not.toBeInTheDocument();
+  // No link, position or memo stored: only the name, the status and the deadline line are shown,
+  // with no empty line left for the missing parts.
+  const bare = item('새벽커머스');
+  expect(within(bare).queryByRole('link')).not.toBeInTheDocument();
+  expect(within(bare).queryByRole('term')).not.toBeInTheDocument();
+  expect([...bare.querySelectorAll('p')].map((line) => line.textContent)).toEqual(['마감일 없음']);
 });
 
 test('a posting link that is not a web address is never put in an href', async () => {

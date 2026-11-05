@@ -65,7 +65,7 @@ export function ApplicationList() {
     <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
       <PageHeader
         title="자기소개서"
-        description="지원한 기업을 작성 중, 제출 완료, 종료 순으로 보고, 마감이 가까운 곳부터 챙깁니다."
+        description="지원한 기업을 작성 중, 제출 완료, 종료 순으로 보고, 같은 상태에서는 마감일이 이른 곳부터 봅니다."
       >
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
@@ -88,7 +88,7 @@ export function ApplicationList() {
           className="break-keep"
           icon={<FileText />}
           title="아직 등록한 지원 기업이 없습니다"
-          description="지원 기업을 등록하면 상태와 마감일 순으로 여기에 보입니다."
+          description="등록한 지원 기업이 상태와 마감일 순으로 여기에 보입니다."
         />
       ) : null}
       {applications.length > 0 ? (
