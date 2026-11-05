@@ -1,4 +1,5 @@
 import {
+  Award,
   Briefcase,
   FolderKanban,
   GraduationCap,
@@ -11,6 +12,7 @@ import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-rout
 
 import type { CareerPaths } from './career-data';
 import { CareerList, EditCareer, NewCareer } from './careers';
+import { CertificationList } from './certifications';
 import { AppShell, type NavItem } from './components/layout/app-shell';
 import { EmptyState } from './components/ui/empty-state';
 import { Toaster } from './components/ui/sonner';
@@ -37,6 +39,7 @@ const pages = {
   skills: '/skills',
   newSkill: '/skills/new',
   editSkill: '/skills/:id/edit',
+  certifications: '/certifications',
   settings: '/settings',
 } as const;
 
@@ -71,6 +74,7 @@ const nav: NavItem[] = [
   { to: pages.careers, label: '이력', icon: Briefcase },
   { to: pages.projects, label: '프로젝트', icon: FolderKanban },
   { to: pages.skills, label: '스킬', icon: Wrench },
+  { to: pages.certifications, label: '자격증', icon: Award },
   { to: pages.settings, label: '설정', icon: Settings2 },
 ];
 
@@ -155,6 +159,7 @@ export function App() {
           <Route path={pages.skills} element={<SkillList paths={skillPaths} />} />
           <Route path={pages.newSkill} element={<NewSkill paths={skillPaths} />} />
           <Route path={pages.editSkill} element={<EditSkill paths={skillPaths} />} />
+          <Route path={pages.certifications} element={<CertificationList />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}
