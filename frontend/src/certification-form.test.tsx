@@ -292,23 +292,48 @@ test('a half-typed expiry date is sent as text the server refuses, not as never 
   expect(api.store).toHaveLength(0);
 });
 
-test('the form can be filled and saved with the keyboard alone', async () => {
-  const api = fakeApi([]);
+test('a row that is already gone (404) counts as deleted', async () => {
+  const api = fakeApi([toeic]);
+  api.failDeletes(404, '자격증을 찾을 수 없습니다');
+  open('/certifications');
+  await screen.findByRole('listitem', { name: 'TOEIC' });
+  // Someone else deleted it after the list loaded.
+  api.store.splice(0, 1);
+  fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
+  const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
+  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(screen.queryByRole('listitem', { name: 'TOEIC' })).not.toBeInTheDocument();
+  expect(
+    await screen.findByRole('heading', { name: '아직 등록한 자격증이 없습니다' }),
+  ).toBeInTheDocument();
+  expect(await screen.findByText("'TOEIC' 자격증을 지웠습니다")).toBeInTheDocument();
+  expect(screen.queryByText(/지우지 못했습니다/)).not.toBeInTheDocument();
+});
+
+// jsdom has no real Tab or Enter handling, so this checks what keyboard use depends on: native
+// controls one after another in screen order, and a real submit button inside the form, which is
+// what lets Enter in a text input submit. The keys themselves were tried in Chrome (see the doc).
+test('the form is built for keyboard use: native controls in order and a submit button', async () => {
+  fakeApi([]);
   open('/certifications/new');
   await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
-  // Every input is a native, labelled control in screen order, and Enter in a text input submits.
   const inputs = ['자격증명', '발급 기관', '취득일', '만료일', '점수·등급', '메모'].map(field);
-  for (const input of inputs) expect(input).not.toHaveAttribute('tabindex', '-1');
-  const order = inputs.map((input) => input.compareDocumentPosition(inputs[0]));
-  expect(order.slice(1).every((position) => position & Node.DOCUMENT_POSITION_PRECEDING)).toBe(
-    true,
-  );
-  type('자격증명', 'SQLD');
-  type('발급 기관', '한국데이터산업진흥원');
-  type('취득일', '2023-06-23');
-  fireEvent.submit(field('자격증명').closest('form') as HTMLFormElement);
-  expect(await screen.findByRole('heading', { level: 1, name: '자격증' })).toBeInTheDocument();
-  expect(api.store).toHaveLength(1);
+  for (const input of inputs) expect(['INPUT', 'TEXTAREA']).toContain(input.tagName);
+  for (let index = 1; index < inputs.length; index++) {
+    expect(
+      inputs[index - 1].compareDocumentPosition(inputs[index]) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  }
+  const form = inputs[0].closest('form');
+  const submit = screen.getByRole('button', { name: '추가' });
+  expect(submit).toHaveAttribute('type', 'submit');
+  expect(form).toContainElement(submit);
+  for (const input of inputs) expect(form).toContainElement(input);
+  // The submit button comes after the last field, so Tab reaches it last.
+  expect(
+    inputs[inputs.length - 1].compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 
 test('server messages map to the field they start with', () => {
