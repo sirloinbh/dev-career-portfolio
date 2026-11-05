@@ -139,7 +139,12 @@ test(
       assert.equal(left.rowCount, 0);
       assert.deepEqual(await list(second), [teamwork]);
 
-      for (const response of [await call(path(first)), await save(first, [])]) {
+      // A single delete checks the application first, so it names the application, not the question.
+      for (const response of [
+        await call(path(first)),
+        await save(first, []),
+        await call(`${path(first)}/${String(current[0].id)}`, { method: 'DELETE' }),
+      ]) {
         assert.equal(response.status, 404);
         assert.equal(response.data.error, '지원 기업을 찾을 수 없습니다');
       }
