@@ -14,10 +14,11 @@ import { errorText, useNotice } from './lib/use-notice';
 /**
  * The value to send for a date input. A date typed only in part ("2023-12-__") reads as '' in the
  * browser, which an optional date would save as "no date" (a job still held, say). It goes as text
- * the server refuses instead, so the Korean message appears under that field.
+ * the server refuses instead, so the Korean message appears under that field. A disabled input is
+ * not the user's to finish, so it sends its value as is.
  */
 export function typedDate(input: HTMLInputElement | null, value: string) {
-  return input?.validity.badInput ? 'incomplete' : value;
+  return input && !input.disabled && input.validity.badInput ? 'incomplete' : value;
 }
 
 /**

@@ -261,7 +261,11 @@ function EducationFields({
                 status: e.target.value as EducationForm['status'],
                 endDate: enrolledNow ? '' : current.endDate,
               }));
-              if (enrolledNow) clearError('endDate');
+              if (enrolledNow) {
+                clearError('endDate');
+                // A half-typed date reads as '' already, so React leaves the input alone; clear it here.
+                if (endDateInput.current) endDateInput.current.value = '';
+              }
             }}
             {...describe('status')}
           >

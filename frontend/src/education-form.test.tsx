@@ -174,6 +174,22 @@ test('a half-typed graduation date is sent as text the server refuses, not as no
   });
 });
 
+test('choosing 재학 중 drops a half-typed graduation date instead of sending it', async () => {
+  const api = fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  // A disabled date input still reports its unfinished parts as bad input.
+  Object.defineProperty(field('졸업일'), 'validity', { value: { badInput: true } });
+  fireEvent.change(field('상태'), { target: { value: 'enrolled' } });
+  expect(field('졸업일')).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await waitFor(() => expect(api.calls.some((call) => call.method === 'POST')).toBe(true));
+  expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
+    status: 'enrolled',
+    endDate: null,
+  });
+});
+
 test('the grade fields are described by their shared hint', async () => {
   fakeApi([]);
   open('/educations/new');
