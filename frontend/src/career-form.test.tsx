@@ -281,6 +281,28 @@ test('a row that is already gone (404) counts as deleted', async () => {
   fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('listitem', { name: '한빛소프트' })).not.toBeInTheDocument();
+  expect(await screen.findByText("'한빛소프트' 이력을 지웠습니다")).toBeInTheDocument();
+  expect(screen.queryByText(/지우지 못했습니다/)).not.toBeInTheDocument();
+});
+
+test('a half-typed end date is sent as text the server refuses, not as a job still held', async () => {
+  const api = fakeApi([]);
+  open('/careers/new');
+  await screen.findByRole('heading', { level: 1, name: '이력 추가' });
+  type('회사명', '한빛소프트');
+  type('입사일', '2023-03-02');
+  // A browser reads an unfinished date ("2023-12-__") as '' and flags it as bad input.
+  Object.defineProperty(field('퇴사일'), 'validity', { value: { badInput: true } });
+  api.refuseNext('퇴사일은(는) YYYY-MM-DD 형식의 날짜여야 합니다');
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await waitFor(() => expect(field('퇴사일')).toHaveFocus());
+  expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
+    endDate: 'incomplete',
+  });
+  expect(field('퇴사일')).toHaveAccessibleDescription(
+    expect.stringContaining('퇴사일은(는) YYYY-MM-DD 형식의 날짜여야 합니다'),
+  );
+  expect(api.store).toHaveLength(0);
 });
 
 test('server messages map to the field they start with', () => {

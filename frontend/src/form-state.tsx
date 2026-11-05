@@ -12,6 +12,15 @@ import { errorText, useNotice } from './lib/use-notice';
 // its Korean messages are shown under the field they are about.
 
 /**
+ * The value to send for a date input. A date typed only in part ("2023-12-__") reads as '' in the
+ * browser, which an optional date would save as "no date" (a job still held, say). It goes as text
+ * the server refuses instead, so the Korean message appears under that field.
+ */
+export function typedDate(input: HTMLInputElement | null, value: string) {
+  return input?.validity.badInput ? 'incomplete' : value;
+}
+
+/**
  * Form state for one item form. `split` turns the server's 400 message into per-field messages
  * (see field-errors.ts). `submit(save)` runs the save, and on failure shows each message under its
  * field and focuses the topmost one; a message that names no field goes in the notice below the form.

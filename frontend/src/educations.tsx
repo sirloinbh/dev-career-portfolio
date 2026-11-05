@@ -29,7 +29,7 @@ import {
   toEducationInput,
 } from './education-data';
 import { controlClass } from './form-fields';
-import { useServerForm } from './form-state';
+import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
@@ -185,6 +185,7 @@ function EducationFields({
   onSubmit: (form: EducationForm) => Promise<unknown>;
 }) {
   const [form, setForm] = useState(initial);
+  const endDateInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, clearError, submit, actions, pending } =
     useServerForm(fieldErrors);
   const set = (field: keyof EducationForm) => (value: string) =>
@@ -195,7 +196,9 @@ function EducationFields({
     // The server checks every rule and answers in Korean, so the browser's own checks are off.
     <form
       noValidate
-      onSubmit={submit(() => onSubmit(form))}
+      onSubmit={submit(() =>
+        onSubmit({ ...form, endDate: typedDate(endDateInput.current, form.endDate) }),
+      )}
       className="flex max-w-2xl flex-col gap-5"
       aria-busy={pending || undefined}
     >
@@ -287,6 +290,7 @@ function EducationFields({
           <Label htmlFor={fieldId('endDate')}>졸업일</Label>
           <Input
             id={fieldId('endDate')}
+            ref={endDateInput}
             type="date"
             disabled={enrolled}
             value={form.endDate}

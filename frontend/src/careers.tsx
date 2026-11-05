@@ -28,7 +28,7 @@ import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
 import { controlClass } from './form-fields';
-import { useServerForm } from './form-state';
+import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
@@ -188,6 +188,7 @@ function CareerFields({
   onSubmit: (form: CareerForm) => Promise<unknown>;
 }) {
   const [form, setForm] = useState(initial);
+  const endDateInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, submit, actions, pending } =
     useServerForm(careerFieldErrors);
   const set = (field: keyof CareerForm) => (value: string) =>
@@ -232,7 +233,9 @@ function CareerFields({
     // The server checks every rule and answers in Korean, so the browser's own checks are off.
     <form
       noValidate
-      onSubmit={submit(() => onSubmit(form))}
+      onSubmit={submit(() =>
+        onSubmit({ ...form, endDate: typedDate(endDateInput.current, form.endDate) }),
+      )}
       className="flex max-w-2xl flex-col gap-5"
       aria-busy={pending || undefined}
     >
@@ -274,6 +277,7 @@ function CareerFields({
           <Label htmlFor={fieldId('endDate')}>퇴사일</Label>
           <Input
             id={fieldId('endDate')}
+            ref={endDateInput}
             type="date"
             value={form.endDate}
             onChange={(e) => set('endDate')(e.target.value)}
