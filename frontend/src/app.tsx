@@ -12,7 +12,8 @@ import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-rout
 
 import type { CareerPaths } from './career-data';
 import { CareerList, EditCareer, NewCareer } from './careers';
-import { CertificationList } from './certifications';
+import type { CertificationPaths } from './certification-data';
+import { CertificationList, EditCertification, NewCertification } from './certifications';
 import { AppShell, type NavItem } from './components/layout/app-shell';
 import { EmptyState } from './components/ui/empty-state';
 import { Toaster } from './components/ui/sonner';
@@ -40,6 +41,8 @@ const pages = {
   newSkill: '/skills/new',
   editSkill: '/skills/:id/edit',
   certifications: '/certifications',
+  newCertification: '/certifications/new',
+  editCertification: '/certifications/:id/edit',
   settings: '/settings',
 } as const;
 
@@ -59,6 +62,12 @@ const projectPaths: ProjectPaths = {
   list: pages.projects,
   create: pages.newProject,
   edit: (id) => generatePath(pages.editProject, { id: String(id) }),
+};
+
+const certificationPaths: CertificationPaths = {
+  list: pages.certifications,
+  create: pages.newCertification,
+  edit: (id) => generatePath(pages.editCertification, { id: String(id) }),
 };
 
 const careerPaths: CareerPaths = {
@@ -159,7 +168,18 @@ export function App() {
           <Route path={pages.skills} element={<SkillList paths={skillPaths} />} />
           <Route path={pages.newSkill} element={<NewSkill paths={skillPaths} />} />
           <Route path={pages.editSkill} element={<EditSkill paths={skillPaths} />} />
-          <Route path={pages.certifications} element={<CertificationList />} />
+          <Route
+            path={pages.certifications}
+            element={<CertificationList paths={certificationPaths} />}
+          />
+          <Route
+            path={pages.newCertification}
+            element={<NewCertification paths={certificationPaths} />}
+          />
+          <Route
+            path={pages.editCertification}
+            element={<EditCertification paths={certificationPaths} />}
+          />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}
