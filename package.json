@@ -39,7 +39,15 @@
     "prettier-plugin-tailwindcss": "0.8.1"
   },
   "overrides": {
-    "minimatch": "^11.0.4"
+    "eslint": {
+      "minimatch": "11.0.4"
+    },
+    "typescript-eslint": {
+      "minimatch": "11.0.4"
+    },
+    "eslint-plugin-jsx-a11y-x": {
+      "minimatch": "11.0.4"
+    }
   },
   "allowScripts": {
     "esbuild@0.28.2": true,
