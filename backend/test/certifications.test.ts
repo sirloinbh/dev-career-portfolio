@@ -52,6 +52,8 @@ test('a bad date reports only its own error, not a false ordering error', async 
 
 test('a blank or too long name or issuer is refused', async () => {
   await expectRefused({ ...valid, name: '  ' }, '자격증명을(를) 입력해 주세요');
+  await expectRefused({ ...valid, name: undefined }, '자격증명을(를) 입력해 주세요');
+  await expectRefused({ ...valid, issuer: '' }, '발급 기관을(를) 입력해 주세요');
   await expectRefused({ ...valid, name: 'a'.repeat(101) }, '자격증명은(는) 100자 이하여야 합니다');
   await expectRefused({ ...valid, issuer: undefined }, '발급 기관을(를) 입력해 주세요');
   await expectRefused(

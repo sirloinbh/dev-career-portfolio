@@ -57,7 +57,7 @@ test(
       assert.equal(stored.rows[0].expiry_date, null);
 
       // Acquired 2024, 2019, then 2024 again, so neither id order matches the expected list.
-      // The same exam twice is allowed: each sitting is its own row.
+      // The same exam twice is allowed: each sitting is its own row, even an identical one.
       const toeic = await add({
         name: 'TOEIC',
         issuer: 'YBM',
@@ -65,7 +65,9 @@ test(
         expiryDate: '2026-03-10',
         score: '905점',
       });
-      await add({ name: 'TOEIC', issuer: 'YBM', acquiredDate: '2019-01-20', score: '780점' });
+      const older = { name: 'TOEIC', issuer: 'YBM', acquiredDate: '2019-01-20', score: '780점' };
+      await add(older);
+      await add(older);
       // Expires the day it was acquired: allowed. Already expired: still stored.
       const sameDay = await add({
         name: 'OPIc',
@@ -87,6 +89,7 @@ test(
           ['OPIc', '2024-03-10', 'IH'],
           ['TOEIC', '2024-03-10', '905점'],
           ['정보처리기사', '2021-06-09', null],
+          ['TOEIC', '2019-01-20', '780점'],
           ['TOEIC', '2019-01-20', '780점'],
         ],
       );
@@ -114,7 +117,6 @@ test(
         memo: '재응시',
       });
 
-      // A refused update leaves the row as it was.
       const refused = await call(`/api/certifications/${String(sameDay.id)}`, {
         method: 'PUT',
         body: {
@@ -126,6 +128,20 @@ test(
       });
       assert.equal(refused.status, 400);
       assert.equal(refused.data.error, '만료일은 취득일보다 빠를 수 없습니다');
+
+      // An update the database itself refuses (NUL is valid JSON but not PostgreSQL text) is a
+      // 400 and leaves the row as it was.
+      const nul = await call(`/api/certifications/${String(sameDay.id)}`, {
+        method: 'PUT',
+        body: {
+          name: 'OPIc',
+          issuer: 'ACTFL',
+          acquiredDate: '2025-01-01',
+          memo: '바뀌면\u0000안 됨',
+        },
+      });
+      assert.equal(nul.status, 400);
+      assert.equal(nul.data.error, '입력에 사용할 수 없는 문자(NUL)가 있습니다');
       const kept = await call('/api/certifications');
       assert.deepEqual(
         (kept.data.certifications as Certification[]).find((row) => row.id === sameDay.id),
@@ -136,7 +152,7 @@ test(
       assert.equal(removed.status, 204);
       const after = await call('/api/certifications');
       const ids = (after.data.certifications as Certification[]).map((row) => row.id);
-      assert.equal(ids.length, 3);
+      assert.equal(ids.length, 4);
       assert.ok(!ids.includes(toeic.id));
 
       for (const request of [
