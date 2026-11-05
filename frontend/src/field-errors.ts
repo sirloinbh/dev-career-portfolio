@@ -7,7 +7,8 @@ export type FieldError<F extends string> = { field: F | undefined; message: stri
  * ", " (backend/src/standard/http.ts). A message can hold commas itself ("고등학교, 전문학사, …"), so a
  * piece that names no field stays with the one before. Messages about the same field are joined even
  * when another field's message sits between them (zod reports per-field issues before the
- * cross-field ones). Fields come in screen order, so the screen focuses the topmost one; a piece
+ * cross-field ones); the same message twice (one per list item, "사용 기술 항목은 50자 …") is shown once.
+ * Fields come in screen order, so the screen focuses the topmost one; a piece
  * that names no field goes last.
  *
  * `labels` maps a message start to its field; put longer labels first so "재학 중이면 졸업일" is not
@@ -31,8 +32,11 @@ export function splitFieldErrors<F extends string>(
   const grouped: FieldError<F>[] = [];
   for (const piece of pieces) {
     const same = piece.field && grouped.find((item) => item.field === piece.field);
-    if (same) same.message += `, ${piece.message}`;
-    else grouped.push(piece);
+    if (same) {
+      // Compared with the separators around it, since a message can hold ", " itself.
+      const shown = `, ${same.message}, `.includes(`, ${piece.message}, `);
+      if (!shown) same.message += `, ${piece.message}`;
+    } else grouped.push(piece);
   }
   const position = (field: F | undefined) =>
     field === undefined ? order.length : order.indexOf(field);

@@ -137,7 +137,7 @@ test('a finished project with only the required fields shows no empty labels', a
   expect(item).not.toHaveTextContent('진행 중');
   expect(item).toHaveTextContent('2021-03-02 ~ 2021-08-31');
   expect(within(item).queryByRole('term')).not.toBeInTheDocument();
-  expect(within(item).queryByRole('link')).not.toBeInTheDocument();
+  expect(within(item).queryByRole('link', { name: /새 탭/ })).not.toBeInTheDocument();
   // The name, then the period: no blank organization line between them.
   expect(item.querySelectorAll('p')).toHaveLength(1);
 });
@@ -151,7 +151,7 @@ test('a link that is not a web address is not made clickable', async () => {
   });
   openProjects();
   const item = await screen.findByRole('listitem', { name: '사내 위키 검색' });
-  expect(within(item).queryByRole('link')).not.toBeInTheDocument();
+  expect(within(item).queryByRole('link', { name: /새 탭/ })).not.toBeInTheDocument();
 });
 
 test('a placeholder shows while the list loads', () => {
@@ -213,7 +213,7 @@ test('each link is checked on its own: a valid one is shown, an invalid one is n
   });
   openProjects();
   const item = await screen.findByRole('listitem', { name: '사내 위키 검색' });
-  const links = within(item).getAllByRole('link');
+  const links = within(item).getAllByRole('link', { name: /새 탭/ });
   expect(links).toHaveLength(1);
   expect(links[0]).toHaveAccessibleName('사내 위키 검색 저장소 (새 탭에서 열림)');
   expect(links[0]).toHaveAttribute('href', 'https://github.com/example/wiki');

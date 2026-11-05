@@ -10,7 +10,8 @@ import { Toaster } from './components/ui/sonner';
 import type { EducationPaths } from './education-data';
 import { EditEducation, EducationList, NewEducation } from './educations';
 import { type Health, healthText } from './health';
-import { ProjectList } from './projects';
+import type { ProjectPaths } from './project-data';
+import { EditProject, NewProject, ProjectList } from './projects';
 
 // Every page URL lives here (central docs/directory-rules.md).
 const pages = {
@@ -22,6 +23,8 @@ const pages = {
   newCareer: '/careers/new',
   editCareer: '/careers/:id/edit',
   projects: '/projects',
+  newProject: '/projects/new',
+  editProject: '/projects/:id/edit',
   settings: '/settings',
 } as const;
 
@@ -29,6 +32,12 @@ const educationPaths: EducationPaths = {
   list: pages.educations,
   create: pages.newEducation,
   edit: (id) => generatePath(pages.editEducation, { id: String(id) }),
+};
+
+const projectPaths: ProjectPaths = {
+  list: pages.projects,
+  create: pages.newProject,
+  edit: (id) => generatePath(pages.editProject, { id: String(id) }),
 };
 
 const careerPaths: CareerPaths = {
@@ -121,7 +130,9 @@ export function App() {
           <Route path={pages.careers} element={<CareerList paths={careerPaths} />} />
           <Route path={pages.newCareer} element={<NewCareer paths={careerPaths} />} />
           <Route path={pages.editCareer} element={<EditCareer paths={careerPaths} />} />
-          <Route path={pages.projects} element={<ProjectList />} />
+          <Route path={pages.projects} element={<ProjectList paths={projectPaths} />} />
+          <Route path={pages.newProject} element={<NewProject paths={projectPaths} />} />
+          <Route path={pages.editProject} element={<EditProject paths={projectPaths} />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}
