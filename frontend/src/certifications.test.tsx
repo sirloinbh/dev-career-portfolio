@@ -7,8 +7,8 @@ import {
   certificationPeriodText,
   isExpired,
   issuerText,
-  serviceToday,
 } from './certification-data';
+import { serviceToday } from './service-date';
 
 // All certifications here are made up for the test.
 

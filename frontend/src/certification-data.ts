@@ -16,16 +16,6 @@ export type Certification = {
   memo: string | null;
 };
 
-/** Today as YYYY-MM-DD in the service time zone (Asia/Seoul), like the API's serviceDate. */
-export function serviceToday(now = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
-}
-
 /**
  * Expired once the expiry date has passed. The expiry date itself still counts as valid, and a
  * certification without one never expires. YYYY-MM-DD strings compare in date order.

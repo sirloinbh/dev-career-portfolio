@@ -12,7 +12,6 @@ import {
   emptyCertificationForm,
   isExpired,
   issuerText,
-  serviceToday,
   toCertificationForm,
   toCertificationInput,
 } from './certification-data';
@@ -31,6 +30,7 @@ import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
+import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
 import { useLoad, useReloading } from './use-load';
 

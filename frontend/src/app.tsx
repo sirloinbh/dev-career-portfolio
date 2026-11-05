@@ -1,6 +1,7 @@
 import {
   Award,
   Briefcase,
+  FileText,
   FolderKanban,
   GraduationCap,
   LayoutDashboard,
@@ -10,6 +11,7 @@ import {
 import { type ReactNode, useEffect, useState } from 'react';
 import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-router';
 
+import { ApplicationList } from './applications';
 import type { CareerPaths } from './career-data';
 import { CareerList, EditCareer, NewCareer } from './careers';
 import type { CertificationPaths } from './certification-data';
@@ -43,6 +45,7 @@ const pages = {
   certifications: '/certifications',
   newCertification: '/certifications/new',
   editCertification: '/certifications/:id/edit',
+  applications: '/applications',
   settings: '/settings',
 } as const;
 
@@ -84,6 +87,7 @@ const nav: NavItem[] = [
   { to: pages.projects, label: '프로젝트', icon: FolderKanban },
   { to: pages.skills, label: '스킬', icon: Wrench },
   { to: pages.certifications, label: '자격증', icon: Award },
+  { to: pages.applications, label: '자기소개서', icon: FileText },
   { to: pages.settings, label: '설정', icon: Settings2 },
 ];
 
@@ -180,6 +184,7 @@ export function App() {
             path={pages.editCertification}
             element={<EditCertification paths={certificationPaths} />}
           />
+          <Route path={pages.applications} element={<ApplicationList />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}

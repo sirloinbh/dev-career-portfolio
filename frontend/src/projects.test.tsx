@@ -2,7 +2,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
-import { type Project, projectPeriodText, projectRoleText, webLink } from './project-data';
+import { type Project, projectPeriodText, projectRoleText } from './project-data';
+import { webLink } from './web-link';
 
 // All projects here are made up for the test.
 

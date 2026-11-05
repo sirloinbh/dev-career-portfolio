@@ -1,4 +1,4 @@
-import { ExternalLink, FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -16,6 +16,7 @@ import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
+import { OutLink } from './out-link';
 import { BackLink, PageHeader } from './page-header';
 import {
   emptyProjectForm,
@@ -29,10 +30,10 @@ import {
   projectRoleText,
   toProjectForm,
   toProjectInput,
-  webLink,
 } from './project-data';
 import { TextBlocks } from './text-blocks';
 import { useLoad, useReloading } from './use-load';
+import { webLink } from './web-link';
 
 const loadProjects = () => projectApi.list();
 
@@ -48,22 +49,6 @@ function Technologies({ names }: { names: string[] }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-/** A link that opens in a new tab; its name says whose link it is and that a tab opens. */
-function OutLink({ href, label, project }: { href: string; label: string; project: string }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`${project} ${label} (새 탭에서 열림)`}
-      className="inline-flex min-h-9 items-center gap-1 rounded-sm text-body-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:min-h-11"
-    >
-      {label}
-      <ExternalLink aria-hidden className="size-3.5" />
-    </a>
   );
 }
 
@@ -103,8 +88,8 @@ function ProjectItem({
       />
       {repository || service ? (
         <div className="flex flex-wrap gap-x-4">
-          {repository ? <OutLink href={repository} label="저장소" project={project.name} /> : null}
-          {service ? <OutLink href={service} label="서비스" project={project.name} /> : null}
+          {repository ? <OutLink href={repository} label="저장소" owner={project.name} /> : null}
+          {service ? <OutLink href={service} label="서비스" owner={project.name} /> : null}
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2 pt-1">
