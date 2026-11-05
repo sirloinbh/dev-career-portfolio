@@ -69,6 +69,7 @@ test('careers are listed in the order the API gives, not re-sorted', async () =>
   openCareers();
   const list = await screen.findByRole('list', { name: '이력 목록' });
   expect(screen.getByRole('status')).toHaveTextContent('이력 2건');
+  expect(screen.getByRole('region', { name: '이력' })).toHaveAttribute('aria-busy', 'false');
   const items = within(list).getAllByRole('listitem');
   expect(items.map((item) => within(item).getByRole('heading', { level: 2 }).textContent)).toEqual([
     '새벽랩',
@@ -88,8 +89,17 @@ test('a job still held shows "재직 중"; a finished one does not', async () =>
   expect(badgeOf(held)).toBe('재직 중');
   expect(held).toHaveTextContent('플랫폼팀 · 선임 · 정규직');
   expect(held).toHaveTextContent('2024-01-02 ~ 재직 중');
-  expect(held).toHaveTextContent('담당 업무결제 API 개발');
-  expect(held).toHaveTextContent('주요 성과응답 시간 40% 단축');
+  // Each label is the term of its own text, so a screen reader can tell the blocks apart.
+  expect(
+    within(held)
+      .getAllByRole('term')
+      .map((term) => term.textContent),
+  ).toEqual(['담당 업무', '주요 성과']);
+  expect(
+    within(held)
+      .getAllByRole('definition')
+      .map((text) => text.textContent),
+  ).toEqual(['결제 API 개발', '응답 시간 40% 단축']);
 
   const finished = within(list).getByRole('listitem', { name: '새벽랩' });
   expect(badgeOf(finished)).toBeUndefined();
@@ -99,6 +109,7 @@ test('a job still held shows "재직 중"; a finished one does not', async () =>
   // Blank duties and achievements leave no empty labels behind.
   expect(finished).not.toHaveTextContent('담당 업무');
   expect(finished).not.toHaveTextContent('주요 성과');
+  expect(within(finished).queryByRole('term')).not.toBeInTheDocument();
 });
 
 test('a placeholder shows while the list loads', () => {
@@ -108,6 +119,7 @@ test('a placeholder shows while the list loads', () => {
   );
   openCareers();
   expect(screen.getByRole('status')).toHaveTextContent('이력을 불러오는 중');
+  expect(screen.getByRole('region', { name: '이력' })).toHaveAttribute('aria-busy', 'true');
 });
 
 test('an empty list explains what will appear', async () => {

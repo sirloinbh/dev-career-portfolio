@@ -11,14 +11,22 @@ import { useLoad } from './use-load';
 
 const loadCareers = () => careerApi.list();
 
-/** A labelled block of free text (duties, achievements), shown only when it was entered. */
-function TextBlock({ label, text }: { label: string; text: string | null }) {
-  if (!text) return null;
+/**
+ * Labelled free text (duties, achievements), only the entries that were filled in. A description
+ * list ties each label to its text, so a screen reader announces where one block ends.
+ */
+function TextBlocks({ entries }: { entries: [label: string, text: string | null][] }) {
+  const filled = entries.filter(([, text]) => text);
+  if (filled.length === 0) return null;
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-caption font-medium text-muted-foreground">{label}</p>
-      <p className="text-body-sm wrap-break-word break-keep whitespace-pre-line">{text}</p>
-    </div>
+    <dl className="flex flex-col gap-2">
+      {filled.map(([label, text]) => (
+        <div key={label} className="flex flex-col gap-1">
+          <dt className="text-caption font-medium text-muted-foreground">{label}</dt>
+          <dd className="text-body-sm wrap-break-word break-keep whitespace-pre-line">{text}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -36,8 +44,12 @@ function CareerItem({ career }: { career: Career }) {
       <p className="text-body-sm wrap-break-word break-keep">{roleText(career)}</p>
       {/* The period is the main fact of a career, so body size rather than text-meta (13px floor). */}
       <p className="text-body-sm text-muted-foreground">{careerPeriodText(career)}</p>
-      <TextBlock label="담당 업무" text={career.duties} />
-      <TextBlock label="주요 성과" text={career.achievements} />
+      <TextBlocks
+        entries={[
+          ['담당 업무', career.duties],
+          ['주요 성과', career.achievements],
+        ]}
+      />
     </li>
   );
 }
