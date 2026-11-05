@@ -6,6 +6,7 @@ import { apiRateLimit, type RateLimitOptions } from './rate-limit.js';
 import { registerApplicationRoutes } from './routes/applications.js';
 import { registerCareerRoutes } from './routes/careers.js';
 import { registerCertificationRoutes } from './routes/certifications.js';
+import { registerCoverLetterQuestionRoutes } from './routes/cover-letter-questions.js';
 import { registerEducationRoutes } from './routes/educations.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerSkillRoutes } from './routes/skills.js';
@@ -34,6 +35,7 @@ export function createApp(
   registerSkillRoutes(app, pool);
   registerCertificationRoutes(app, pool);
   registerApplicationRoutes(app, pool);
+  registerCoverLetterQuestionRoutes(app, pool);
   app.use('/api', notFound);
   app.use(errorHandler);
   return app;

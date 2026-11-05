@@ -1,6 +1,20 @@
-import type { Pool } from 'pg';
+import type { TestContext } from 'node:test';
+
+import { Client, type Pool } from 'pg';
 
 import { createApp } from '../src/app.js';
+
+// Test files run in parallel processes. Deleting applications also deletes their cover letter
+// questions (#37), so every test that clears either table holds this lock for its whole run.
+const applicationsLock = 37_036;
+
+export async function lockApplications(t: TestContext) {
+  const client = new Client({ connectionString: testDatabaseUrl() });
+  await client.connect();
+  await client.query('SELECT pg_advisory_lock($1)', [applicationsLock]);
+  // Closing the session releases the lock, even when the test fails.
+  t.after(() => client.end());
+}
 
 // TEST_DATABASE_URL is often a machine-wide variable set for another project. These tests delete
 // rows, so they only ever run against this app's dedicated test database and skip anywhere else.

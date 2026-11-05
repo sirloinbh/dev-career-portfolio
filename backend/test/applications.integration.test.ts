@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { testDatabaseUrl, withApi } from './helpers.js';
+import { lockApplications, testDatabaseUrl, withApi } from './helpers.js';
 
 const url = testDatabaseUrl();
 
@@ -22,6 +22,7 @@ test(
   'applications are stored, listed by status and deadline, updated and deleted',
   { skip: !url },
   async (t) => {
+    await lockApplications(t);
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
     await pool.query('DELETE FROM applications');
@@ -182,6 +183,7 @@ test(
 );
 
 test('the database itself refuses rows the API would refuse', { skip: !url }, async (t) => {
+  await lockApplications(t);
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
   await pool.query('DELETE FROM applications');
