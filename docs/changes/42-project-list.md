@@ -12,7 +12,7 @@
 - `frontend/src/project-data.ts`: `Project` 타입, 진행 여부(`isRunning`), 기간·소속 문구, 웹 주소만 링크로 쓰는 `webLink`, `projectApi.list`.
 - `frontend/src/projects.tsx`: `ProjectList` 화면. 로딩 `SkeletonList`, 빈 목록 `EmptyState`, 오류 `Notice`(`role="alert"`), 페이지 `section`의 `aria-busy`와 항상 붙어 있는 `sr-only` 상태 문구("프로젝트를 불러오는 중" → "프로젝트 N건")는 이력과 같습니다.
 - `frontend/src/text-blocks.tsx`: 이력 화면 안에 있던 `TextBlocks`(제목 붙은 설명 목록 `dl`)를 항목 화면들이 함께 쓰도록 옮겼습니다. 글 대신 요소(사용 기술 태그)도 받습니다. 이력 화면의 동작은 같습니다.
-- `frontend/src/projects.test.tsx`: 메뉴 이동, API 순서 유지, 진행 중 표시, 빈 칸 생략, 링크, 로딩·빈 목록·오류 상태, 문구 함수 테스트(11건).
+- `frontend/src/projects.test.tsx`: 메뉴 이동, API 순서 유지, 진행 중 표시, 빈 칸 생략, 링크, 로딩·빈 목록·오류 상태, 문구 함수 테스트(처음 11건, 1차 리뷰 반영 뒤 12건).
 
 ## 판단한 내용
 
@@ -47,3 +47,7 @@
 
 - 프론트엔드 프로젝트 테스트는 12건이 됐습니다.
 - `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과. 백엔드 78건 통과·건너뜀 0건, 프론트엔드 126건 통과·2건 건너뜀, 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
+
+## 2차 리뷰 결과
+
+1차 지적 2건이 맞게 고쳐졌는지 확인했습니다(링크 수 1개 확인, 배지 글자로 찾기). 최종 전체 diff에서 정확성·회귀·접근성 지적은 없었습니다. 변경 절의 테스트 수가 11건으로 남아 있다는 지적만 있어 고쳤습니다. 리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
