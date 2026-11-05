@@ -161,6 +161,46 @@ test('a message that names no field is shown below the form', async () => {
   );
 });
 
+test('a half-typed graduation date is sent as text the server refuses, not as no date', async () => {
+  const api = fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  // A browser reads an unfinished date ("2019-02-__") as '' and flags it as bad input.
+  Object.defineProperty(field('졸업일'), 'validity', { value: { badInput: true } });
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await waitFor(() => expect(api.calls.some((call) => call.method === 'POST')).toBe(true));
+  expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
+    endDate: 'incomplete',
+  });
+});
+
+test('choosing 재학 중 drops a half-typed graduation date instead of sending it', async () => {
+  const api = fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  // A disabled date input still reports its unfinished parts as bad input.
+  Object.defineProperty(field('졸업일'), 'validity', { value: { badInput: true } });
+  fireEvent.change(field('상태'), { target: { value: 'enrolled' } });
+  expect(field('졸업일')).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await waitFor(() => expect(api.calls.some((call) => call.method === 'POST')).toBe(true));
+  expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
+    status: 'enrolled',
+    endDate: null,
+  });
+});
+
+test('the grade fields are described by their shared hint', async () => {
+  fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  for (const name of ['학점', '만점']) {
+    expect(field(name)).toHaveAccessibleDescription(
+      expect.stringContaining('학점과 만점은 함께 넣거나 함께 비워 둡니다'),
+    );
+  }
+});
+
 test('choosing 재학 중 clears and locks the graduation date', async () => {
   fakeApi([]);
   open('/educations/new');
