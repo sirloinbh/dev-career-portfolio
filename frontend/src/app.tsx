@@ -1,4 +1,11 @@
-import { Briefcase, FolderKanban, GraduationCap, LayoutDashboard, Settings2 } from 'lucide-react';
+import {
+  Briefcase,
+  FolderKanban,
+  GraduationCap,
+  LayoutDashboard,
+  Settings2,
+  Wrench,
+} from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-router';
 
@@ -12,6 +19,7 @@ import { EditEducation, EducationList, NewEducation } from './educations';
 import { type Health, healthText } from './health';
 import type { ProjectPaths } from './project-data';
 import { EditProject, NewProject, ProjectList } from './projects';
+import { SkillList } from './skills';
 
 // Every page URL lives here (central docs/directory-rules.md).
 const pages = {
@@ -25,6 +33,7 @@ const pages = {
   projects: '/projects',
   newProject: '/projects/new',
   editProject: '/projects/:id/edit',
+  skills: '/skills',
   settings: '/settings',
 } as const;
 
@@ -52,6 +61,7 @@ const nav: NavItem[] = [
   { to: pages.educations, label: '학력', icon: GraduationCap },
   { to: pages.careers, label: '이력', icon: Briefcase },
   { to: pages.projects, label: '프로젝트', icon: FolderKanban },
+  { to: pages.skills, label: '스킬', icon: Wrench },
   { to: pages.settings, label: '설정', icon: Settings2 },
 ];
 
@@ -133,6 +143,7 @@ export function App() {
           <Route path={pages.projects} element={<ProjectList paths={projectPaths} />} />
           <Route path={pages.newProject} element={<NewProject paths={projectPaths} />} />
           <Route path={pages.editProject} element={<EditProject paths={projectPaths} />} />
+          <Route path={pages.skills} element={<SkillList />} />
           <Route
             path={pages.settings}
             element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}
