@@ -32,28 +32,10 @@ import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
+import { TextBlocks } from './text-blocks';
 import { useLoad, useReloading } from './use-load';
 
 const loadCareers = () => careerApi.list();
-
-/**
- * Labelled free text (duties, achievements), only the entries that were filled in. A description
- * list ties each label to its text, so a screen reader announces where one block ends.
- */
-function TextBlocks({ entries }: { entries: [label: string, text: string | null][] }) {
-  const filled = entries.filter(([, text]) => text);
-  if (filled.length === 0) return null;
-  return (
-    <dl className="flex flex-col gap-2">
-      {filled.map(([label, text]) => (
-        <div key={label} className="flex flex-col gap-1">
-          <dt className="text-caption font-medium text-muted-foreground">{label}</dt>
-          <dd className="text-body-sm wrap-break-word break-keep whitespace-pre-line">{text}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 function CareerItem({
   career,
