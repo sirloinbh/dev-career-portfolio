@@ -1,8 +1,8 @@
 {
-  "name": "개발 커리어 포트폴리오",
-  "short_name": "개발 커리어 포트폴리오",
-  "description": "개발 경력, 프로젝트, 기술 성장을 정리하는 개인 포트폴리오 서비스. 사용자는 본인 한 명이며 로그인은 없다. 외부 공개 전에는 사설 접속 또는 인증을 먼저 설계한다.",
-  "lang": "ko",
+  "name": "Dev Career Portfolio",
+  "short_name": "Dev Career",
+  "description": "A personal portfolio service for organizing my development career, projects, and technical growth. There is one user (me) and no login. Before any public exposure, design private access or authentication first.",
+  "lang": "en",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
