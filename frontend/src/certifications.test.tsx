@@ -76,10 +76,12 @@ test('the main menu leads to the certification list', async () => {
   window.history.replaceState(null, '', '/');
   render(<App />);
   const menu = screen.getByRole('navigation', { name: 'Main menu' });
-  fireEvent.click(within(menu).getByRole('link', { name: '자격증' }));
+  fireEvent.click(within(menu).getByRole('link', { name: 'Certifications' }));
   expect(window.location.pathname).toBe('/certifications');
-  expect(await screen.findByRole('heading', { level: 1, name: '자격증' })).toBeInTheDocument();
-  expect(within(menu).getByRole('link', { name: '자격증' })).toHaveAttribute(
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Certifications' }),
+  ).toBeInTheDocument();
+  expect(within(menu).getByRole('link', { name: 'Certifications' })).toHaveAttribute(
     'aria-current',
     'page',
   );
@@ -89,67 +91,72 @@ test('certifications are listed in the API order with issuer, score and dates', 
   setSeoulJustAfterMidnight();
   serve({ status: 200, body: { certifications: [toeic, cloud, engineer] } });
   openCertifications();
-  await screen.findByRole('list', { name: '자격증 목록' });
-  expect(screen.getByRole('status')).toHaveTextContent('자격증 3건');
-  expect(screen.getByRole('region', { name: '자격증' })).toHaveAttribute('aria-busy', 'false');
+  await screen.findByRole('list', { name: 'Certification list' });
+  expect(screen.getByRole('status')).toHaveTextContent('3 entries');
+  expect(screen.getByRole('region', { name: 'Certifications' })).toHaveAttribute(
+    'aria-busy',
+    'false',
+  );
   expect(
     screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
   ).toEqual(['TOEIC', 'AWS Solutions Architect – Associate', '정보처리기사']);
 
   const first = item('TOEIC');
   expect(within(first).getByText('ETS · 905점')).toBeInTheDocument();
-  expect(within(first).getByText('취득 2025-03-09 · 만료 2027-03-08')).toBeInTheDocument();
+  expect(
+    within(first).getByText('Earned March 9, 2025 · Expires March 8, 2027'),
+  ).toBeInTheDocument();
   // The memo sits under its own label.
-  expect(within(first).getByRole('term')).toHaveTextContent('메모');
+  expect(within(first).getByRole('term')).toHaveTextContent('Notes');
   expect(within(first).getByRole('definition')).toHaveTextContent('스피킹은 별도 응시 예정');
-  expect(within(first).queryByText('만료됨')).not.toBeInTheDocument();
+  expect(within(first).queryByText('Expired')).not.toBeInTheDocument();
 });
 
-test('a certification without an expiry date shows "만료 없음" instead of a date', async () => {
+test('a certification without an expiry date shows "No expiry" instead of a date', async () => {
   setSeoulJustAfterMidnight();
   serve({ status: 200, body: { certifications: [engineer] } });
   openCertifications();
-  await screen.findByRole('list', { name: '자격증 목록' });
+  await screen.findByRole('list', { name: 'Certification list' });
   const row = item('정보처리기사');
-  expect(within(row).getByText('취득 2023-08-30 · 만료 없음')).toBeInTheDocument();
+  expect(within(row).getByText('Earned August 30, 2023 · No expiry')).toBeInTheDocument();
   // No score: the issuer stands alone, with no trailing separator. No memo: no empty label.
   expect(within(row).getByText('한국산업인력공단')).toBeInTheDocument();
   expect(within(row).queryByRole('term')).not.toBeInTheDocument();
-  expect(within(row).queryByText('만료됨')).not.toBeInTheDocument();
+  expect(within(row).queryByText('Expired')).not.toBeInTheDocument();
 });
 
 test('an expiry date before today in Seoul is marked expired, even while UTC is a day behind', async () => {
   setSeoulJustAfterMidnight();
   serve({ status: 200, body: { certifications: [cloud] } });
   openCertifications();
-  await screen.findByRole('list', { name: '자격증 목록' });
+  await screen.findByRole('list', { name: 'Certification list' });
   expect(
-    within(item('AWS Solutions Architect – Associate')).getByText('만료됨'),
+    within(item('AWS Solutions Architect – Associate')).getByText('Expired'),
   ).toBeInTheDocument();
 });
 
 test('an empty list explains what will appear', async () => {
   serve({ status: 200, body: { certifications: [] } });
   openCertifications();
-  expect(await screen.findByText('아직 등록한 자격증이 없습니다')).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('자격증 0건');
-  expect(screen.queryByRole('list', { name: '자격증 목록' })).not.toBeInTheDocument();
+  expect(await screen.findByText('No certifications added yet')).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('0 entries');
+  expect(screen.queryByRole('list', { name: 'Certification list' })).not.toBeInTheDocument();
 });
 
-test('a failed request shows a Korean error with the reason', async () => {
+test('a failed request shows an English error with the reason', async () => {
   serve({ status: 500, body: { error: 'Server error' } });
   openCertifications();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '자격증을 불러오지 못했습니다. Server error',
+    'Could not load certifications. Server error',
   );
-  expect(screen.queryByText('아직 등록한 자격증이 없습니다')).not.toBeInTheDocument();
+  expect(screen.queryByText('No certifications added yet')).not.toBeInTheDocument();
 });
 
 test('an unreachable server is reported, not shown as an empty list', async () => {
   serve('offline');
   openCertifications();
-  expect(await screen.findByRole('alert')).toHaveTextContent('자격증을 불러오지 못했습니다.');
-  expect(screen.queryByText('아직 등록한 자격증이 없습니다')).not.toBeInTheDocument();
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load certifications.');
+  expect(screen.queryByText('No certifications added yet')).not.toBeInTheDocument();
 });
 
 test('the loading state is announced and marks the page busy', () => {
@@ -158,8 +165,11 @@ test('the loading state is announced and marks the page busy', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openCertifications();
-  expect(screen.getByRole('status')).toHaveTextContent('자격증을 불러오는 중');
-  expect(screen.getByRole('region', { name: '자격증' })).toHaveAttribute('aria-busy', 'true');
+  expect(screen.getByRole('status')).toHaveTextContent('Loading certifications');
+  expect(screen.getByRole('region', { name: 'Certifications' })).toHaveAttribute(
+    'aria-busy',
+    'true',
+  );
 });
 
 test('display rules: expiry, period and issuer text', () => {
@@ -167,7 +177,7 @@ test('display rules: expiry, period and issuer text', () => {
   expect(isExpired({ expiryDate: '2026-11-05' }, '2026-11-05')).toBe(false);
   expect(isExpired({ expiryDate: '2026-11-04' }, '2026-11-05')).toBe(true);
   expect(certificationPeriodText({ acquiredDate: '2024-05-17', expiryDate: null })).toBe(
-    '취득 2024-05-17 · 만료 없음',
+    'Earned May 17, 2024 · No expiry',
   );
   expect(issuerText({ issuer: 'ETS', score: null })).toBe('ETS');
   expect(issuerText({ issuer: 'ETS', score: '905점' })).toBe('ETS · 905점');

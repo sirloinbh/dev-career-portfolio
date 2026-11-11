@@ -1,5 +1,6 @@
 import { splitFieldErrors } from './field-errors';
 import { requestJson } from './lib/api';
+import { formatDate } from './service-date';
 
 // Work history (#32 API, #40 list, #41 form): API calls and display rules. The screens are in
 // careers.tsx.
@@ -22,22 +23,22 @@ export type Career = {
 };
 
 export const employmentTypeLabels: Record<EmploymentType, string> = {
-  full_time: '정규직',
-  contract: '계약직',
-  intern: '인턴',
-  freelance: '프리랜서',
-  other: '기타',
+  full_time: 'Full-time',
+  contract: 'Contract',
+  intern: 'Intern',
+  freelance: 'Freelance',
+  other: 'Other',
 };
 
 /** A job with no end date is the one still held. */
 export const isCurrent = (career: Pick<Career, 'endDate'>) => career.endDate === null;
 
-/** "2020-03-02 ~ 2023-12-29", or "2024-01-02 ~ 재직 중" while the job is held. */
+/** "March 2, 2020 – December 29, 2023", or "January 2, 2024 – Present" while the job is held. */
 export function careerPeriodText(career: Pick<Career, 'startDate' | 'endDate'>) {
-  return `${career.startDate} ~ ${career.endDate ?? '재직 중'}`;
+  return `${formatDate(career.startDate)} – ${career.endDate ? formatDate(career.endDate) : 'Present'}`;
 }
 
-/** "백엔드팀 · 선임 · 정규직": the parts that were entered, then the employment type. */
+/** "Backend team · Senior · Full-time": the parts that were entered, then the employment type. */
 export function roleText(career: Pick<Career, 'department' | 'position' | 'employmentType'>) {
   return [career.department, career.position, employmentTypeLabels[career.employmentType]]
     .filter(Boolean)
@@ -90,7 +91,7 @@ export function toCareerForm(career: Career): CareerForm {
 
 /**
  * A blank end date means the job is still held, so it goes as null. Blank text goes as '' and the
- * server stores it as NULL; a blank start date goes as '' so the server answers in Korean.
+ * server stores it as NULL; a blank start date goes as '' so the server answers in English.
  */
 export function toCareerInput(form: CareerForm): CareerInput {
   return { ...form, endDate: form.endDate === '' ? null : form.endDate };
@@ -98,14 +99,14 @@ export function toCareerInput(form: CareerForm): CareerInput {
 
 // The server's messages start with these labels (backend/src/routes/careers.ts).
 const fieldLabels: [string, keyof CareerForm][] = [
-  ['회사명', 'company'],
-  ['부서', 'department'],
-  ['직책', 'position'],
-  ['고용 형태', 'employmentType'],
-  ['입사일', 'startDate'],
-  ['퇴사일', 'endDate'],
-  ['담당 업무', 'duties'],
-  ['주요 성과', 'achievements'],
+  ['Company', 'company'],
+  ['Department', 'department'],
+  ['Job title', 'position'],
+  ['Employment type', 'employmentType'],
+  ['Start date', 'startDate'],
+  ['End date', 'endDate'],
+  ['Duties', 'duties'],
+  ['Achievements', 'achievements'],
 ];
 
 // The order the inputs appear on screen (careers.tsx CareerFields).

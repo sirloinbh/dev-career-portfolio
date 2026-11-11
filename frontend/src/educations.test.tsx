@@ -29,7 +29,7 @@ const university: Education = {
   endDate: '2019-02-20',
   gpa: 3.75,
   gpaScale: 4.5,
-  memo: '졸업 작품: 일정 관리 앱',
+  memo: 'Graduated 작품: 일정 관리 앱',
 };
 
 /** Answers /api/educations with `educations` (or an error) and /api/health with a date. */
@@ -58,18 +58,21 @@ test('the main menu leads to the education list', async () => {
   serve({ status: 200, body: { educations: [] } });
   render(<App />);
   const menu = screen.getByRole('navigation', { name: 'Main menu' });
-  fireEvent.click(within(menu).getByRole('link', { name: '학력' }));
+  fireEvent.click(within(menu).getByRole('link', { name: 'Education' }));
   expect(window.location.pathname).toBe('/educations');
-  expect(await screen.findByRole('heading', { level: 1, name: '학력' })).toBeInTheDocument();
-  expect(within(menu).getByRole('link', { name: '학력' })).toHaveAttribute('aria-current', 'page');
+  expect(await screen.findByRole('heading', { level: 1, name: 'Education' })).toBeInTheDocument();
+  expect(within(menu).getByRole('link', { name: 'Education' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
 });
 
 test('educations are listed in the order the API gives, not re-sorted', async () => {
   // Deliberately not newest first: the screen must keep the server's order.
   serve({ status: 200, body: { educations: [university, graduate] } });
   openEducations();
-  const list = await screen.findByRole('list', { name: '학력 목록' });
-  expect(screen.getByRole('status')).toHaveTextContent('학력 2건');
+  const list = await screen.findByRole('list', { name: 'Education list' });
+  expect(screen.getByRole('status')).toHaveTextContent('2 entries');
   const items = within(list).getAllByRole('listitem');
   expect(items.map((item) => within(item).getByRole('heading', { level: 2 }).textContent)).toEqual([
     '한빛대학교',
@@ -83,19 +86,19 @@ const badgeOf = (item: HTMLElement) => item.querySelector('[data-slot="badge"]')
 test('each education shows its status, degree, period, grade and memo', async () => {
   serve({ status: 200, body: { educations: [graduate, university] } });
   openEducations();
-  const list = await screen.findByRole('list', { name: '학력 목록' });
+  const list = await screen.findByRole('list', { name: 'Education list' });
 
   const enrolled = within(list).getByRole('listitem', { name: '한빛대학원' });
-  expect(badgeOf(enrolled)).toBe('재학 중');
-  expect(enrolled).toHaveTextContent('석사 · 소프트웨어공학');
-  expect(enrolled).toHaveTextContent('2024-03-04 ~');
-  expect(enrolled).not.toHaveTextContent('학점');
+  expect(badgeOf(enrolled)).toBe('Enrolled');
+  expect(enrolled).toHaveTextContent('Master · 소프트웨어공학');
+  expect(enrolled).toHaveTextContent('March 4, 2024 –');
+  expect(enrolled).not.toHaveTextContent('GPA');
 
   const done = within(list).getByRole('listitem', { name: '한빛대학교' });
-  expect(badgeOf(done)).toBe('졸업');
-  expect(done).not.toHaveTextContent('재학 중');
-  expect(done).toHaveTextContent('2015-03-02 ~ 2019-02-20 · 학점 3.75 / 4.5');
-  expect(done).toHaveTextContent('졸업 작품: 일정 관리 앱');
+  expect(badgeOf(done)).toBe('Graduated');
+  expect(done).not.toHaveTextContent('Enrolled');
+  expect(done).toHaveTextContent('March 2, 2015 – February 20, 2019 · GPA 3.75 / 4.5');
+  expect(done).toHaveTextContent('Graduated 작품: 일정 관리 앱');
 });
 
 test('a placeholder shows while the list loads', () => {
@@ -104,23 +107,23 @@ test('a placeholder shows while the list loads', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openEducations();
-  expect(screen.getByRole('status')).toHaveTextContent('학력을 불러오는 중');
+  expect(screen.getByRole('status')).toHaveTextContent('Loading education');
 });
 
 test('an empty list explains what will appear', async () => {
   serve({ status: 200, body: { educations: [] } });
   openEducations();
   expect(
-    await screen.findByRole('heading', { name: '아직 등록한 학력이 없습니다' }),
+    await screen.findByRole('heading', { name: 'No education added yet' }),
   ).toBeInTheDocument();
-  expect(screen.queryByRole('list', { name: '학력 목록' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('list', { name: 'Education list' })).not.toBeInTheDocument();
 });
 
-test('a server error is shown in Korean', async () => {
-  serve({ status: 503, body: { error: '데이터베이스에 연결할 수 없습니다' } });
+test('a server error is shown in English', async () => {
+  serve({ status: 503, body: { error: 'Cannot connect to the database' } });
   openEducations();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '학력을 불러오지 못했습니다. 데이터베이스에 연결할 수 없습니다',
+    'Could not load education. Cannot connect to the database',
   );
 });
 
@@ -128,35 +131,35 @@ test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openEducations();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '학력을 불러오지 못했습니다. Could not process the request',
+    'Could not load education. Could not process the request',
   );
 });
 
-test('an unreachable server is shown in Korean', async () => {
+test('an unreachable server is shown in English', async () => {
   serve('offline');
   openEducations();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '학력을 불러오지 못했습니다. Cannot reach the server',
+    'Could not load education. Cannot reach the server',
   );
 });
 
 test('period and grade text', () => {
   expect(periodText({ status: 'graduated', startDate: '2015-03-02', endDate: '2019-02-20' })).toBe(
-    '2015-03-02 ~ 2019-02-20',
+    'March 2, 2015 – February 20, 2019',
   );
   expect(periodText({ status: 'enrolled', startDate: '2024-03-04', endDate: null })).toBe(
-    '2024-03-04 ~',
+    'March 4, 2024 –',
   );
   expect(periodText({ status: 'on_leave', startDate: '2024-03-04', endDate: null })).toBe(
-    '2024-03-04 ~',
+    'March 4, 2024 –',
   );
-  // Finished without a recorded end: no open "~" that would read as still going.
+  // Finished without a recorded end: no open "–" that would read as still going.
   expect(periodText({ status: 'graduated', startDate: '2012-03-02', endDate: null })).toBe(
-    '2012-03-02',
+    'March 2, 2012',
   );
   expect(periodText({ status: 'dropped_out', startDate: '2019-03-02', endDate: null })).toBe(
-    '2019-03-02',
+    'March 2, 2019',
   );
-  expect(gpaText({ gpa: 95, gpaScale: 100 })).toBe('학점 95 / 100');
+  expect(gpaText({ gpa: 95, gpaScale: 100 })).toBe('GPA 95 / 100');
   expect(gpaText({ gpa: null, gpaScale: null })).toBe('');
 });

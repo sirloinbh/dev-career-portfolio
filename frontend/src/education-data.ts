@@ -1,6 +1,7 @@
 import { splitFieldErrors } from './field-errors';
 import { toNumber } from './form-fields';
 import { requestJson } from './lib/api';
+import { formatDate } from './service-date';
 
 // Education history (#31 API, #38 list, #39 form): API calls and display rules. The screens are in
 // educations.tsx.
@@ -30,7 +31,7 @@ export type Education = {
   memo: string | null;
 };
 
-/** What the form sends. Numbers that are not numbers go as text so the server explains in Korean. */
+/** What the form sends. Numbers that are not numbers go as text so the server explains in English. */
 type EducationInput = Omit<Education, 'id' | 'gpa' | 'gpaScale'> & {
   gpa: number | string | null;
   gpaScale: number | string | null;
@@ -43,35 +44,36 @@ export type EducationPaths = {
 };
 
 export const degreeLabels: Record<Degree, string> = {
-  high_school: '고등학교',
-  associate: '전문학사',
-  bachelor: '학사',
-  master: '석사',
-  doctorate: '박사',
-  other: '기타',
+  high_school: 'High school',
+  associate: 'Associate',
+  bachelor: 'Bachelor',
+  master: 'Master',
+  doctorate: 'Doctorate',
+  other: 'Other',
 };
 
 export const statusLabels: Record<EducationStatus, string> = {
-  graduated: '졸업',
-  enrolled: '재학 중',
-  on_leave: '휴학',
-  dropped_out: '중퇴',
+  graduated: 'Graduated',
+  enrolled: 'Enrolled',
+  on_leave: 'On leave',
+  dropped_out: 'Dropped out',
 };
 
 /**
- * "2015-03-02 ~ 2019-02-20". Without an end date, enrolled and on-leave periods are still running
- * ("2024-03-04 ~"); a finished one with no recorded end shows only its start.
+ * "March 2, 2015 – February 20, 2019". Without an end date, enrolled and on-leave periods are still
+ * running ("March 4, 2024 –"); a finished one with no recorded end shows only its start.
  */
 export function periodText(education: Pick<Education, 'status' | 'startDate' | 'endDate'>) {
-  if (education.endDate) return `${education.startDate} ~ ${education.endDate}`;
+  if (education.endDate)
+    return `${formatDate(education.startDate)} – ${formatDate(education.endDate)}`;
   const running = education.status === 'enrolled' || education.status === 'on_leave';
-  return running ? `${education.startDate} ~` : education.startDate;
+  return running ? `${formatDate(education.startDate)} –` : formatDate(education.startDate);
 }
 
-/** "학점 3.75 / 4.5", or nothing when no grade was entered. */
+/** "GPA 3.75 / 4.5", or nothing when no grade was entered. */
 export function gpaText(education: Pick<Education, 'gpa' | 'gpaScale'>) {
   if (education.gpa === null || education.gpaScale === null) return '';
-  return `학점 ${education.gpa} / ${education.gpaScale}`;
+  return `GPA ${education.gpa} / ${education.gpaScale}`;
 }
 
 /** The form keeps every field as the text in its input. */
@@ -115,7 +117,7 @@ export function toEducationForm(education: Education): EducationForm {
 
 /**
  * Blank optional fields become null. A blank start date goes as '' so the server answers with its
- * Korean date message; the form does not repeat the server's rules.
+ * date message; the form does not repeat the server's rules.
  */
 export function toEducationInput(form: EducationForm): EducationInput {
   return {
@@ -131,19 +133,18 @@ export function toEducationInput(form: EducationForm): EducationInput {
   };
 }
 
-// The server answers one Korean message that starts with the field's label (backend/src/routes/
-// educations.ts). Longer labels come first so "졸업일" is not read as another field.
+// The server answers one message that starts with the field's label (backend/src/routes/
+// educations.ts). Longer labels come first so "Graduation date" is not read as another field.
 const fieldLabels: [string, keyof EducationForm][] = [
-  ['재학 중이면 졸업일', 'endDate'],
-  ['학교명', 'school'],
-  ['전공', 'major'],
-  ['학위', 'degree'],
-  ['상태', 'status'],
-  ['입학일', 'startDate'],
-  ['졸업일', 'endDate'],
-  ['학점', 'gpa'],
-  ['만점', 'gpaScale'],
-  ['메모', 'memo'],
+  ['School', 'school'],
+  ['Major', 'major'],
+  ['Degree', 'degree'],
+  ['Status', 'status'],
+  ['Enrollment date', 'startDate'],
+  ['Graduation date', 'endDate'],
+  ['GPA', 'gpa'],
+  ['Maximum GPA', 'gpaScale'],
+  ['Notes', 'memo'],
 ];
 
 // The order the inputs appear on screen (educations.tsx EducationFields).

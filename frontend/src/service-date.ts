@@ -19,3 +19,13 @@ export function daysUntil(date: string, today: string) {
     (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000,
   );
 }
+
+/** A YYYY-MM-DD date as "October 22, 2026". */
+export function formatDate(date: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(`${date}T00:00:00Z`));
+}

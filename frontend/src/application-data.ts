@@ -1,7 +1,7 @@
 import { requestJson } from './lib/api';
-import { daysUntil } from './service-date';
+import { daysUntil, formatDate } from './service-date';
 
-// Applications, shown as "지원 기업" under the 자기소개서 menu (#36 API, #48 list): API calls and
+// Applications, shown as "Application" under the Cover letters menu (#36 API, #48 list): API calls and
 // display rules. The screens are in applications.tsx. One row is one job applied for at one company.
 
 // The same three values as backend/src/routes/applications.ts.
@@ -19,23 +19,23 @@ export type Application = {
 };
 
 export const applicationStatusLabels: Record<ApplicationStatus, string> = {
-  drafting: '작성 중',
-  submitted: '제출 완료',
-  closed: '종료',
+  drafting: 'Drafting',
+  submitted: 'Submitted',
+  closed: 'Closed',
 };
 
 /**
- * "마감 2026-11-20 · D-15", or "마감일 없음". The countdown ("D-15", "오늘 마감", "마감 지남") only
+ * "Due November 20, 2026 · D-15", or "No deadline". The countdown ("D-15", "Due today", "Overdue") only
  * matters while the cover letter is still being written; a submitted or closed application shows
  * the date alone.
  */
 export function deadlineText(application: Pick<Application, 'deadline' | 'status'>, today: string) {
-  if (application.deadline === null) return '마감일 없음';
-  const date = `마감 ${application.deadline}`;
+  if (application.deadline === null) return 'No deadline';
+  const date = `Due ${formatDate(application.deadline)}`;
   if (application.status !== 'drafting') return date;
   const days = daysUntil(application.deadline, today);
   if (days > 0) return `${date} · D-${String(days)}`;
-  return `${date} · ${days === 0 ? '오늘 마감' : '마감 지남'}`;
+  return `${date} · ${days === 0 ? 'Due today' : 'Overdue'}`;
 }
 
 const base = '/api/applications';

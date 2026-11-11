@@ -81,14 +81,14 @@ const careerPaths: CareerPaths = {
 
 // Main menu (LNB) items, in display order.
 const nav: NavItem[] = [
-  { to: pages.overview, label: '대시보드', icon: LayoutDashboard },
-  { to: pages.educations, label: '학력', icon: GraduationCap },
-  { to: pages.careers, label: '이력', icon: Briefcase },
-  { to: pages.projects, label: '프로젝트', icon: FolderKanban },
-  { to: pages.skills, label: '스킬', icon: Wrench },
-  { to: pages.certifications, label: '자격증', icon: Award },
-  { to: pages.applications, label: '자기소개서', icon: FileText },
-  { to: pages.settings, label: '설정', icon: Settings2 },
+  { to: pages.overview, label: 'Dashboard', icon: LayoutDashboard },
+  { to: pages.educations, label: 'Education', icon: GraduationCap },
+  { to: pages.careers, label: 'Career', icon: Briefcase },
+  { to: pages.projects, label: 'Projects', icon: FolderKanban },
+  { to: pages.skills, label: 'Skills', icon: Wrench },
+  { to: pages.certifications, label: 'Certifications', icon: Award },
+  { to: pages.applications, label: 'Cover letters', icon: FileText },
+  { to: pages.settings, label: 'Settings', icon: Settings2 },
 ];
 
 function useHealth() {
@@ -100,10 +100,10 @@ function useHealth() {
         setHealth(
           response.ok && data.today
             ? { state: 'ok', today: data.today }
-            : { state: 'error', message: data.error ?? '서버 상태를 확인할 수 없습니다' },
+            : { state: 'error', message: data.error ?? 'Cannot check the server status' },
         );
       })
-      .catch(() => setHealth({ state: 'error', message: '서버에 연결할 수 없습니다' }));
+      .catch(() => setHealth({ state: 'error', message: 'Cannot reach the server' }));
   }, []);
   return health;
 }
@@ -136,8 +136,8 @@ function Page({
       </header>
       {children ?? (
         <EmptyState
-          title="아직 기능이 없습니다"
-          description="기능은 GitHub 이슈 카드로 등록한 뒤 하나씩 추가합니다."
+          title="No features yet"
+          description="Features are registered as GitHub issue cards and added one at a time."
         />
       )}
     </section>
@@ -148,14 +148,14 @@ export function App() {
   const health = useHealth();
   return (
     <BrowserRouter>
-      <AppShell appName="개발 커리어 포트폴리오" nav={nav}>
+      <AppShell appName="Dev Career Portfolio" nav={nav}>
         <Routes>
           <Route
             path={pages.overview}
             element={
               <Page
-                title="대시보드"
-                description="개발 경력, 프로젝트, 기술 성장을 정리하는 개인 포트폴리오 서비스"
+                title="Dashboard"
+                description="A personal portfolio service for organizing your career, projects, and skill growth"
                 health={health}
               />
             }
@@ -187,7 +187,13 @@ export function App() {
           <Route path={pages.applications} element={<ApplicationList />} />
           <Route
             path={pages.settings}
-            element={<Page title="설정" description="앱 환경과 데이터 관리" health={health} />}
+            element={
+              <Page
+                title="Settings"
+                description="App settings and data management"
+                health={health}
+              />
+            }
           />
           <Route path="*" element={<Navigate to={pages.overview} replace />} />
         </Routes>

@@ -12,6 +12,7 @@ import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
+import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
@@ -72,45 +73,47 @@ function ProjectItem({
         <h2 id={titleId} className="text-body font-semibold wrap-anywhere break-keep">
           {project.name}
         </h2>
-        {isRunning(project) ? <Badge>진행 중</Badge> : null}
+        {isRunning(project) ? <Badge>Ongoing</Badge> : null}
       </div>
       {roleText ? <p className="text-body-sm wrap-break-word break-keep">{roleText}</p> : null}
       <p className="text-body-sm text-muted-foreground">{projectPeriodText(project)}</p>
       <TextBlocks
         entries={[
-          ['요약', project.summary],
-          ['기여와 성과', project.contributions],
+          ['Summary', project.summary],
+          ['Contributions', project.contributions],
           [
-            '사용 기술',
+            'Technologies',
             project.technologies.length > 0 ? <Technologies names={project.technologies} /> : null,
           ],
         ]}
       />
       {repository || service ? (
         <div className="flex flex-wrap gap-x-4">
-          {repository ? <OutLink href={repository} label="저장소" owner={project.name} /> : null}
-          {service ? <OutLink href={service} label="서비스" owner={project.name} /> : null}
+          {repository ? (
+            <OutLink href={repository} label="Repository" owner={project.name} />
+          ) : null}
+          {service ? <OutLink href={service} label="Service" owner={project.name} /> : null}
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2 pt-1">
         <Button asChild variant="outline" size="sm">
-          <Link to={paths.edit(project.id)} aria-label={`${project.name} 수정`}>
+          <Link to={paths.edit(project.id)} aria-label={`Edit ${project.name}`}>
             <Pencil aria-hidden />
-            수정
+            Edit
           </Link>
         </Button>
         <ConfirmDialog
-          title="프로젝트를 지울까요?"
+          title="Delete this project?"
           description={
             <span className="wrap-anywhere break-keep">
-              &apos;{project.name}&apos; 프로젝트를 지웁니다. 지운 뒤에는 되돌릴 수 없습니다.
+              &apos;{project.name}&apos; will be deleted. This cannot be undone.
             </span>
           }
           onConfirm={() => onDelete(project)}
           trigger={
-            <Button variant="outline" size="sm" aria-label={`${project.name} 삭제`}>
+            <Button variant="outline" size="sm" aria-label={`Delete ${project.name}`}>
               <Trash2 aria-hidden />
-              삭제
+              Delete
             </Button>
           }
         />
@@ -129,7 +132,7 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
   const remove = async (project: Project) => {
     await deleteItem({
       remove: () => projectApi.remove(project.id),
-      noun: '프로젝트',
+      noun: 'project',
       name: project.name,
     });
     reload((current) => ({ projects: current.projects.filter((item) => item.id !== project.id) }));
@@ -140,20 +143,20 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
   return (
     <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
       <PageHeader
-        title="프로젝트"
-        description="참여한 프로젝트를 최근 시작 순으로 봅니다."
+        title="Projects"
+        description="See the projects you worked on, newest start first."
         headingRef={heading}
       >
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
-          {firstLoad ? '프로젝트를 불러오는 중' : ''}
-          {data ? `프로젝트 ${projects.length}건` : ''}
+          {firstLoad ? 'Loading projects' : ''}
+          {data ? entryCount(projects.length) : ''}
         </p>
       </PageHeader>
       <Button asChild className="w-fit">
         <Link to={paths.create}>
           <Plus aria-hidden />
-          프로젝트 추가
+          Add project
         </Link>
       </Button>
       {firstLoad ? <SkeletonList rows={3} /> : null}
@@ -162,7 +165,7 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
         <Notice
           notice={{
             kind: 'error',
-            text: `프로젝트를 불러오지 못했습니다. ${errorText(loaded.error)}`,
+            text: `Could not load projects. ${errorText(loaded.error)}`,
           }}
         />
       ) : null}
@@ -170,13 +173,13 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
         <EmptyState
           className="break-keep"
           icon={<FolderKanban />}
-          title="아직 등록한 프로젝트가 없습니다"
-          description="프로젝트를 등록하면 최근 시작 순으로 여기에 보입니다."
+          title="No projects added yet"
+          description="Add a project and it will appear here, newest start first."
         />
       ) : null}
       {projects.length > 0 ? (
         <ul
-          aria-label="프로젝트 목록"
+          aria-label="Project list"
           className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
         >
           {projects.map((project) => (
@@ -265,7 +268,7 @@ function ProjectFields({
   );
 
   return (
-    // The server checks every rule and answers in Korean, so the browser's own checks are off.
+    // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
       onSubmit={submit(() =>
@@ -274,14 +277,16 @@ function ProjectFields({
       className="flex max-w-2xl flex-col gap-5"
       aria-busy={pending || undefined}
     >
-      {textField('name', '프로젝트명', { placeholder: '예: 주문 정산 자동화' })}
+      {textField('name', 'Project name', { placeholder: 'e.g. Order settlement automation' })}
       <div className="grid gap-5 sm:grid-cols-2">
-        {textField('organization', '소속', { placeholder: '예: 한빛소프트, 개인 프로젝트' })}
-        {textField('role', '역할', { placeholder: '예: 백엔드 개발' })}
+        {textField('organization', 'Organization', {
+          placeholder: 'e.g. Hanbit Soft, side project',
+        })}
+        {textField('role', 'Role', { placeholder: 'e.g. Backend development' })}
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('startDate')}>시작일</Label>
+          <Label htmlFor={fieldId('startDate')}>Start date</Label>
           <Input
             id={fieldId('startDate')}
             type="date"
@@ -292,7 +297,7 @@ function ProjectFields({
           {errorFor('startDate')}
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('endDate')}>종료일</Label>
+          <Label htmlFor={fieldId('endDate')}>End date</Label>
           <Input
             id={fieldId('endDate')}
             ref={endDateInput}
@@ -306,27 +311,32 @@ function ProjectFields({
             id={`${fieldId('endDate')}-hint`}
             className="text-caption break-keep text-muted-foreground"
           >
-            진행 중인 프로젝트면 비워 둡니다. 목록에 &quot;진행 중&quot;으로 보입니다.
+            Leave it empty if the project is still running. The list shows &quot;Ongoing&quot;.
           </p>
           {errorFor('endDate')}
         </div>
       </div>
-      {longField('summary', '요약', '어떤 프로젝트였는지 한두 문장으로', 500)}
-      {longField('contributions', '기여와 성과', '맡은 부분과 숫자로 말할 수 있는 결과', 2000)}
-      {textField('technologies', '사용 기술', {
-        placeholder: '예: TypeScript, PostgreSQL, AWS',
+      {longField('summary', 'Summary', 'What the project was, in a sentence or two', 500)}
+      {longField(
+        'contributions',
+        'Contributions',
+        'Your part and results you can state in numbers',
+        2000,
+      )}
+      {textField('technologies', 'Technologies', {
+        placeholder: 'e.g. TypeScript, PostgreSQL, AWS',
         // 30 names of up to 50 characters, with ", " between them.
         maxLength: 1600,
-        hint: '쉼표(,)로 나눠 적습니다. 항목마다 50자, 30개까지 넣을 수 있습니다.',
+        hint: 'Separate items with commas. Up to 30 items, 50 characters each.',
       })}
-      {textField('repositoryUrl', '저장소 링크', {
-        placeholder: '예: https://github.com/사용자/저장소',
+      {textField('repositoryUrl', 'Repository link', {
+        placeholder: 'e.g. https://github.com/user/repository',
         maxLength: 500,
         type: 'url',
-        hint: 'http:// 또는 https://로 시작하는 주소를 넣습니다.',
+        hint: 'Use an address that starts with http:// or https://.',
       })}
-      {textField('serviceUrl', '서비스 링크', {
-        placeholder: '예: https://service.example.com',
+      {textField('serviceUrl', 'Service link', {
+        placeholder: 'e.g. https://service.example.com',
         maxLength: 500,
         type: 'url',
       })}
@@ -339,19 +349,19 @@ export function NewProject({ paths }: { paths: ProjectPaths }) {
   const navigate = useNavigate();
   const create = async (form: ProjectForm) => {
     const { project } = await projectApi.create(toProjectInput(form));
-    toast.success(`'${project.name}' 프로젝트를 추가했습니다`);
+    toast.success(`Added '${project.name}'`);
     void navigate(paths.list);
   };
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="프로젝트 목록" />
+      <BackLink to={paths.list} label="Project list" />
       <PageHeader
-        title="프로젝트 추가"
-        description="프로젝트명과 시작일만 있으면 됩니다. 나머지는 비워 둘 수 있습니다."
+        title="Add project"
+        description="Project name and start date are all you need. The rest can stay empty."
       />
       <ProjectFields
         initial={emptyProjectForm}
-        submitLabel="추가"
+        submitLabel="Add"
         cancelTo={paths.list}
         onSubmit={create}
       />
@@ -368,7 +378,7 @@ export function EditProject({ paths }: { paths: ProjectPaths }) {
     loaded.state === 'ok' ? loaded.data.projects.find((item) => String(item.id) === id) : undefined;
   const update = async (form: ProjectForm) => {
     await projectApi.update(Number(id), toProjectInput(form));
-    toast.success('저장했습니다');
+    toast.success('Saved');
     void navigate(paths.list);
   };
   return (
@@ -377,28 +387,26 @@ export function EditProject({ paths }: { paths: ProjectPaths }) {
       aria-busy={loaded.state === 'loading'}
       className="flex flex-col gap-6"
     >
-      <BackLink to={paths.list} label="프로젝트 목록" />
-      <PageHeader title="프로젝트 수정" description="바꿀 내용을 고친 뒤 저장합니다." />
+      <BackLink to={paths.list} label="Project list" />
+      <PageHeader title="Edit project" description="Change what you need, then save." />
       {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
       {loaded.state === 'error' ? (
         <Notice
           notice={{
             kind: 'error',
-            text: `프로젝트를 불러오지 못했습니다. ${errorText(loaded.error)}`,
+            text: `Could not load projects. ${errorText(loaded.error)}`,
           }}
         />
       ) : null}
       {loaded.state === 'ok' && !project ? (
-        <Notice
-          notice={{ kind: 'error', text: '프로젝트를 찾을 수 없습니다. 이미 지웠을 수 있습니다.' }}
-        />
+        <Notice notice={{ kind: 'error', text: 'Project not found. It may already be deleted.' }} />
       ) : null}
       {project ? (
         <ProjectFields
           // A new id starts a fresh form instead of keeping the previous row's typing.
           key={project.id}
           initial={toProjectForm(project)}
-          submitLabel="저장"
+          submitLabel="Save"
           cancelTo={paths.list}
           onSubmit={update}
         />

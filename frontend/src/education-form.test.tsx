@@ -36,7 +36,7 @@ type Call = { method: string; url: string; body: unknown };
 
 /**
  * A small in-memory API: GET lists the rows, POST and PUT store the body, DELETE removes. `refuse`
- * answers the next POST or PUT with a 400 and that Korean message, as the server would.
+ * answers the next POST or PUT with a 400 and that message, as the server would.
  */
 function fakeApi(rows: Education[]) {
   const store = [...rows];
@@ -67,7 +67,7 @@ function fakeApi(rows: Education[]) {
         store.unshift(education);
         return json({ education }, 201);
       }
-      if (index === -1) return json({ error: '학력을 찾을 수 없습니다' }, 404);
+      if (index === -1) return json({ error: 'Education not found' }, 404);
       if (method === 'PUT') {
         store[index] = { ...(body as Education), id };
         return json({ education: store[index] });
@@ -101,16 +101,18 @@ const type = (name: string, value: string) => fireEvent.change(field(name), { ta
 test('a new education is sent to the API and appears in the list', async () => {
   const api = fakeApi([]);
   open('/educations');
-  fireEvent.click(await screen.findByRole('link', { name: '학력 추가' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '학력 추가' })).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Add education' }));
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Add education' }),
+  ).toBeInTheDocument();
 
-  type('학교명', '한빛대학교 소프트웨어대학원');
-  fireEvent.change(field('학위'), { target: { value: 'master' } });
-  fireEvent.change(field('상태'), { target: { value: 'enrolled' } });
-  type('입학일', '2024-03-04');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  type('School', '한빛대학교 소프트웨어대학원');
+  fireEvent.change(field('Degree'), { target: { value: 'master' } });
+  fireEvent.change(field('Status'), { target: { value: 'enrolled' } });
+  type('Enrollment date', '2024-03-04');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  expect(await screen.findByRole('heading', { level: 1, name: '학력' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Education' })).toBeInTheDocument();
   expect(window.location.pathname).toBe('/educations');
   expect(api.calls.find((call) => call.method === 'POST')?.body).toEqual({
     school: '한빛대학교 소프트웨어대학원',
@@ -123,7 +125,7 @@ test('a new education is sent to the API and appears in the list', async () => {
     gpaScale: null,
     memo: '',
   });
-  const list = await screen.findByRole('list', { name: '학력 목록' });
+  const list = await screen.findByRole('list', { name: 'Education list' });
   expect(
     within(list).getByRole('listitem', { name: '한빛대학교 소프트웨어대학원' }),
   ).toBeInTheDocument();
@@ -132,57 +134,57 @@ test('a new education is sent to the API and appears in the list', async () => {
 test('the server message is shown under the field it is about, and focus moves there', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  type('학교명', '한빛대학교');
-  type('입학일', '2019-03-02');
-  type('졸업일', '2015-02-20');
-  api.refuseNext('졸업일은 입학일보다 빠를 수 없습니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  type('School', '한빛대학교');
+  type('Enrollment date', '2019-03-02');
+  type('Graduation date', '2015-02-20');
+  api.refuseNext('Graduation date cannot be earlier than the enrollment date');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  await waitFor(() => expect(field('졸업일')).toHaveAttribute('aria-invalid', 'true'));
-  expect(field('졸업일')).toHaveAccessibleDescription(
-    expect.stringContaining('졸업일은 입학일보다 빠를 수 없습니다'),
+  await waitFor(() => expect(field('Graduation date')).toHaveAttribute('aria-invalid', 'true'));
+  expect(field('Graduation date')).toHaveAccessibleDescription(
+    expect.stringContaining('Graduation date cannot be earlier than the enrollment date'),
   );
-  await waitFor(() => expect(field('졸업일')).toHaveFocus());
-  expect(field('입학일')).not.toHaveAttribute('aria-invalid');
+  await waitFor(() => expect(field('Graduation date')).toHaveFocus());
+  expect(field('Enrollment date')).not.toHaveAttribute('aria-invalid');
   // The form keeps what was typed.
-  expect(field('학교명')).toHaveValue('한빛대학교');
+  expect(field('School')).toHaveValue('한빛대학교');
   expect(window.location.pathname).toBe('/educations/new');
 });
 
 test('a message that names no field is shown below the form', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  api.refuseNext('입력에 사용할 수 없는 문자(NUL)가 있습니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  api.refuseNext('Input contains a character that is not allowed (NUL)');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '입력에 사용할 수 없는 문자(NUL)가 있습니다',
+    'Input contains a character that is not allowed (NUL)',
   );
 });
 
 test('a half-typed graduation date is sent as text the server refuses, not as no date', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
   // A browser reads an unfinished date ("2019-02-__") as '' and flags it as bad input.
-  Object.defineProperty(field('졸업일'), 'validity', { value: { badInput: true } });
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  Object.defineProperty(field('Graduation date'), 'validity', { value: { badInput: true } });
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(api.calls.some((call) => call.method === 'POST')).toBe(true));
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
     endDate: 'incomplete',
   });
 });
 
-test('choosing 재학 중 drops a half-typed graduation date instead of sending it', async () => {
+test('choosing Enrolled drops a half-typed graduation date instead of sending it', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
   // A disabled date input still reports its unfinished parts as bad input.
-  Object.defineProperty(field('졸업일'), 'validity', { value: { badInput: true } });
-  fireEvent.change(field('상태'), { target: { value: 'enrolled' } });
-  expect(field('졸업일')).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  Object.defineProperty(field('Graduation date'), 'validity', { value: { badInput: true } });
+  fireEvent.change(field('Status'), { target: { value: 'enrolled' } });
+  expect(field('Graduation date')).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(api.calls.some((call) => call.method === 'POST')).toBe(true));
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
     status: 'enrolled',
@@ -193,54 +195,56 @@ test('choosing 재학 중 drops a half-typed graduation date instead of sending 
 test('the grade fields are described by their shared hint', async () => {
   fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  for (const name of ['학점', '만점']) {
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  for (const name of ['GPA', 'Maximum GPA']) {
     expect(field(name)).toHaveAccessibleDescription(
-      expect.stringContaining('학점과 만점은 함께 넣거나 함께 비워 둡니다'),
+      expect.stringContaining('Enter the GPA and maximum GPA together, or leave both empty'),
     );
   }
 });
 
-test('choosing 재학 중 clears and locks the graduation date', async () => {
+test('choosing Enrolled clears and locks the graduation date', async () => {
   fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  type('졸업일', '2019-02-20');
-  fireEvent.change(field('상태'), { target: { value: 'enrolled' } });
-  expect(field('졸업일')).toHaveValue('');
-  expect(field('졸업일')).toBeDisabled();
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  type('Graduation date', '2019-02-20');
+  fireEvent.change(field('Status'), { target: { value: 'enrolled' } });
+  expect(field('Graduation date')).toHaveValue('');
+  expect(field('Graduation date')).toBeDisabled();
 });
 
 test('an education is edited with its saved values filled in', async () => {
   const api = fakeApi([university]);
   open('/educations');
-  fireEvent.click(await screen.findByRole('link', { name: '한빛대학교 수정' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '학력 수정' })).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Edit 한빛대학교' }));
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Edit education' }),
+  ).toBeInTheDocument();
   expect(window.location.pathname).toBe('/educations/1/edit');
-  expect(field('학교명')).toHaveValue('한빛대학교');
-  expect(field('학점')).toHaveValue('3.75');
-  expect(field('만점')).toHaveValue('4.5');
+  expect(field('School')).toHaveValue('한빛대학교');
+  expect(field('GPA')).toHaveValue('3.75');
+  expect(field('Maximum GPA')).toHaveValue('4.5');
 
-  type('전공', '소프트웨어공학');
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '학력' })).toBeInTheDocument();
+  type('Major', '소프트웨어공학');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Education' })).toBeInTheDocument();
   const put = api.calls.find((call) => call.method === 'PUT');
   expect(put?.url).toBe('/api/educations/1');
   expect(put?.body).toMatchObject({ major: '소프트웨어공학', gpa: 3.75, gpaScale: 4.5 });
-  expect(await screen.findByText(/학사 · 소프트웨어공학/)).toBeInTheDocument();
+  expect(await screen.findByText(/Bachelor · 소프트웨어공학/)).toBeInTheDocument();
 });
 
 test('editing an education that no longer exists says so', async () => {
   fakeApi([]);
   open('/educations/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('학력을 찾을 수 없습니다');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Education not found');
 });
 
 test('cancelling the delete dialog keeps the education', async () => {
   const api = fakeApi([university]);
   open('/educations');
-  fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛대학교' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this education?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
@@ -250,42 +254,42 @@ test('cancelling the delete dialog keeps the education', async () => {
 test('confirming the delete removes the education and moves focus to the page title', async () => {
   const api = fakeApi([university]);
   open('/educations');
-  fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛대학교' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this education?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
-    await screen.findByRole('heading', { name: '아직 등록한 학력이 없습니다' }),
+    await screen.findByRole('heading', { name: 'No education added yet' }),
   ).toBeInTheDocument();
   expect(api.calls.find((call) => call.method === 'DELETE')?.url).toBe('/api/educations/1');
   expect(api.store).toHaveLength(0);
   await waitFor(() =>
-    expect(screen.getByRole('heading', { level: 1, name: '학력' })).toHaveFocus(),
+    expect(screen.getByRole('heading', { level: 1, name: 'Education' })).toHaveFocus(),
   );
 });
 
 test('a failed delete keeps the dialog open and the row on screen', async () => {
   const api = fakeApi([university]);
-  api.failDeletes(503, '데이터베이스에 연결할 수 없습니다');
+  api.failDeletes(503, 'Cannot connect to the database');
   open('/educations');
-  fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛대학교' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this education?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
-    await screen.findByText('학력을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
+    await screen.findByText('Could not delete the education. Cannot connect to the database'),
   ).toBeInTheDocument();
-  expect(screen.getByRole('dialog', { name: '학력을 지울까요?' })).toBeInTheDocument();
+  expect(screen.getByRole('dialog', { name: 'Delete this education?' })).toBeInTheDocument();
   expect(screen.getByRole('listitem', { hidden: true, name: '한빛대학교' })).toBeInTheDocument();
 });
 
 test('a row that is already gone (404) counts as deleted', async () => {
   const api = fakeApi([university]);
-  api.failDeletes(404, '학력을 찾을 수 없습니다');
+  api.failDeletes(404, 'Education not found');
   open('/educations');
   await screen.findByRole('listitem', { name: '한빛대학교' });
   // Someone else deleted it after the list loaded.
   api.store.splice(0, 1);
-  fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛대학교' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this education?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('listitem', { name: '한빛대학교' })).not.toBeInTheDocument();
@@ -294,109 +298,111 @@ test('a row that is already gone (404) counts as deleted', async () => {
 test('text that is not a number reaches the server as typed', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  type('학점', '3..5');
-  type('만점', '4.5');
-  api.refuseNext('학점은(는) 숫자여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() =>
-    expect(field('학점')).toHaveAccessibleDescription(/학점은\(는\) 숫자여야 합니다/),
-  );
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  type('GPA', '3..5');
+  type('Maximum GPA', '4.5');
+  api.refuseNext('GPA must be a number');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('GPA')).toHaveAccessibleDescription(/GPA must be a number/));
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
     gpa: '3..5',
     gpaScale: 4.5,
   });
 });
 
-test('choosing 재학 중 also clears a message about the graduation date', async () => {
+test('choosing Enrolled also clears a message about the graduation date', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  type('졸업일', '2015-02-20');
-  api.refuseNext('졸업일은 입학일보다 빠를 수 없습니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('졸업일')).toHaveAttribute('aria-invalid', 'true'));
-  fireEvent.change(field('상태'), { target: { value: 'enrolled' } });
-  expect(field('졸업일')).not.toHaveAttribute('aria-invalid');
-  expect(screen.queryByText('졸업일은 입학일보다 빠를 수 없습니다')).not.toBeInTheDocument();
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  type('Graduation date', '2015-02-20');
+  api.refuseNext('Graduation date cannot be earlier than the enrollment date');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('Graduation date')).toHaveAttribute('aria-invalid', 'true'));
+  fireEvent.change(field('Status'), { target: { value: 'enrolled' } });
+  expect(field('Graduation date')).not.toHaveAttribute('aria-invalid');
+  expect(
+    screen.queryByText('Graduation date cannot be earlier than the enrollment date'),
+  ).not.toBeInTheDocument();
 });
 
 test('server messages map to the field they start with', () => {
   const fieldOf = (message: string) => fieldErrors(message)[0]?.field;
-  expect(fieldOf('학교명을(를) 입력해 주세요')).toBe('school');
-  expect(fieldOf('입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다')).toBe('startDate');
-  expect(fieldOf('졸업일은 입학일보다 빠를 수 없습니다')).toBe('endDate');
-  expect(fieldOf('재학 중이면 졸업일을 비워 주세요')).toBe('endDate');
-  expect(fieldOf('학점과 만점은 함께 입력해 주세요')).toBe('gpa');
-  expect(fieldOf('만점은 0보다 커야 합니다')).toBe('gpaScale');
-  expect(fieldOf('메모은(는) 2000자 이하여야 합니다')).toBe('memo');
-  expect(fieldOf('요청 본문은 JSON 객체여야 합니다')).toBeUndefined();
+  expect(fieldOf('School is required')).toBe('school');
+  expect(fieldOf('Enrollment date must be a date in YYYY-MM-DD format')).toBe('startDate');
+  expect(fieldOf('Graduation date cannot be earlier than the enrollment date')).toBe('endDate');
+  expect(fieldOf('Graduation date must be empty while enrolled')).toBe('endDate');
+  expect(fieldOf('GPA and maximum GPA must be entered together')).toBe('gpa');
+  expect(fieldOf('Maximum GPA must be greater than 0')).toBe('gpaScale');
+  expect(fieldOf('Notes must be at most 2000 characters')).toBe('memo');
+  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
 });
 
 test('several joined messages are split per field, keeping commas inside one message', () => {
   expect(
     fieldErrors(
-      '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다, 학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, and 2 more',
+      'Enrollment date must be a date in YYYY-MM-DD format, Degree must be one of high school, associate, bachelor, master, doctorate, other, and 2 more',
     ),
   ).toEqual([
-    // Screen order: 학위 sits above 입학일.
+    // Screen order: Degree sits above Enrollment date.
     {
       field: 'degree',
-      message: '학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, and 2 more',
+      message:
+        'Degree must be one of high school, associate, bachelor, master, doctorate, other, and 2 more',
     },
-    { field: 'startDate', message: '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다' },
+    { field: 'startDate', message: 'Enrollment date must be a date in YYYY-MM-DD format' },
   ]);
 });
 
 test('focus goes to the topmost field with a message, not the first one the server named', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  // zod reports per-field issues before cross-field ones, so 학점 comes before 졸업일.
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  // zod reports per-field issues before cross-field ones, so GPA comes before Graduation date.
   api.refuseNext(
-    '학점은(는) 소수 둘째 자리까지 입력해 주세요, 졸업일은 입학일보다 빠를 수 없습니다, 학점은 만점보다 클 수 없습니다',
+    'GPA must have at most two decimal places, Graduation date cannot be earlier than the enrollment date, GPA cannot be greater than the maximum GPA',
   );
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('졸업일')).toHaveFocus());
-  expect(field('학점')).toHaveAccessibleDescription(
-    /학점은\(는\) 소수 둘째 자리까지 입력해 주세요, 학점은 만점보다 클 수 없습니다$/,
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('Graduation date')).toHaveFocus());
+  expect(field('GPA')).toHaveAccessibleDescription(
+    /GPA must have at most two decimal places, GPA cannot be greater than the maximum GPA$/,
   );
 });
 
 test('after a message that names no field, focus returns to the submit button', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  api.refuseNext('입력에 사용할 수 없는 문자(NUL)가 있습니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  api.refuseNext('Input contains a character that is not allowed (NUL)');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await screen.findByRole('alert');
-  await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('two messages about one field are kept even with another field between them', () => {
   expect(
     fieldErrors(
-      '학점은(는) 소수 둘째 자리까지 입력해 주세요, 만점은(는) 소수 둘째 자리까지 입력해 주세요, 학점은 만점보다 클 수 없습니다',
+      'GPA must have at most two decimal places, Maximum GPA must have at most two decimal places, GPA cannot be greater than the maximum GPA',
     ),
   ).toEqual([
     {
       field: 'gpa',
-      message: '학점은(는) 소수 둘째 자리까지 입력해 주세요, 학점은 만점보다 클 수 없습니다',
+      message:
+        'GPA must have at most two decimal places, GPA cannot be greater than the maximum GPA',
     },
-    { field: 'gpaScale', message: '만점은(는) 소수 둘째 자리까지 입력해 주세요' },
+    { field: 'gpaScale', message: 'Maximum GPA must have at most two decimal places' },
   ]);
 });
 
 test('each joined server message is shown under its own field', async () => {
   const api = fakeApi([]);
   open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: '학력 추가' });
-  api.refuseNext('학교명을(를) 입력해 주세요, 입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('학교명')).toHaveFocus());
-  expect(field('학교명')).toHaveAccessibleDescription('학교명을(를) 입력해 주세요');
-  expect(field('입학일')).toHaveAccessibleDescription(
-    '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다',
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  api.refuseNext('School is required, Enrollment date must be a date in YYYY-MM-DD format');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('School')).toHaveFocus());
+  expect(field('School')).toHaveAccessibleDescription('School is required');
+  expect(field('Enrollment date')).toHaveAccessibleDescription(
+    'Enrollment date must be a date in YYYY-MM-DD format',
   );
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
@@ -405,7 +411,7 @@ test('form values become the API input and back', () => {
   expect(toEducationInput({ ...emptyEducationForm, gpa: ' 3.5 ', gpaScale: 'abc' })).toMatchObject({
     endDate: null,
     gpa: 3.5,
-    // Not a number: sent as typed so the server explains in Korean.
+    // Not a number: sent as typed so the server explains in English.
     gpaScale: 'abc',
   });
   // Number() would read these, and JSON turns Infinity into null (saved without a GPA).

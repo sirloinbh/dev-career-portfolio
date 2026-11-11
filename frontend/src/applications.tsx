@@ -10,6 +10,7 @@ import { Badge } from './components/ui/badge';
 import { EmptyState } from './components/ui/empty-state';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
+import { entryCount } from './entry-count';
 import { errorText } from './lib/use-notice';
 import { OutLink } from './out-link';
 import { PageHeader } from './page-header';
@@ -45,10 +46,10 @@ function ApplicationItem({ application, today }: { application: Application; tod
         <p className="text-body-sm wrap-anywhere break-keep">{application.position}</p>
       ) : null}
       <p className="text-body-sm text-muted-foreground">{deadlineText(application, today)}</p>
-      <TextBlocks entries={[['메모', application.memo]]} />
+      <TextBlocks entries={[['Notes', application.memo]]} />
       {posting ? (
         <div className="flex flex-wrap gap-x-4">
-          <OutLink href={posting} label="채용 공고" owner={application.companyName} />
+          <OutLink href={posting} label="Job posting" owner={application.companyName} />
         </div>
       ) : null}
     </li>
@@ -64,13 +65,13 @@ export function ApplicationList() {
   return (
     <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
       <PageHeader
-        title="자기소개서"
-        description="지원한 기업을 작성 중, 제출 완료, 종료 순으로 보고, 같은 상태에서는 마감일이 이른 곳부터 봅니다."
+        title="Cover letters"
+        description="See the companies you applied to by status (drafting, submitted, closed), earliest deadline first within each status."
       >
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
-          {loading ? '지원 기업을 불러오는 중' : ''}
-          {loaded.state === 'ok' ? `지원 기업 ${applications.length}건` : ''}
+          {loading ? 'Loading applications' : ''}
+          {loaded.state === 'ok' ? entryCount(applications.length) : ''}
         </p>
       </PageHeader>
       {loading ? <SkeletonList rows={3} /> : null}
@@ -79,7 +80,7 @@ export function ApplicationList() {
         <Notice
           notice={{
             kind: 'error',
-            text: `지원 기업을 불러오지 못했습니다. ${errorText(loaded.error)}`,
+            text: `Could not load applications. ${errorText(loaded.error)}`,
           }}
         />
       ) : null}
@@ -87,13 +88,13 @@ export function ApplicationList() {
         <EmptyState
           className="break-keep"
           icon={<FileText />}
-          title="아직 등록한 지원 기업이 없습니다"
-          description="등록한 지원 기업이 상태와 마감일 순으로 여기에 보입니다."
+          title="No applications added yet"
+          description="Applications you add appear here by status and deadline."
         />
       ) : null}
       {applications.length > 0 ? (
         <ul
-          aria-label="지원 기업 목록"
+          aria-label="Application list"
           className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
         >
           {applications.map((application) => (

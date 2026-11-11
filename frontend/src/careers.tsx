@@ -27,6 +27,7 @@ import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
+import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
@@ -54,36 +55,36 @@ function CareerItem({
         <h2 id={titleId} className="text-body font-semibold wrap-anywhere break-keep">
           {career.company}
         </h2>
-        {isCurrent(career) ? <Badge>재직 중</Badge> : null}
+        {isCurrent(career) ? <Badge>Current</Badge> : null}
       </div>
       <p className="text-body-sm wrap-break-word break-keep">{roleText(career)}</p>
       {/* The period is the main fact of a career, so body size rather than text-meta (13px floor). */}
       <p className="text-body-sm text-muted-foreground">{careerPeriodText(career)}</p>
       <TextBlocks
         entries={[
-          ['담당 업무', career.duties],
-          ['주요 성과', career.achievements],
+          ['Duties', career.duties],
+          ['Achievements', career.achievements],
         ]}
       />
       <div className="flex flex-wrap gap-2 pt-1">
         <Button asChild variant="outline" size="sm">
-          <Link to={paths.edit(career.id)} aria-label={`${career.company} 수정`}>
+          <Link to={paths.edit(career.id)} aria-label={`Edit ${career.company}`}>
             <Pencil aria-hidden />
-            수정
+            Edit
           </Link>
         </Button>
         <ConfirmDialog
-          title="이력을 지울까요?"
+          title="Delete this career?"
           description={
             <span className="break-keep">
-              &apos;{career.company}&apos; 이력을 지웁니다. 지운 뒤에는 되돌릴 수 없습니다.
+              &apos;{career.company}&apos; will be deleted. This cannot be undone.
             </span>
           }
           onConfirm={() => onDelete(career)}
           trigger={
-            <Button variant="outline" size="sm" aria-label={`${career.company} 삭제`}>
+            <Button variant="outline" size="sm" aria-label={`Delete ${career.company}`}>
               <Trash2 aria-hidden />
-              삭제
+              Delete
             </Button>
           }
         />
@@ -102,7 +103,7 @@ export function CareerList({ paths }: { paths: CareerPaths }) {
   const remove = async (career: Career) => {
     await deleteItem({
       remove: () => careerApi.remove(career.id),
-      noun: '이력',
+      noun: 'career',
       name: career.company,
     });
     reload((current) => ({ careers: current.careers.filter((item) => item.id !== career.id) }));
@@ -113,40 +114,40 @@ export function CareerList({ paths }: { paths: CareerPaths }) {
   return (
     <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
       <PageHeader
-        title="이력"
-        description="다닌 회사와 맡은 일을 최근 입사 순으로 봅니다."
+        title="Career"
+        description="See your employers and roles, newest start first."
         headingRef={heading}
       >
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
-          {firstLoad ? '이력을 불러오는 중' : ''}
-          {data ? `이력 ${careers.length}건` : ''}
+          {firstLoad ? 'Loading career' : ''}
+          {data ? entryCount(careers.length) : ''}
         </p>
       </PageHeader>
       <Button asChild className="w-fit">
         <Link to={paths.create}>
           <Plus aria-hidden />
-          이력 추가
+          Add career
         </Link>
       </Button>
       {firstLoad ? <SkeletonList rows={3} /> : null}
       {loaded.state === 'error' && data === undefined ? (
         // Say what failed first: a proxy error without a server message only carries the generic text.
         <Notice
-          notice={{ kind: 'error', text: `이력을 불러오지 못했습니다. ${errorText(loaded.error)}` }}
+          notice={{ kind: 'error', text: `Could not load career. ${errorText(loaded.error)}` }}
         />
       ) : null}
       {data && careers.length === 0 ? (
         <EmptyState
           className="break-keep"
           icon={<Briefcase />}
-          title="아직 등록한 이력이 없습니다"
-          description="이력 추가를 누르면 최근 입사 순으로 여기에 보입니다."
+          title="No career added yet"
+          description="Choose Add career and it will appear here, newest start first."
         />
       ) : null}
       {careers.length > 0 ? (
         <ul
-          aria-label="이력 목록"
+          aria-label="Career list"
           className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
         >
           {careers.map((career) => (
@@ -212,7 +213,7 @@ function CareerFields({
   );
 
   return (
-    // The server checks every rule and answers in Korean, so the browser's own checks are off.
+    // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
       onSubmit={submit(() =>
@@ -221,13 +222,13 @@ function CareerFields({
       className="flex max-w-2xl flex-col gap-5"
       aria-busy={pending || undefined}
     >
-      {textField('company', '회사명', '예: 한빛소프트')}
+      {textField('company', 'Company', 'e.g. Hanbit Soft')}
       <div className="grid gap-5 sm:grid-cols-2">
-        {textField('department', '부서', '예: 플랫폼팀')}
-        {textField('position', '직책', '예: 선임 개발자')}
+        {textField('department', 'Department', 'e.g. Platform team')}
+        {textField('position', 'Job title', 'e.g. Senior developer')}
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor={fieldId('employmentType')}>고용 형태</Label>
+        <Label htmlFor={fieldId('employmentType')}>Employment type</Label>
         <select
           id={fieldId('employmentType')}
           className={cn(controlClass, 'h-9 sm:max-w-xs')}
@@ -245,7 +246,7 @@ function CareerFields({
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('startDate')}>입사일</Label>
+          <Label htmlFor={fieldId('startDate')}>Start date</Label>
           <Input
             id={fieldId('startDate')}
             type="date"
@@ -256,7 +257,7 @@ function CareerFields({
           {errorFor('startDate')}
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('endDate')}>퇴사일</Label>
+          <Label htmlFor={fieldId('endDate')}>End date</Label>
           <Input
             id={fieldId('endDate')}
             ref={endDateInput}
@@ -270,13 +271,13 @@ function CareerFields({
             id={`${fieldId('endDate')}-hint`}
             className="text-caption break-keep text-muted-foreground"
           >
-            지금 다니는 회사면 비워 둡니다. 목록에 &quot;재직 중&quot;으로 보입니다.
+            Leave it empty if you still work here. The list shows &quot;Current&quot;.
           </p>
           {errorFor('endDate')}
         </div>
       </div>
-      {longField('duties', '담당 업무', '맡은 서비스, 역할, 사용한 기술')}
-      {longField('achievements', '주요 성과', '숫자로 말할 수 있는 결과')}
+      {longField('duties', 'Duties', 'Services, role, and technologies used')}
+      {longField('achievements', 'Achievements', 'Results you can state in numbers')}
       {actions({ submitLabel, cancelTo })}
     </form>
   );
@@ -286,19 +287,19 @@ export function NewCareer({ paths }: { paths: CareerPaths }) {
   const navigate = useNavigate();
   const create = async (form: CareerForm) => {
     const { career } = await careerApi.create(toCareerInput(form));
-    toast.success(`'${career.company}' 이력을 추가했습니다`);
+    toast.success(`Added '${career.company}'`);
     void navigate(paths.list);
   };
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="이력 목록" />
+      <BackLink to={paths.list} label="Career list" />
       <PageHeader
-        title="이력 추가"
-        description="회사명, 고용 형태, 입사일만 있으면 됩니다. 나머지는 비워 둘 수 있습니다."
+        title="Add career"
+        description="Company, employment type, and start date are all you need. The rest can stay empty."
       />
       <CareerFields
         initial={emptyCareerForm}
-        submitLabel="추가"
+        submitLabel="Add"
         cancelTo={paths.list}
         onSubmit={create}
       />
@@ -315,7 +316,7 @@ export function EditCareer({ paths }: { paths: CareerPaths }) {
     loaded.state === 'ok' ? loaded.data.careers.find((item) => String(item.id) === id) : undefined;
   const update = async (form: CareerForm) => {
     await careerApi.update(Number(id), toCareerInput(form));
-    toast.success('저장했습니다');
+    toast.success('Saved');
     void navigate(paths.list);
   };
   return (
@@ -324,25 +325,23 @@ export function EditCareer({ paths }: { paths: CareerPaths }) {
       aria-busy={loaded.state === 'loading'}
       className="flex flex-col gap-6"
     >
-      <BackLink to={paths.list} label="이력 목록" />
-      <PageHeader title="이력 수정" description="바꿀 내용을 고친 뒤 저장합니다." />
+      <BackLink to={paths.list} label="Career list" />
+      <PageHeader title="Edit career" description="Change what you need, then save." />
       {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
       {loaded.state === 'error' ? (
         <Notice
-          notice={{ kind: 'error', text: `이력을 불러오지 못했습니다. ${errorText(loaded.error)}` }}
+          notice={{ kind: 'error', text: `Could not load career. ${errorText(loaded.error)}` }}
         />
       ) : null}
       {loaded.state === 'ok' && !career ? (
-        <Notice
-          notice={{ kind: 'error', text: '이력을 찾을 수 없습니다. 이미 지웠을 수 있습니다.' }}
-        />
+        <Notice notice={{ kind: 'error', text: 'Career not found. It may already be deleted.' }} />
       ) : null}
       {career ? (
         <CareerFields
           // A new id starts a fresh form instead of keeping the previous row's typing.
           key={career.id}
           initial={toCareerForm(career)}
-          submitLabel="저장"
+          submitLabel="Save"
           cancelTo={paths.list}
           onSubmit={update}
         />

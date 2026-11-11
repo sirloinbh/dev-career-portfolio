@@ -25,6 +25,7 @@ import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
+import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
@@ -56,30 +57,30 @@ function CertificationItem({
           {certification.name}
         </h2>
         {/* A word, not a colour: an expired certification stays in the list as part of the record. */}
-        {isExpired(certification, today) ? <Badge variant="outline">만료됨</Badge> : null}
+        {isExpired(certification, today) ? <Badge variant="outline">Expired</Badge> : null}
       </div>
       <p className="text-body-sm wrap-anywhere break-keep">{issuerText(certification)}</p>
       <p className="text-body-sm text-muted-foreground">{certificationPeriodText(certification)}</p>
-      <TextBlocks entries={[['메모', certification.memo]]} />
+      <TextBlocks entries={[['Notes', certification.memo]]} />
       <div className="flex flex-wrap gap-2 pt-1">
         <Button asChild variant="outline" size="sm">
-          <Link to={paths.edit(certification.id)} aria-label={`${certification.name} 수정`}>
+          <Link to={paths.edit(certification.id)} aria-label={`Edit ${certification.name}`}>
             <Pencil aria-hidden />
-            수정
+            Edit
           </Link>
         </Button>
         <ConfirmDialog
-          title="자격증을 지울까요?"
+          title="Delete this certification?"
           description={
             <span className="break-keep">
-              &apos;{certification.name}&apos; 자격증을 지웁니다. 지운 뒤에는 되돌릴 수 없습니다.
+              &apos;{certification.name}&apos; will be deleted. This cannot be undone.
             </span>
           }
           onConfirm={() => onDelete(certification)}
           trigger={
-            <Button variant="outline" size="sm" aria-label={`${certification.name} 삭제`}>
+            <Button variant="outline" size="sm" aria-label={`Delete ${certification.name}`}>
               <Trash2 aria-hidden />
-              삭제
+              Delete
             </Button>
           }
         />
@@ -100,7 +101,7 @@ export function CertificationList({ paths }: { paths: CertificationPaths }) {
   const remove = async (certification: Certification) => {
     await deleteItem({
       remove: () => certificationApi.remove(certification.id),
-      noun: '자격증',
+      noun: 'certification',
       name: certification.name,
     });
     reload((current) => ({
@@ -113,20 +114,20 @@ export function CertificationList({ paths }: { paths: CertificationPaths }) {
   return (
     <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
       <PageHeader
-        title="자격증"
-        description="취득한 자격증과 시험 결과를 최근 취득 순으로 봅니다."
+        title="Certifications"
+        description="See your certifications and exam results, newest first."
         headingRef={heading}
       >
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
-          {firstLoad ? '자격증을 불러오는 중' : ''}
-          {data ? `자격증 ${certifications.length}건` : ''}
+          {firstLoad ? 'Loading certifications' : ''}
+          {data ? entryCount(certifications.length) : ''}
         </p>
       </PageHeader>
       <Button asChild className="w-fit">
         <Link to={paths.create}>
           <Plus aria-hidden />
-          자격증 추가
+          Add certification
         </Link>
       </Button>
       {firstLoad ? <SkeletonList rows={3} /> : null}
@@ -135,7 +136,7 @@ export function CertificationList({ paths }: { paths: CertificationPaths }) {
         <Notice
           notice={{
             kind: 'error',
-            text: `자격증을 불러오지 못했습니다. ${errorText(loaded.error)}`,
+            text: `Could not load certifications. ${errorText(loaded.error)}`,
           }}
         />
       ) : null}
@@ -143,13 +144,13 @@ export function CertificationList({ paths }: { paths: CertificationPaths }) {
         <EmptyState
           className="break-keep"
           icon={<Award />}
-          title="아직 등록한 자격증이 없습니다"
-          description="자격증 추가를 누르면 최근 취득 순으로 여기에 보입니다."
+          title="No certifications added yet"
+          description="Choose Add certification and it will appear here, newest first."
         />
       ) : null}
       {certifications.length > 0 ? (
         <ul
-          aria-label="자격증 목록"
+          aria-label="Certification list"
           className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
         >
           {certifications.map((certification) => (
@@ -208,7 +209,7 @@ function CertificationFields({
   );
 
   return (
-    // The server checks every rule and answers in Korean, so the browser's own checks are off.
+    // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
       onSubmit={submit(() =>
@@ -217,11 +218,11 @@ function CertificationFields({
       className="flex max-w-2xl flex-col gap-5"
       aria-busy={pending || undefined}
     >
-      {textField('name', '자격증명', '예: 정보처리기사', 100)}
-      {textField('issuer', '발급 기관', '예: 한국산업인력공단', 100)}
+      {textField('name', 'Certification name', 'e.g. Engineer Information Processing', 100)}
+      {textField('issuer', 'Issuer', 'e.g. Human Resources Development Service', 100)}
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('acquiredDate')}>취득일</Label>
+          <Label htmlFor={fieldId('acquiredDate')}>Date earned</Label>
           <Input
             id={fieldId('acquiredDate')}
             type="date"
@@ -232,7 +233,7 @@ function CertificationFields({
           {errorFor('acquiredDate')}
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('expiryDate')}>만료일</Label>
+          <Label htmlFor={fieldId('expiryDate')}>Expiry date</Label>
           <Input
             id={fieldId('expiryDate')}
             ref={expiryDateInput}
@@ -246,14 +247,17 @@ function CertificationFields({
             id={`${fieldId('expiryDate')}-hint`}
             className="text-caption break-keep text-muted-foreground"
           >
-            만료일이 없는 자격증이면 비워 둡니다. 목록에 &quot;만료 없음&quot;으로 보입니다.
+            Leave it empty if the certification does not expire. The list shows &quot;No
+            expiry&quot;.
           </p>
           {errorFor('expiryDate')}
         </div>
       </div>
-      <div className="sm:max-w-xs">{textField('score', '점수·등급', '예: 905점, 1급, IH', 50)}</div>
+      <div className="sm:max-w-xs">
+        {textField('score', 'Score or grade', 'e.g. 905, Grade 1, IH', 50)}
+      </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor={fieldId('memo')}>메모</Label>
+        <Label htmlFor={fieldId('memo')}>Notes</Label>
         <textarea
           id={fieldId('memo')}
           rows={4}
@@ -261,7 +265,7 @@ function CertificationFields({
           className={cn(controlClass, 'min-h-24 py-2')}
           value={form.memo}
           onChange={(e) => set('memo')(e.target.value)}
-          placeholder="갱신 계획, 응시 과목 같은 참고 사항"
+          placeholder="Renewal plans, exam subjects, and other notes"
           {...describe('memo')}
         />
         {errorFor('memo')}
@@ -275,19 +279,19 @@ export function NewCertification({ paths }: { paths: CertificationPaths }) {
   const navigate = useNavigate();
   const create = async (form: CertificationForm) => {
     const { certification } = await certificationApi.create(toCertificationInput(form));
-    toast.success(`'${certification.name}' 자격증을 추가했습니다`);
+    toast.success(`Added '${certification.name}'`);
     void navigate(paths.list);
   };
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="자격증 목록" />
+      <BackLink to={paths.list} label="Certification list" />
       <PageHeader
-        title="자격증 추가"
-        description="자격증명, 발급 기관, 취득일만 있으면 됩니다. 나머지는 비워 둘 수 있습니다."
+        title="Add certification"
+        description="Certification name, issuer, and date earned are all you need. The rest can stay empty."
       />
       <CertificationFields
         initial={emptyCertificationForm}
-        submitLabel="추가"
+        submitLabel="Add"
         cancelTo={paths.list}
         onSubmit={create}
       />
@@ -306,7 +310,7 @@ export function EditCertification({ paths }: { paths: CertificationPaths }) {
       : undefined;
   const update = async (form: CertificationForm) => {
     await certificationApi.update(Number(id), toCertificationInput(form));
-    toast.success('저장했습니다');
+    toast.success('Saved');
     void navigate(paths.list);
   };
   return (
@@ -315,20 +319,20 @@ export function EditCertification({ paths }: { paths: CertificationPaths }) {
       aria-busy={loaded.state === 'loading'}
       className="flex flex-col gap-6"
     >
-      <BackLink to={paths.list} label="자격증 목록" />
-      <PageHeader title="자격증 수정" description="바꿀 내용을 고친 뒤 저장합니다." />
+      <BackLink to={paths.list} label="Certification list" />
+      <PageHeader title="Edit certification" description="Change what you need, then save." />
       {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
       {loaded.state === 'error' ? (
         <Notice
           notice={{
             kind: 'error',
-            text: `자격증을 불러오지 못했습니다. ${errorText(loaded.error)}`,
+            text: `Could not load certifications. ${errorText(loaded.error)}`,
           }}
         />
       ) : null}
       {loaded.state === 'ok' && !certification ? (
         <Notice
-          notice={{ kind: 'error', text: '자격증을 찾을 수 없습니다. 이미 지웠을 수 있습니다.' }}
+          notice={{ kind: 'error', text: 'Certification not found. It may already be deleted.' }}
         />
       ) : null}
       {certification ? (
@@ -336,7 +340,7 @@ export function EditCertification({ paths }: { paths: CertificationPaths }) {
           // A new id starts a fresh form instead of keeping the previous row's typing.
           key={certification.id}
           initial={toCertificationForm(certification)}
-          submitLabel="저장"
+          submitLabel="Save"
           cancelTo={paths.list}
           onSubmit={update}
         />
