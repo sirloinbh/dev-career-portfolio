@@ -9,8 +9,8 @@ import { objectBodyError, optionalText, requiredText } from './shared.js';
 const maxQuestions = 10;
 const maxAnswer = 5000;
 
-const charLimitError = `글자 수 제한은 1 이상 ${String(maxAnswer)} 이하의 정수여야 합니다`;
-const questionIdError = '문항 ID가 올바르지 않습니다';
+const charLimitError = `Character limit must be a whole number from 1 to ${String(maxAnswer)}`;
+const questionIdError = 'Invalid question ID';
 
 const questionInput = z.object(
   {
@@ -21,9 +21,9 @@ const questionInput = z.object(
       .min(1, questionIdError)
       .max(999_999_999_999_999, questionIdError)
       .optional(),
-    question: requiredText('문항', 500),
+    question: requiredText('Question', 500),
     // An answer longer than charLimit is still stored: the screen warns instead (issue #37).
-    answer: optionalText('답변', maxAnswer),
+    answer: optionalText('Answer', maxAnswer),
     charLimit: z
       .int({ error: charLimitError })
       .min(1, charLimitError)
@@ -31,19 +31,19 @@ const questionInput = z.object(
       .nullable()
       .default(null),
   },
-  { error: '문항은 객체여야 합니다' },
+  { error: 'Question must be an object' },
 );
 
 const questionsInput = z.object(
   {
     // The list order is the display order, so there is no separate order field.
     questions: z
-      .array(questionInput, { error: '문항 목록(questions)을 배열로 보내 주세요' })
-      .max(maxQuestions, `문항은 ${String(maxQuestions)}개까지 입력할 수 있습니다`)
+      .array(questionInput, { error: 'Send the question list (questions) as an array' })
+      .max(maxQuestions, `Questions can have at most ${String(maxQuestions)} items`)
       .refine((questions) => {
         const ids = questions.flatMap((item) => (item.id === undefined ? [] : [item.id]));
         return new Set(ids).size === ids.length;
-      }, '같은 문항이 두 번 들어 있습니다'),
+      }, 'The same question appears twice'),
   },
   objectBodyError,
 );
@@ -58,7 +58,7 @@ function parseQuestions(body: unknown): QuestionsInput {
     result.error.issues.map((issue) => {
       const [field, index] = issue.path;
       return field === 'questions' && typeof index === 'number'
-        ? { ...issue, message: `${String(index + 1)}번째 문항: ${issue.message}` }
+        ? { ...issue, message: `Question ${String(index + 1)}: ${issue.message}` }
         : issue;
     }),
   );
@@ -71,7 +71,7 @@ const columns = `id::text AS id, question, answer, char_limit AS "charLimit"`;
 
 const toQuestion = (row: QuestionRow) => ({ ...row, id: Number(row.id) });
 
-const applicationNotFound = () => new HttpError(404, '지원 기업을 찾을 수 없습니다');
+const applicationNotFound = () => new HttpError(404, 'Application not found');
 
 async function listQuestions(db: Pool | PoolClient, applicationId: number) {
   const { rows } = await db.query<QuestionRow>(
@@ -114,7 +114,7 @@ async function inTransaction<T>(pool: Pool, run: (client: PoolClient) => Promise
 
 export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
   app.get('/api/applications/:id/questions', async (req, res) => {
-    const applicationId = parseId(req.params.id, '지원 기업');
+    const applicationId = parseId(req.params.id, 'application');
     const found = await pool.query('SELECT 1 FROM applications WHERE id = $1', [applicationId]);
     if (found.rowCount === 0) throw applicationNotFound();
     res.json({ questions: await listQuestions(pool, applicationId) });
@@ -123,7 +123,7 @@ export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
   // Saves the whole list at once: questions missing from it are deleted, ones with an id are
   // updated and ones without are added. Any failure leaves every question as it was.
   app.put('/api/applications/:id/questions', async (req, res) => {
-    const applicationId = parseId(req.params.id, '지원 기업');
+    const applicationId = parseId(req.params.id, 'application');
     const { questions } = parseQuestions(req.body);
     const saved = await inTransaction(pool, async (client) => {
       await lockApplication(client, applicationId);
@@ -138,7 +138,10 @@ export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
       const keptIds = questions.flatMap((item) => (item.id === undefined ? [] : [item.id]));
       // Another application's question, or one deleted in another tab since the list was loaded.
       if (keptIds.some((id) => !known.has(id))) {
-        throw new HttpError(409, '이 지원 기업에 없는 문항이 있습니다. 목록을 다시 불러와 주세요');
+        throw new HttpError(
+          409,
+          'Some questions do not belong to this application. Please reload the list',
+        );
       }
 
       await client.query(
@@ -172,8 +175,8 @@ export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
   });
 
   app.delete('/api/applications/:id/questions/:questionId', async (req, res) => {
-    const applicationId = parseId(req.params.id, '지원 기업');
-    const questionId = parseId(req.params.questionId, '자기소개서 문항');
+    const applicationId = parseId(req.params.id, 'application');
+    const questionId = parseId(req.params.questionId, 'cover letter question');
     await inTransaction(pool, async (client) => {
       // Waits for a list save of the same application, so it never lands in the middle of one.
       await lockApplication(client, applicationId);
@@ -182,7 +185,7 @@ export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
         'DELETE FROM cover_letter_questions WHERE id = $1 AND application_id = $2',
         [questionId, applicationId],
       );
-      if (rowCount === 0) throw new HttpError(404, '자기소개서 문항을 찾을 수 없습니다');
+      if (rowCount === 0) throw new HttpError(404, 'Cover letter question not found');
     });
     res.status(204).end();
   });

@@ -15,21 +15,20 @@ const categories = [
   'other',
 ] as const;
 
-const proficiencyError = '숙련도는 1~5 사이의 정수여야 합니다';
+const proficiencyError = 'Proficiency must be a whole number from 1 to 5';
 
 const skillInput = z.object(
   {
-    name: requiredText('스킬명', 50),
+    name: requiredText('Skill name', 50),
     category: z.enum(categories, {
-      error:
-        '분류는 언어, 프레임워크·라이브러리, 데이터베이스, 인프라·클라우드, 도구, 기타 중 하나여야 합니다',
+      error: 'Category must be one of language, framework, database, infrastructure, tool, other',
     }),
     // A JSON number only: "3" is refused rather than converted, like every other field. One check,
     // not .int().min().max(): past the safe integer range those each fail and repeat the message.
     proficiency: z
       .number({ error: proficiencyError })
       .refine((value) => Number.isInteger(value) && value >= 1 && value <= 5, proficiencyError),
-    memo: optionalText('메모', 2000),
+    memo: optionalText('Notes', 2000),
   },
   objectBodyError,
 );
@@ -41,7 +40,7 @@ const columns = 'id::text AS id, name, category, proficiency, memo';
 
 const toSkill = (row: SkillRow) => ({ ...row, id: Number(row.id) });
 
-const notFoundError = () => new HttpError(404, '스킬을 찾을 수 없습니다');
+const notFoundError = () => new HttpError(404, 'Skill not found');
 
 /** The unique index on lower(name) refused the row: the name is taken, whatever its case. */
 async function refuseDuplicateName<T>(query: Promise<T>) {
@@ -50,7 +49,7 @@ async function refuseDuplicateName<T>(query: Promise<T>) {
   } catch (error) {
     const { code, constraint } = error as { code?: unknown; constraint?: unknown };
     if (code === '23505' && constraint === 'skills_name_unique') {
-      throw new HttpError(409, '이미 등록된 스킬입니다');
+      throw new HttpError(409, 'This skill is already registered');
     }
     throw error;
   }
@@ -59,7 +58,7 @@ async function refuseDuplicateName<T>(query: Promise<T>) {
 export function registerSkillRoutes(app: Express, pool: Pool) {
   app.get('/api/skills', async (_req, res) => {
     // Category in the fixed order above, then the strongest first, then the name. COLLATE "C" keeps
-    // the name order the same on every database locale: Latin letters first, then 가나다 order.
+    // the name order the same on every database locale: Latin letters first, then Korean alphabetical order.
     const { rows } = await pool.query<SkillRow>(
       `SELECT ${columns} FROM skills
        ORDER BY array_position($1::text[], category), proficiency DESC, lower(name) COLLATE "C"`,
@@ -82,7 +81,7 @@ export function registerSkillRoutes(app: Express, pool: Pool) {
   });
 
   app.put('/api/skills/:id', async (req, res) => {
-    const id = parseId(req.params.id, '스킬');
+    const id = parseId(req.params.id, 'skill');
     const input = skillInput.parse(req.body);
     const { rows } = await refuseDuplicateName(
       pool.query<SkillRow>(
@@ -98,7 +97,7 @@ export function registerSkillRoutes(app: Express, pool: Pool) {
   });
 
   app.delete('/api/skills/:id', async (req, res) => {
-    const id = parseId(req.params.id, '스킬');
+    const id = parseId(req.params.id, 'skill');
     const { rowCount } = await pool.query('DELETE FROM skills WHERE id = $1', [id]);
     if (rowCount === 0) throw notFoundError();
     res.status(204).end();

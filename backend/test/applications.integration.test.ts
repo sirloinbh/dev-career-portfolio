@@ -176,7 +176,7 @@ test(
       ]) {
         const missing = await call(`/api/applications/${String(firstTwin.id)}`, request);
         assert.equal(missing.status, 404);
-        assert.equal(missing.data.error, '지원 기업을 찾을 수 없습니다');
+        assert.equal(missing.data.error, 'Application not found');
       }
     });
   },

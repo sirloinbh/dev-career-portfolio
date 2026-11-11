@@ -96,7 +96,7 @@ test(
       for (const request of [{ method: 'PUT', body: university }, { method: 'DELETE' }]) {
         const missing = await call(`/api/educations/${String(education.id)}`, request);
         assert.equal(missing.status, 404);
-        assert.equal(missing.data.error, '학력을 찾을 수 없습니다');
+        assert.equal(missing.data.error, 'Education not found');
       }
     });
   },

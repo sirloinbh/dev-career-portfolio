@@ -105,7 +105,7 @@ test('careers are stored, listed newest first, updated and deleted', { skip: !ur
     for (const request of [{ method: 'PUT', body: startup }, { method: 'DELETE' }]) {
       const missing = await call(`/api/careers/${String(career.id)}`, request);
       assert.equal(missing.status, 404);
-      assert.equal(missing.data.error, '이력을 찾을 수 없습니다');
+      assert.equal(missing.data.error, 'Career not found');
     }
   });
 });

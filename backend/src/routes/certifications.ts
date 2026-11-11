@@ -8,14 +8,14 @@ import { calendarDate, objectBodyError, optionalText, requiredText } from './sha
 const certificationInput = z
   .object(
     {
-      name: requiredText('자격증명', 100),
-      issuer: requiredText('발급 기관', 100),
-      acquiredDate: calendarDate('취득일'),
+      name: requiredText('Certification name', 100),
+      issuer: requiredText('Issuer', 100),
+      acquiredDate: calendarDate('Date earned'),
       // No expiry stays NULL. An expiry already past is still stored: the screen marks it (#46).
-      expiryDate: calendarDate('만료일').nullable().default(null),
-      // Text, not a number: results come as "905점", "1급" or "IH".
-      score: optionalText('점수·등급', 50),
-      memo: optionalText('메모', 2000),
+      expiryDate: calendarDate('Expiry date').nullable().default(null),
+      // Text, not a number: results come as "905", "Grade 1" or "IH".
+      score: optionalText('Score or grade', 50),
+      memo: optionalText('Notes', 2000),
     },
     objectBodyError,
   )
@@ -25,7 +25,7 @@ const certificationInput = z
       ctx.addIssue({
         code: 'custom',
         path: ['expiryDate'],
-        message: '만료일은 취득일보다 빠를 수 없습니다',
+        message: 'Expiry date cannot be earlier than the date earned',
       });
     }
   });
@@ -38,7 +38,7 @@ const columns = `id::text AS id, name, issuer, acquired_date AS "acquiredDate",
 
 const toCertification = (row: CertificationRow) => ({ ...row, id: Number(row.id) });
 
-const notFoundError = () => new HttpError(404, '자격증을 찾을 수 없습니다');
+const notFoundError = () => new HttpError(404, 'Certification not found');
 
 export function registerCertificationRoutes(app: Express, pool: Pool) {
   app.get('/api/certifications', async (_req, res) => {
@@ -63,7 +63,7 @@ export function registerCertificationRoutes(app: Express, pool: Pool) {
   });
 
   app.put('/api/certifications/:id', async (req, res) => {
-    const id = parseId(req.params.id, '자격증');
+    const id = parseId(req.params.id, 'certification');
     const input = certificationInput.parse(req.body);
     const { rows } = await pool.query<CertificationRow>(
       `UPDATE certifications
@@ -78,7 +78,7 @@ export function registerCertificationRoutes(app: Express, pool: Pool) {
   });
 
   app.delete('/api/certifications/:id', async (req, res) => {
-    const id = parseId(req.params.id, '자격증');
+    const id = parseId(req.params.id, 'certification');
     const { rowCount } = await pool.query('DELETE FROM certifications WHERE id = $1', [id]);
     if (rowCount === 0) throw notFoundError();
     res.status(204).end();

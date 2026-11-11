@@ -127,7 +127,7 @@ test(
         },
       });
       assert.equal(refused.status, 400);
-      assert.equal(refused.data.error, '만료일은 취득일보다 빠를 수 없습니다');
+      assert.equal(refused.data.error, 'Expiry date cannot be earlier than the date earned');
 
       // An update the database itself refuses (NUL is valid JSON but not PostgreSQL text) is a
       // 400 and leaves the row as it was.
@@ -164,7 +164,7 @@ test(
       ]) {
         const missing = await call(`/api/certifications/${String(toeic.id)}`, request);
         assert.equal(missing.status, 404);
-        assert.equal(missing.data.error, '자격증을 찾을 수 없습니다');
+        assert.equal(missing.data.error, 'Certification not found');
       }
     });
   },

@@ -87,7 +87,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
         startDate: '2024-01-09',
         endDate: null,
         role: '팀장',
-        summary: '요약 2',
+        summary: 'Summary 2',
         contributions: '응답 시간 40% 단축',
         technologies: ['Go'],
         repositoryUrl: 'HTTPS://github.com/example/shop2',
@@ -103,7 +103,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
       startDate: '2024-01-09',
       endDate: null,
       role: '팀장',
-      summary: '요약 2',
+      summary: 'Summary 2',
       contributions: '응답 시간 40% 단축',
       technologies: ['Go'],
       repositoryUrl: 'HTTPS://github.com/example/shop2',
@@ -118,7 +118,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
     for (const request of [{ method: 'PUT', body: shop }, { method: 'DELETE' }]) {
       const missing = await call(`/api/projects/${String(project.id)}`, request);
       assert.equal(missing.status, 404);
-      assert.equal(missing.data.error, '프로젝트를 찾을 수 없습니다');
+      assert.equal(missing.data.error, 'Project not found');
     }
   });
 });
