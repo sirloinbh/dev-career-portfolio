@@ -202,9 +202,9 @@ test('a repeated message about technologies is shown once, topmost field focused
 test('a long list of the same message keeps the count of the ones not shown', () => {
   const message = '사용 기술 항목은 50자 이하여야 합니다';
   // Ten issues, then the count of the rest; as backend/src/standard/http.ts joins them.
-  expect(projectFieldErrors([...Array<string>(10).fill(message), '외 1개'].join(', '))).toEqual([
-    { field: 'technologies', message: `${message}, 외 1개` },
-  ]);
+  expect(projectFieldErrors([...Array<string>(10).fill(message), 'and 1 more'].join(', '))).toEqual(
+    [{ field: 'technologies', message: `${message}, and 1 more` }],
+  );
 });
 
 test('a half-typed end date is sent as text the server refuses, not as running', async () => {
@@ -310,7 +310,7 @@ test('cancelling the delete dialog keeps the project', async () => {
   open('/projects');
   fireEvent.click(await screen.findByRole('button', { name: '사내 위키 검색 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '프로젝트를 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
   expect(api.store).toHaveLength(1);
@@ -322,7 +322,7 @@ test('confirming the delete removes the project and moves focus to the page titl
   open('/projects');
   fireEvent.click(await screen.findByRole('button', { name: '사내 위키 검색 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '프로젝트를 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByRole('heading', { name: '아직 등록한 프로젝트가 없습니다' }),
   ).toBeInTheDocument();
@@ -341,7 +341,7 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   open('/projects');
   fireEvent.click(await screen.findByRole('button', { name: '사내 위키 검색 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '프로젝트를 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByText('프로젝트를 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
   ).toBeInTheDocument();
@@ -365,9 +365,9 @@ test('server messages map to the field they start with', () => {
   expect(fieldOf('저장소 링크에는 공백을 넣을 수 없습니다')).toBe('repositoryUrl');
   expect(fieldOf('서비스 링크은(는) 500자 이하여야 합니다')).toBe('serviceUrl');
   expect(fieldOf('요청 본문은 JSON 객체여야 합니다')).toBeUndefined();
-  // More than ten issues end with "외 N개", which stays with the message before it.
-  expect(projectFieldErrors('사용 기술 항목은 50자 이하여야 합니다, 외 3개')).toEqual([
-    { field: 'technologies', message: '사용 기술 항목은 50자 이하여야 합니다, 외 3개' },
+  // More than ten issues end with "and N more", which stays with the message before it.
+  expect(projectFieldErrors('사용 기술 항목은 50자 이하여야 합니다, and 3 more')).toEqual([
+    { field: 'technologies', message: '사용 기술 항목은 50자 이하여야 합니다, and 3 more' },
   ]);
 });
 

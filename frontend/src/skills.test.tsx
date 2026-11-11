@@ -49,7 +49,7 @@ test('the main menu leads to the skill list', async () => {
   serve({ status: 200, body: { skills: [] } });
   window.history.replaceState(null, '', '/');
   render(<App />);
-  const menu = screen.getByRole('navigation', { name: '주 메뉴' });
+  const menu = screen.getByRole('navigation', { name: 'Main menu' });
   fireEvent.click(within(menu).getByRole('link', { name: '스킬' }));
   expect(window.location.pathname).toBe('/skills');
   expect(await screen.findByRole('heading', { level: 1, name: '스킬' })).toBeInTheDocument();
@@ -135,7 +135,7 @@ test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openSkills();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '스킬을 불러오지 못했습니다. 요청을 처리하지 못했습니다',
+    '스킬을 불러오지 못했습니다. Could not process the request',
   );
 });
 
@@ -143,7 +143,7 @@ test('an unreachable server is shown in Korean', async () => {
   serve('offline');
   openSkills();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '스킬을 불러오지 못했습니다. 서버에 연결할 수 없습니다',
+    '스킬을 불러오지 못했습니다. Cannot reach the server',
   );
 });
 

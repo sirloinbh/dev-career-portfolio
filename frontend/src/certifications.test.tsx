@@ -75,7 +75,7 @@ test('the main menu leads to the certification list', async () => {
   serve({ status: 200, body: { certifications: [] } });
   window.history.replaceState(null, '', '/');
   render(<App />);
-  const menu = screen.getByRole('navigation', { name: '주 메뉴' });
+  const menu = screen.getByRole('navigation', { name: 'Main menu' });
   fireEvent.click(within(menu).getByRole('link', { name: '자격증' }));
   expect(window.location.pathname).toBe('/certifications');
   expect(await screen.findByRole('heading', { level: 1, name: '자격증' })).toBeInTheDocument();
@@ -137,10 +137,10 @@ test('an empty list explains what will appear', async () => {
 });
 
 test('a failed request shows a Korean error with the reason', async () => {
-  serve({ status: 500, body: { error: '서버 오류가 발생했습니다' } });
+  serve({ status: 500, body: { error: 'Server error' } });
   openCertifications();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '자격증을 불러오지 못했습니다. 서버 오류가 발생했습니다',
+    '자격증을 불러오지 못했습니다. Server error',
   );
   expect(screen.queryByText('아직 등록한 자격증이 없습니다')).not.toBeInTheDocument();
 });

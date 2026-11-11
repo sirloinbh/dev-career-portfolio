@@ -104,7 +104,7 @@ test(
         { question: '새 문항', answer: '바뀌면\u0000안 됨' },
       ]);
       assert.equal(nul.status, 400);
-      assert.equal(nul.data.error, '입력에 사용할 수 없는 문자(NUL)가 있습니다');
+      assert.equal(nul.data.error, 'Input contains a character that is not allowed (NUL)');
       assert.deepEqual(await list(first), current);
 
       // Another application's question cannot be pulled into this list.

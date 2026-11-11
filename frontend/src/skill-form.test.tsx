@@ -172,9 +172,9 @@ test('a 409 that names no field still goes below the form', async () => {
   open('/skills/new');
   await screen.findByRole('heading', { level: 1, name: '스킬 추가' });
   // The generic unique-violation answer (backend/src/standard/http.ts).
-  api.refuseNext(409, '이미 등록된 항목입니다');
+  api.refuseNext(409, 'This item already exists');
   fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('이미 등록된 항목입니다');
+  expect(await screen.findByRole('alert')).toHaveTextContent('This item already exists');
   await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
   expect(field('스킬명')).not.toHaveAttribute('aria-invalid');
 });
@@ -227,7 +227,7 @@ test('cancelling the delete dialog keeps the skill', async () => {
   open('/skills');
   fireEvent.click(await screen.findByRole('button', { name: 'Go 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '스킬을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
   expect(api.store).toHaveLength(1);
@@ -239,7 +239,7 @@ test('confirming the delete removes the skill and moves focus to the page title'
   open('/skills');
   fireEvent.click(await screen.findByRole('button', { name: 'Go 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '스킬을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByRole('heading', { name: '아직 등록한 스킬이 없습니다' }),
   ).toBeInTheDocument();
@@ -257,7 +257,7 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   open('/skills');
   fireEvent.click(await screen.findByRole('button', { name: 'Go 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '스킬을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByText('스킬을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
   ).toBeInTheDocument();

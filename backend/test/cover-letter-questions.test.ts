@@ -78,17 +78,13 @@ test('one application holds at most ten questions', async () => {
 test('malformed ids in the path are refused before any query', async () => {
   await withApi(refusingPool(), async (call) => {
     for (const [path, request, message] of [
-      ['/api/applications/abc/questions', {}, '지원 기업 ID가 올바르지 않습니다'],
+      ['/api/applications/abc/questions', {}, 'Invalid 지원 기업 ID'],
       [
         '/api/applications/0/questions',
         { method: 'PUT', body: { questions: [] } },
-        '지원 기업 ID가 올바르지 않습니다',
+        'Invalid 지원 기업 ID',
       ],
-      [
-        '/api/applications/1/questions/x',
-        { method: 'DELETE' },
-        '자기소개서 문항 ID가 올바르지 않습니다',
-      ],
+      ['/api/applications/1/questions/x', { method: 'DELETE' }, 'Invalid 자기소개서 문항 ID'],
     ] as const) {
       const { status, data } = await call(path, request);
       assert.equal(status, 400);

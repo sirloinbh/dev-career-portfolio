@@ -83,7 +83,7 @@ test('a malformed id is refused before any query', async () => {
     for (const request of [{ method: 'PUT', body: valid }, { method: 'DELETE' }]) {
       const { status, data } = await call('/api/careers/abc', request);
       assert.equal(status, 400);
-      assert.equal(data.error, '이력 ID가 올바르지 않습니다');
+      assert.equal(data.error, 'Invalid 이력 ID');
     }
   });
 });

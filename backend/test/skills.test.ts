@@ -69,7 +69,7 @@ test('a malformed id is refused before any query', async () => {
     for (const request of [{ method: 'PUT', body: valid }, { method: 'DELETE' }]) {
       const { status, data } = await call('/api/skills/abc', request);
       assert.equal(status, 400);
-      assert.equal(data.error, '스킬 ID가 올바르지 않습니다');
+      assert.equal(data.error, 'Invalid 스킬 ID');
     }
   });
 });
@@ -103,6 +103,6 @@ test('another unique violation keeps the general 409 message', async () => {
   await withApi(duplicatePool('skills_pkey'), async (call) => {
     const { status, data } = await call('/api/skills', { method: 'POST', body: valid });
     assert.equal(status, 409);
-    assert.equal(data.error, '이미 등록된 항목입니다');
+    assert.equal(data.error, 'This item already exists');
   });
 });

@@ -156,6 +156,6 @@ test('a NUL character in text is a 400, not a server error', { skip: !url }, asy
       },
     });
     assert.equal(status, 400);
-    assert.equal(data.error, '입력에 사용할 수 없는 문자(NUL)가 있습니다');
+    assert.equal(data.error, 'Input contains a character that is not allowed (NUL)');
   });
 });
