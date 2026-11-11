@@ -241,7 +241,7 @@ test('cancelling the delete dialog keeps the education', async () => {
   open('/educations');
   fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
   expect(screen.getByRole('listitem', { name: '한빛대학교' })).toBeInTheDocument();
@@ -252,7 +252,7 @@ test('confirming the delete removes the education and moves focus to the page ti
   open('/educations');
   fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByRole('heading', { name: '아직 등록한 학력이 없습니다' }),
   ).toBeInTheDocument();
@@ -269,7 +269,7 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   open('/educations');
   fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByText('학력을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
   ).toBeInTheDocument();
@@ -286,7 +286,7 @@ test('a row that is already gone (404) counts as deleted', async () => {
   api.store.splice(0, 1);
   fireEvent.click(await screen.findByRole('button', { name: '한빛대학교 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '학력을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('listitem', { name: '한빛대학교' })).not.toBeInTheDocument();
 });
@@ -336,13 +336,13 @@ test('server messages map to the field they start with', () => {
 test('several joined messages are split per field, keeping commas inside one message', () => {
   expect(
     fieldErrors(
-      '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다, 학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, 외 2개',
+      '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다, 학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, and 2 more',
     ),
   ).toEqual([
     // Screen order: 학위 sits above 입학일.
     {
       field: 'degree',
-      message: '학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, 외 2개',
+      message: '학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다, and 2 more',
     },
     { field: 'startDate', message: '입학일은(는) YYYY-MM-DD 형식의 날짜여야 합니다' },
   ]);

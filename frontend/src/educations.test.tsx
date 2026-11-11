@@ -57,7 +57,7 @@ function openEducations() {
 test('the main menu leads to the education list', async () => {
   serve({ status: 200, body: { educations: [] } });
   render(<App />);
-  const menu = screen.getByRole('navigation', { name: '주 메뉴' });
+  const menu = screen.getByRole('navigation', { name: 'Main menu' });
   fireEvent.click(within(menu).getByRole('link', { name: '학력' }));
   expect(window.location.pathname).toBe('/educations');
   expect(await screen.findByRole('heading', { level: 1, name: '학력' })).toBeInTheDocument();
@@ -128,7 +128,7 @@ test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openEducations();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '학력을 불러오지 못했습니다. 요청을 처리하지 못했습니다',
+    '학력을 불러오지 못했습니다. Could not process the request',
   );
 });
 
@@ -136,7 +136,7 @@ test('an unreachable server is shown in Korean', async () => {
   serve('offline');
   openEducations();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '학력을 불러오지 못했습니다. 서버에 연결할 수 없습니다',
+    '학력을 불러오지 못했습니다. Cannot reach the server',
   );
 });
 

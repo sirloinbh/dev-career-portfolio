@@ -231,7 +231,7 @@ test('cancelling the delete dialog keeps the career', async () => {
   open('/careers');
   fireEvent.click(await screen.findByRole('button', { name: '한빛소프트 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '이력을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
   expect(api.store).toHaveLength(1);
@@ -243,7 +243,7 @@ test('confirming the delete removes the career and moves focus to the page title
   open('/careers');
   fireEvent.click(await screen.findByRole('button', { name: '한빛소프트 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '이력을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByRole('heading', { name: '아직 등록한 이력이 없습니다' }),
   ).toBeInTheDocument();
@@ -261,7 +261,7 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   open('/careers');
   fireEvent.click(await screen.findByRole('button', { name: '한빛소프트 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '이력을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByText('이력을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
   ).toBeInTheDocument();
@@ -278,7 +278,7 @@ test('a row that is already gone (404) counts as deleted', async () => {
   api.store.splice(0, 1);
   fireEvent.click(await screen.findByRole('button', { name: '한빛소프트 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '이력을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('listitem', { name: '한빛소프트' })).not.toBeInTheDocument();
   expect(await screen.findByText("'한빛소프트' 이력을 지웠습니다")).toBeInTheDocument();

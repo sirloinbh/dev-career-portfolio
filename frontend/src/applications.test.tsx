@@ -65,7 +65,7 @@ test('the 자기소개서 menu leads to the application list', async () => {
   serve({ status: 200, body: { applications: [] } });
   window.history.replaceState(null, '', '/');
   render(<App />);
-  const menu = screen.getByRole('navigation', { name: '주 메뉴' });
+  const menu = screen.getByRole('navigation', { name: 'Main menu' });
   fireEvent.click(within(menu).getByRole('link', { name: '자기소개서' }));
   expect(window.location.pathname).toBe('/applications');
   expect(await screen.findByRole('heading', { level: 1, name: '자기소개서' })).toBeInTheDocument();
@@ -137,10 +137,10 @@ test('an empty list explains what will appear', async () => {
 });
 
 test('a failed request shows a Korean error with the reason', async () => {
-  serve({ status: 500, body: { error: '서버 오류가 발생했습니다' } });
+  serve({ status: 500, body: { error: 'Server error' } });
   openApplications();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '지원 기업을 불러오지 못했습니다. 서버 오류가 발생했습니다',
+    '지원 기업을 불러오지 못했습니다. Server error',
   );
   expect(screen.queryByText('아직 등록한 지원 기업이 없습니다')).not.toBeInTheDocument();
 });

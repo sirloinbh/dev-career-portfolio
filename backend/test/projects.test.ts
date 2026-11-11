@@ -120,7 +120,7 @@ test('a malformed id is refused before any query', async () => {
     for (const request of [{ method: 'PUT', body: valid }, { method: 'DELETE' }]) {
       const { status, data } = await call('/api/projects/abc', request);
       assert.equal(status, 400);
-      assert.equal(data.error, '프로젝트 ID가 올바르지 않습니다');
+      assert.equal(data.error, 'Invalid 프로젝트 ID');
     }
   });
 });

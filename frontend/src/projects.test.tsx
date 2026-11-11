@@ -67,7 +67,7 @@ test('the main menu leads to the project list', async () => {
   serve({ status: 200, body: { projects: [] } });
   window.history.replaceState(null, '', '/');
   render(<App />);
-  const menu = screen.getByRole('navigation', { name: '주 메뉴' });
+  const menu = screen.getByRole('navigation', { name: 'Main menu' });
   fireEvent.click(within(menu).getByRole('link', { name: '프로젝트' }));
   expect(window.location.pathname).toBe('/projects');
   expect(await screen.findByRole('heading', { level: 1, name: '프로젝트' })).toBeInTheDocument();
@@ -187,7 +187,7 @@ test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openProjects();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '프로젝트를 불러오지 못했습니다. 요청을 처리하지 못했습니다',
+    '프로젝트를 불러오지 못했습니다. Could not process the request',
   );
 });
 
@@ -195,7 +195,7 @@ test('an unreachable server is shown in Korean', async () => {
   serve('offline');
   openProjects();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '프로젝트를 불러오지 못했습니다. 서버에 연결할 수 없습니다',
+    '프로젝트를 불러오지 못했습니다. Cannot reach the server',
   );
 });
 

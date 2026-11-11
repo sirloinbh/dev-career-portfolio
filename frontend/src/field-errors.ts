@@ -15,7 +15,7 @@ export type FieldError<F extends string> = { field: F | undefined; message: stri
  * read as another field. `order` is the order the inputs appear on screen.
  */
 /** The count the server adds when it shows only the first ten issues (backend/src/standard/http.ts). */
-const overflow = /, 외 \d+개$/;
+const overflow = /, and \d+ more$/;
 
 export function splitFieldErrors<F extends string>(
   message: string,
@@ -36,7 +36,7 @@ export function splitFieldErrors<F extends string>(
   for (const piece of pieces) {
     const same = piece.field && grouped.find((item) => item.field === piece.field);
     if (same) {
-      // The server ends a long list with "외 N개", which arrives stuck to the last message; keep it
+      // The server ends a long list with "and N more", which arrives stuck to the last message; keep it
       // even when that message is already shown.
       const message = piece.message.replace(overflow, '');
       const rest = piece.message.slice(message.length);

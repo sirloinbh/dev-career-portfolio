@@ -234,7 +234,7 @@ test('cancelling the delete dialog keeps the certification', async () => {
   open('/certifications');
   fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
   expect(api.store).toHaveLength(1);
@@ -246,7 +246,7 @@ test('confirming the delete removes the certification and moves focus to the pag
   open('/certifications');
   fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByRole('heading', { name: '아직 등록한 자격증이 없습니다' }),
   ).toBeInTheDocument();
@@ -264,7 +264,7 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   open('/certifications');
   fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
     await screen.findByText('자격증을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
   ).toBeInTheDocument();
@@ -302,7 +302,7 @@ test('a row that is already gone (404) counts as deleted', async () => {
   api.store.splice(0, 1);
   fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
   const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('listitem', { name: 'TOEIC' })).not.toBeInTheDocument();
   expect(
