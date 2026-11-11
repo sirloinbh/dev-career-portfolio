@@ -141,7 +141,7 @@ test(
         },
       });
       assert.equal(nul.status, 400);
-      assert.equal(nul.data.error, '입력에 사용할 수 없는 문자(NUL)가 있습니다');
+      assert.equal(nul.data.error, 'Input contains a character that is not allowed (NUL)');
       const kept = await call('/api/certifications');
       assert.deepEqual(
         (kept.data.certifications as Certification[]).find((row) => row.id === sameDay.id),

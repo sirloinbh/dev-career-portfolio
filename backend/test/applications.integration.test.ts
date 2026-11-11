@@ -153,7 +153,7 @@ test(
         body: { companyName: '먼회사', status: 'submitted', memo: '바뀌면\u0000안 됨' },
       });
       assert.equal(nul.status, 400);
-      assert.equal(nul.data.error, '입력에 사용할 수 없는 문자(NUL)가 있습니다');
+      assert.equal(nul.data.error, 'Input contains a character that is not allowed (NUL)');
       const kept = await call('/api/applications');
       assert.deepEqual(
         (kept.data.applications as Application[]).find((row) => row.id === farDraft.id),
