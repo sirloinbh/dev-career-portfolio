@@ -1,14 +1,14 @@
-# 다음 작업
+# Next steps
 
-최종 갱신일: **2026-10-19 (Asia/Seoul)**.
+Last updated: **2026-10-19 (Asia/Seoul)**.
 
-## 우선 처리
+## Do first
 
-| 순서 | 할 일                                | 상태             | 다음 행동                                             |
-| ---- | ------------------------------------ | ---------------- | ----------------------------------------------------- |
-| 1    | 세부 요구사항 이슈 카드 등록         | 사용자 등록 대기 | 등록되면 이슈 → 브랜치 → 구현·테스트 → PR 순서로 진행 |
-| 2    | 첫 기능의 DB 마이그레이션 `002` 설계 | 요구사항 대기    | 이슈의 완료 기준에서 테이블과 단위·NULL 규칙 확정     |
+| Order | Task                                            | Status                   | Next action                                                                      |
+| ----- | ----------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------- |
+| 1     | Register detailed requirement issue cards       | Waiting for the user     | Once registered, go issue → branch → implementation and tests → PR               |
+| 2     | Design DB migration `002` for the first feature | Waiting for requirements | Settle the tables and the unit and NULL rules in the issue's completion criteria |
 
-## 실행 경계
+## Execution boundary
 
-배포, 하위 저장소 동기화, AWS 리소스 생성은 별도 요청 시에만 한다. 공유 인프라의 ECR 저장소는 첫 배포 때 `shared-aws-infrastructure`의 목록에 추가한다.
+Deploys, syncing the sub-repositories, and creating AWS resources happen only on a separate request. Add the shared infrastructure's ECR repository to the list in `shared-aws-infrastructure` at the first deploy.
