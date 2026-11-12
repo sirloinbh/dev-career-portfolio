@@ -12,27 +12,29 @@ const hasTwoDecimalsAtMost = (value: number) => Math.round(value * 100) / 100 ==
 
 const gpaValue = (label: string) =>
   z
-    .number({ error: `${label}은(는) 숫자여야 합니다` })
-    .min(0, `${label}은(는) 0 이상이어야 합니다`)
-    .max(100, `${label}은(는) 100 이하여야 합니다`)
-    .refine(hasTwoDecimalsAtMost, `${label}은(는) 소수 둘째 자리까지 입력해 주세요`)
+    .number({ error: `${label} must be a number` })
+    .min(0, `${label} must be at least 0`)
+    .max(100, `${label} must be at most 100`)
+    .refine(hasTwoDecimalsAtMost, `${label} must have at most two decimal places`)
     .nullable()
     .default(null);
 
 const educationInput = z
   .object(
     {
-      school: requiredText('학교명', 100),
-      major: optionalText('전공', 100),
+      school: requiredText('School', 100),
+      major: optionalText('Major', 100),
       degree: z.enum(degrees, {
-        error: '학위는 고등학교, 전문학사, 학사, 석사, 박사, 기타 중 하나여야 합니다',
+        error: 'Degree must be one of high school, associate, bachelor, master, doctorate, other',
       }),
-      status: z.enum(statuses, { error: '상태는 졸업, 재학, 휴학, 중퇴 중 하나여야 합니다' }),
-      startDate: calendarDate('입학일'),
-      endDate: calendarDate('졸업일').nullable().default(null),
-      gpa: gpaValue('학점'),
-      gpaScale: gpaValue('만점'),
-      memo: optionalText('메모', 2000),
+      status: z.enum(statuses, {
+        error: 'Status must be one of graduated, enrolled, on leave, dropped out',
+      }),
+      startDate: calendarDate('Enrollment date'),
+      endDate: calendarDate('Graduation date').nullable().default(null),
+      gpa: gpaValue('GPA'),
+      gpaScale: gpaValue('Maximum GPA'),
+      memo: optionalText('Notes', 2000),
     },
     objectBodyError,
   )
@@ -41,21 +43,21 @@ const educationInput = z
       ctx.addIssue({
         code: 'custom',
         path: ['endDate'],
-        message: '졸업일은 입학일보다 빠를 수 없습니다',
+        message: 'Graduation date cannot be earlier than the enrollment date',
       });
     }
     if (input.status === 'enrolled' && input.endDate !== null) {
       ctx.addIssue({
         code: 'custom',
         path: ['endDate'],
-        message: '재학 중이면 졸업일을 비워 주세요',
+        message: 'Graduation date must be empty while enrolled',
       });
     }
     if ((input.gpa === null) !== (input.gpaScale === null)) {
       ctx.addIssue({
         code: 'custom',
         path: ['gpa'],
-        message: '학점과 만점은 함께 입력해 주세요',
+        message: 'GPA and maximum GPA must be entered together',
       });
     }
     if (input.gpa !== null && input.gpaScale !== null) {
@@ -63,13 +65,13 @@ const educationInput = z
         ctx.addIssue({
           code: 'custom',
           path: ['gpaScale'],
-          message: '만점은 0보다 커야 합니다',
+          message: 'Maximum GPA must be greater than 0',
         });
       } else if (input.gpa > input.gpaScale) {
         ctx.addIssue({
           code: 'custom',
           path: ['gpa'],
-          message: '학점은 만점보다 클 수 없습니다',
+          message: 'GPA cannot be greater than the maximum GPA',
         });
       }
     }
@@ -83,7 +85,7 @@ const columns = `id::text AS id, school, major, degree, status, start_date AS "s
 
 const toEducation = (row: EducationRow) => ({ ...row, id: Number(row.id) });
 
-const notFoundError = () => new HttpError(404, '학력을 찾을 수 없습니다');
+const notFoundError = () => new HttpError(404, 'Education not found');
 
 export function registerEducationRoutes(app: Express, pool: Pool) {
   app.get('/api/educations', async (_req, res) => {
@@ -116,7 +118,7 @@ export function registerEducationRoutes(app: Express, pool: Pool) {
   });
 
   app.put('/api/educations/:id', async (req, res) => {
-    const id = parseId(req.params.id, '학력');
+    const id = parseId(req.params.id, 'education');
     const input = educationInput.parse(req.body);
     const { rows } = await pool.query<EducationRow>(
       `UPDATE educations
@@ -142,7 +144,7 @@ export function registerEducationRoutes(app: Express, pool: Pool) {
   });
 
   app.delete('/api/educations/:id', async (req, res) => {
-    const id = parseId(req.params.id, '학력');
+    const id = parseId(req.params.id, 'education');
     const { rowCount } = await pool.query('DELETE FROM educations WHERE id = $1', [id]);
     if (rowCount === 0) throw notFoundError();
     res.status(204).end();

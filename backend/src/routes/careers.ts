@@ -11,16 +11,16 @@ const employmentTypes = ['full_time', 'contract', 'intern', 'freelance', 'other'
 const careerInput = z
   .object(
     {
-      company: requiredText('회사명', 100),
-      department: optionalText('부서', 100),
-      position: optionalText('직책', 100),
+      company: requiredText('Company', 100),
+      department: optionalText('Department', 100),
+      position: optionalText('Job title', 100),
       employmentType: z.enum(employmentTypes, {
-        error: '고용 형태는 정규직, 계약직, 인턴, 프리랜서, 기타 중 하나여야 합니다',
+        error: 'Employment type must be one of full-time, contract, intern, freelance, other',
       }),
-      startDate: calendarDate('입사일'),
-      endDate: calendarDate('퇴사일').nullable().default(null),
-      duties: optionalText('담당 업무', 2000),
-      achievements: optionalText('주요 성과', 2000),
+      startDate: calendarDate('Start date'),
+      endDate: calendarDate('End date').nullable().default(null),
+      duties: optionalText('Duties', 2000),
+      achievements: optionalText('Achievements', 2000),
     },
     objectBodyError,
   )
@@ -29,7 +29,7 @@ const careerInput = z
       ctx.addIssue({
         code: 'custom',
         path: ['endDate'],
-        message: '퇴사일은 입사일보다 빠를 수 없습니다',
+        message: 'End date cannot be earlier than start date',
       });
     }
   });
@@ -42,7 +42,7 @@ const columns = `id::text AS id, company, department, position, employment_type 
 
 const toCareer = (row: CareerRow) => ({ ...row, id: Number(row.id) });
 
-const notFoundError = () => new HttpError(404, '이력을 찾을 수 없습니다');
+const notFoundError = () => new HttpError(404, 'Career not found');
 
 export function registerCareerRoutes(app: Express, pool: Pool) {
   app.get('/api/careers', async (_req, res) => {
@@ -75,7 +75,7 @@ export function registerCareerRoutes(app: Express, pool: Pool) {
   });
 
   app.put('/api/careers/:id', async (req, res) => {
-    const id = parseId(req.params.id, '이력');
+    const id = parseId(req.params.id, 'career');
     const input = careerInput.parse(req.body);
     const { rows } = await pool.query<CareerRow>(
       `UPDATE careers
@@ -100,7 +100,7 @@ export function registerCareerRoutes(app: Express, pool: Pool) {
   });
 
   app.delete('/api/careers/:id', async (req, res) => {
-    const id = parseId(req.params.id, '이력');
+    const id = parseId(req.params.id, 'career');
     const { rowCount } = await pool.query('DELETE FROM careers WHERE id = $1', [id]);
     if (rowCount === 0) throw notFoundError();
     res.status(204).end();

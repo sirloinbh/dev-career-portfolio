@@ -35,7 +35,7 @@ type Call = { method: string; url: string; body: unknown };
 
 /**
  * A small in-memory API: GET lists the rows, POST and PUT store the body, DELETE removes. `refuse`
- * answers the next POST or PUT with a 400 and that Korean message, as the server would.
+ * answers the next POST or PUT with a 400 and that message, as the server would.
  */
 function fakeApi(rows: Career[]) {
   const store = [...rows];
@@ -71,7 +71,7 @@ function fakeApi(rows: Career[]) {
         store.unshift(career);
         return json({ career }, 201);
       }
-      if (index === -1) return json({ error: '이력을 찾을 수 없습니다' }, 404);
+      if (index === -1) return json({ error: 'Career not found' }, 404);
       if (method === 'PUT') {
         store[index] = saved({ ...(body as Career), id });
         return json({ career: store[index] });
@@ -102,20 +102,20 @@ function open(path: string) {
 const field = (name: string) => screen.getByLabelText(name);
 const type = (name: string, value: string) => fireEvent.change(field(name), { target: { value } });
 
-test('a new career with no end date is sent as a job still held and listed as 재직 중', async () => {
+test('a new career with no end date is sent as a job still held and listed as Current', async () => {
   const api = fakeApi([]);
   open('/careers');
-  fireEvent.click(await screen.findByRole('link', { name: '이력 추가' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '이력 추가' })).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Add career' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Add career' })).toBeInTheDocument();
 
-  type('회사명', '구름데이터');
-  type('직책', '선임 개발자');
-  fireEvent.change(field('고용 형태'), { target: { value: 'contract' } });
-  type('입사일', '2024-01-02');
-  type('담당 업무', '데이터 수집 API');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  type('Company', '구름데이터');
+  type('Job title', '선임 개발자');
+  fireEvent.change(field('Employment type'), { target: { value: 'contract' } });
+  type('Start date', '2024-01-02');
+  type('Duties', '데이터 수집 API');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  expect(await screen.findByRole('heading', { level: 1, name: '이력' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Career' })).toBeInTheDocument();
   expect(window.location.pathname).toBe('/careers');
   expect(api.calls.find((call) => call.method === 'POST')?.body).toEqual({
     company: '구름데이터',
@@ -127,52 +127,52 @@ test('a new career with no end date is sent as a job still held and listed as �
     duties: '데이터 수집 API',
     achievements: '',
   });
-  const list = await screen.findByRole('list', { name: '이력 목록' });
+  const list = await screen.findByRole('list', { name: 'Career list' });
   const item = within(list).getByRole('listitem', { name: '구름데이터' });
-  expect(item).toHaveTextContent('2024-01-02 ~ 재직 중');
-  expect(item).toHaveTextContent('선임 개발자 · 계약직');
+  expect(item).toHaveTextContent('January 2, 2024 – Present');
+  expect(item).toHaveTextContent('선임 개발자 · Contract');
 });
 
 test('the end date hint says an empty date means a job still held', async () => {
   fakeApi([]);
   open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: '이력 추가' });
-  expect(field('퇴사일')).toHaveAccessibleDescription(
-    '지금 다니는 회사면 비워 둡니다. 목록에 "재직 중"으로 보입니다.',
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  expect(field('End date')).toHaveAccessibleDescription(
+    'Leave it empty if you still work here. The list shows "Current".',
   );
 });
 
 test('the server message is shown under the field it is about, and focus moves there', async () => {
   const api = fakeApi([]);
   open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: '이력 추가' });
-  type('회사명', '한빛소프트');
-  type('입사일', '2023-03-02');
-  type('퇴사일', '2020-02-28');
-  api.refuseNext('퇴사일은 입사일보다 빠를 수 없습니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  type('Company', '한빛소프트');
+  type('Start date', '2023-03-02');
+  type('End date', '2020-02-28');
+  api.refuseNext('End date cannot be earlier than start date');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  await waitFor(() => expect(field('퇴사일')).toHaveAttribute('aria-invalid', 'true'));
-  expect(field('퇴사일')).toHaveAccessibleDescription(
-    expect.stringContaining('퇴사일은 입사일보다 빠를 수 없습니다'),
+  await waitFor(() => expect(field('End date')).toHaveAttribute('aria-invalid', 'true'));
+  expect(field('End date')).toHaveAccessibleDescription(
+    expect.stringContaining('End date cannot be earlier than start date'),
   );
-  await waitFor(() => expect(field('퇴사일')).toHaveFocus());
-  expect(field('입사일')).not.toHaveAttribute('aria-invalid');
+  await waitFor(() => expect(field('End date')).toHaveFocus());
+  expect(field('Start date')).not.toHaveAttribute('aria-invalid');
   // The form keeps what was typed.
-  expect(field('회사명')).toHaveValue('한빛소프트');
+  expect(field('Company')).toHaveValue('한빛소프트');
   expect(window.location.pathname).toBe('/careers/new');
 });
 
 test('each joined server message is shown under its own field, topmost focused', async () => {
   const api = fakeApi([]);
   open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: '이력 추가' });
-  api.refuseNext('입사일은(는) YYYY-MM-DD 형식의 날짜여야 합니다, 회사명을(를) 입력해 주세요');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('회사명')).toHaveFocus());
-  expect(field('회사명')).toHaveAccessibleDescription('회사명을(를) 입력해 주세요');
-  expect(field('입사일')).toHaveAccessibleDescription(
-    '입사일은(는) YYYY-MM-DD 형식의 날짜여야 합니다',
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  api.refuseNext('Start date must be a date in YYYY-MM-DD format, Company is required');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('Company')).toHaveFocus());
+  expect(field('Company')).toHaveAccessibleDescription('Company is required');
+  expect(field('Start date')).toHaveAccessibleDescription(
+    'Start date must be a date in YYYY-MM-DD format',
   );
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
@@ -180,57 +180,57 @@ test('each joined server message is shown under its own field, topmost focused',
 test('a message that names no field is shown below the form and focus returns to the button', async () => {
   const api = fakeApi([]);
   open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: '이력 추가' });
-  api.refuseNext('입력에 사용할 수 없는 문자(NUL)가 있습니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  api.refuseNext('Input contains a character that is not allowed (NUL)');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '입력에 사용할 수 없는 문자(NUL)가 있습니다',
+    'Input contains a character that is not allowed (NUL)',
   );
-  await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('a career is edited with its saved values filled in', async () => {
   const api = fakeApi([past]);
   open('/careers');
-  fireEvent.click(await screen.findByRole('link', { name: '한빛소프트 수정' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '이력 수정' })).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Edit 한빛소프트' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Edit career' })).toBeInTheDocument();
   expect(window.location.pathname).toBe('/careers/1/edit');
-  expect(field('회사명')).toHaveValue('한빛소프트');
-  expect(field('고용 형태')).toHaveValue('full_time');
-  expect(field('퇴사일')).toHaveValue('2023-12-29');
-  expect(field('주요 성과')).toHaveValue('');
+  expect(field('Company')).toHaveValue('한빛소프트');
+  expect(field('Employment type')).toHaveValue('full_time');
+  expect(field('End date')).toHaveValue('2023-12-29');
+  expect(field('Achievements')).toHaveValue('');
 
-  type('주요 성과', '정산 배치 시간 단축');
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '이력' })).toBeInTheDocument();
+  type('Achievements', '정산 배치 시간 단축');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Career' })).toBeInTheDocument();
   const put = api.calls.find((call) => call.method === 'PUT');
   expect(put?.url).toBe('/api/careers/1');
   expect(put?.body).toMatchObject({ achievements: '정산 배치 시간 단축', endDate: '2023-12-29' });
   expect(await screen.findByText('정산 배치 시간 단축')).toBeInTheDocument();
 });
 
-test('clearing the end date of a past job makes it 재직 중', async () => {
+test('clearing the end date of a past job makes it Current', async () => {
   const api = fakeApi([past]);
   open('/careers/1/edit');
-  await screen.findByRole('heading', { level: 1, name: '이력 수정' });
-  type('퇴사일', '');
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
+  await screen.findByRole('heading', { level: 1, name: 'Edit career' });
+  type('End date', '');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const item = await screen.findByRole('listitem', { name: '한빛소프트' });
   expect(api.calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ endDate: null });
-  expect(item).toHaveTextContent('2019-02-11 ~ 재직 중');
+  expect(item).toHaveTextContent('February 11, 2019 – Present');
 });
 
 test('editing a career that no longer exists says so', async () => {
   fakeApi([]);
   open('/careers/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('이력을 찾을 수 없습니다');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Career not found');
 });
 
 test('cancelling the delete dialog keeps the career', async () => {
   const api = fakeApi([past]);
   open('/careers');
-  fireEvent.click(await screen.findByRole('button', { name: '한빛소프트 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '이력을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛소프트' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this career?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
@@ -241,90 +241,88 @@ test('cancelling the delete dialog keeps the career', async () => {
 test('confirming the delete removes the career and moves focus to the page title', async () => {
   const api = fakeApi([past]);
   open('/careers');
-  fireEvent.click(await screen.findByRole('button', { name: '한빛소프트 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '이력을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛소프트' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this career?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
-  expect(
-    await screen.findByRole('heading', { name: '아직 등록한 이력이 없습니다' }),
-  ).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'No career added yet' })).toBeInTheDocument();
   expect(api.calls.find((call) => call.method === 'DELETE')?.url).toBe('/api/careers/1');
   expect(api.store).toHaveLength(0);
-  expect(await screen.findByText("'한빛소프트' 이력을 지웠습니다")).toBeInTheDocument();
+  expect(await screen.findByText("Deleted '한빛소프트'")).toBeInTheDocument();
   await waitFor(() =>
-    expect(screen.getByRole('heading', { level: 1, name: '이력' })).toHaveFocus(),
+    expect(screen.getByRole('heading', { level: 1, name: 'Career' })).toHaveFocus(),
   );
 });
 
 test('a failed delete keeps the dialog open and the row on screen', async () => {
   const api = fakeApi([past]);
-  api.failDeletes(503, '데이터베이스에 연결할 수 없습니다');
+  api.failDeletes(503, 'Cannot connect to the database');
   open('/careers');
-  fireEvent.click(await screen.findByRole('button', { name: '한빛소프트 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '이력을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛소프트' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this career?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
-    await screen.findByText('이력을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
+    await screen.findByText('Could not delete the career. Cannot connect to the database'),
   ).toBeInTheDocument();
-  expect(screen.getByRole('dialog', { name: '이력을 지울까요?' })).toBeInTheDocument();
+  expect(screen.getByRole('dialog', { name: 'Delete this career?' })).toBeInTheDocument();
   expect(screen.getByRole('listitem', { hidden: true, name: '한빛소프트' })).toBeInTheDocument();
 });
 
 test('a row that is already gone (404) counts as deleted', async () => {
   const api = fakeApi([past]);
-  api.failDeletes(404, '이력을 찾을 수 없습니다');
+  api.failDeletes(404, 'Career not found');
   open('/careers');
   await screen.findByRole('listitem', { name: '한빛소프트' });
   // Someone else deleted it after the list loaded.
   api.store.splice(0, 1);
-  fireEvent.click(await screen.findByRole('button', { name: '한빛소프트 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '이력을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛소프트' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this career?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('listitem', { name: '한빛소프트' })).not.toBeInTheDocument();
-  expect(await screen.findByText("'한빛소프트' 이력을 지웠습니다")).toBeInTheDocument();
-  expect(screen.queryByText(/지우지 못했습니다/)).not.toBeInTheDocument();
+  expect(await screen.findByText("Deleted '한빛소프트'")).toBeInTheDocument();
+  expect(screen.queryByText(/Could not delete/)).not.toBeInTheDocument();
 });
 
 test('a half-typed end date is sent as text the server refuses, not as a job still held', async () => {
   const api = fakeApi([]);
   open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: '이력 추가' });
-  type('회사명', '한빛소프트');
-  type('입사일', '2023-03-02');
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  type('Company', '한빛소프트');
+  type('Start date', '2023-03-02');
   // A browser reads an unfinished date ("2023-12-__") as '' and flags it as bad input.
-  Object.defineProperty(field('퇴사일'), 'validity', { value: { badInput: true } });
-  api.refuseNext('퇴사일은(는) YYYY-MM-DD 형식의 날짜여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('퇴사일')).toHaveFocus());
+  Object.defineProperty(field('End date'), 'validity', { value: { badInput: true } });
+  api.refuseNext('End date must be a date in YYYY-MM-DD format');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('End date')).toHaveFocus());
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
     endDate: 'incomplete',
   });
-  expect(field('퇴사일')).toHaveAccessibleDescription(
-    expect.stringContaining('퇴사일은(는) YYYY-MM-DD 형식의 날짜여야 합니다'),
+  expect(field('End date')).toHaveAccessibleDescription(
+    expect.stringContaining('End date must be a date in YYYY-MM-DD format'),
   );
   expect(api.store).toHaveLength(0);
 });
 
 test('server messages map to the field they start with', () => {
   const fieldOf = (message: string) => careerFieldErrors(message)[0]?.field;
-  expect(fieldOf('회사명을(를) 입력해 주세요')).toBe('company');
-  expect(fieldOf('부서은(는) 100자 이하여야 합니다')).toBe('department');
-  expect(fieldOf('직책은(는) 100자 이하여야 합니다')).toBe('position');
-  expect(fieldOf('입사일은(는) YYYY-MM-DD 형식의 날짜여야 합니다')).toBe('startDate');
-  expect(fieldOf('퇴사일은 입사일보다 빠를 수 없습니다')).toBe('endDate');
-  expect(fieldOf('담당 업무은(는) 2000자 이하여야 합니다')).toBe('duties');
-  expect(fieldOf('주요 성과은(는) 2000자 이하여야 합니다')).toBe('achievements');
-  expect(fieldOf('요청 본문은 JSON 객체여야 합니다')).toBeUndefined();
+  expect(fieldOf('Company is required')).toBe('company');
+  expect(fieldOf('Department must be at most 100 characters')).toBe('department');
+  expect(fieldOf('Job title must be at most 100 characters')).toBe('position');
+  expect(fieldOf('Start date must be a date in YYYY-MM-DD format')).toBe('startDate');
+  expect(fieldOf('End date cannot be earlier than start date')).toBe('endDate');
+  expect(fieldOf('Duties must be at most 2000 characters')).toBe('duties');
+  expect(fieldOf('Achievements must be at most 2000 characters')).toBe('achievements');
+  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
   // The employment type message holds commas of its own; it stays one message.
   expect(
     careerFieldErrors(
-      '고용 형태는 정규직, 계약직, 인턴, 프리랜서, 기타 중 하나여야 합니다, 회사명을(를) 입력해 주세요',
+      'Employment type must be one of full-time, contract, intern, freelance, other, Company is required',
     ),
   ).toEqual([
-    { field: 'company', message: '회사명을(를) 입력해 주세요' },
+    { field: 'company', message: 'Company is required' },
     {
       field: 'employmentType',
-      message: '고용 형태는 정규직, 계약직, 인턴, 프리랜서, 기타 중 하나여야 합니다',
+      message: 'Employment type must be one of full-time, contract, intern, freelance, other',
     },
   ]);
 });

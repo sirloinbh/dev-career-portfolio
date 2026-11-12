@@ -24,36 +24,36 @@ async function expectRefused(body: unknown, message: string) {
 const question = { question: '지원 동기를 적어 주세요', answer: '', charLimit: 1000 };
 
 test('the list must be an object holding a questions array', async () => {
-  await expectRefused([], '요청 본문은 JSON 객체여야 합니다');
-  await expectRefused({}, '문항 목록(questions)을 배열로 보내 주세요');
-  await expectRefused({ questions: question }, '문항 목록(questions)을 배열로 보내 주세요');
-  await expectRefused({ questions: ['문항'] }, '1번째 문항: 문항은 객체여야 합니다');
+  await expectRefused([], 'Request body must be a JSON object');
+  await expectRefused({}, 'Send the question list (questions) as an array');
+  await expectRefused({ questions: question }, 'Send the question list (questions) as an array');
+  await expectRefused({ questions: ['문항'] }, 'Question 1: Question must be an object');
 });
 
 test('a field error names the question it belongs to', async () => {
   await expectRefused(
     { questions: [question, { ...question, question: '  ' }] },
-    '2번째 문항: 문항을(를) 입력해 주세요',
+    'Question 2: Question is required',
   );
   await expectRefused(
     { questions: [{ ...question, question: '가'.repeat(501) }] },
-    '1번째 문항: 문항은(는) 500자 이하여야 합니다',
+    'Question 1: Question must be at most 500 characters',
   );
   await expectRefused(
     { questions: [{ ...question, answer: '가'.repeat(5001) }] },
-    '1번째 문항: 답변은(는) 5000자 이하여야 합니다',
+    'Question 1: Answer must be at most 5000 characters',
   );
 });
 
 test('a character limit is a whole number from 1 to 5000', async () => {
-  const message = '1번째 문항: 글자 수 제한은 1 이상 5000 이하의 정수여야 합니다';
+  const message = 'Question 1: Character limit must be a whole number from 1 to 5000';
   for (const charLimit of [0, -1, 5001, 1.5, '1000']) {
     await expectRefused({ questions: [{ ...question, charLimit }] }, message);
   }
 });
 
 test('question ids must be valid and appear only once', async () => {
-  const message = '1번째 문항: 문항 ID가 올바르지 않습니다';
+  const message = 'Question 1: Invalid question ID';
   for (const id of [0, -3, 1.5, '7', 1e15]) {
     await expectRefused({ questions: [{ ...question, id }] }, message);
   }
@@ -64,27 +64,27 @@ test('question ids must be valid and appear only once', async () => {
         { ...question, id: 7 },
       ],
     },
-    '같은 문항이 두 번 들어 있습니다',
+    'The same question appears twice',
   );
 });
 
 test('one application holds at most ten questions', async () => {
   await expectRefused(
     { questions: Array.from({ length: 11 }, () => question) },
-    '문항은 10개까지 입력할 수 있습니다',
+    'Questions can have at most 10 items',
   );
 });
 
 test('malformed ids in the path are refused before any query', async () => {
   await withApi(refusingPool(), async (call) => {
     for (const [path, request, message] of [
-      ['/api/applications/abc/questions', {}, 'Invalid 지원 기업 ID'],
+      ['/api/applications/abc/questions', {}, 'Invalid application ID'],
       [
         '/api/applications/0/questions',
         { method: 'PUT', body: { questions: [] } },
-        'Invalid 지원 기업 ID',
+        'Invalid application ID',
       ],
-      ['/api/applications/1/questions/x', { method: 'DELETE' }, 'Invalid 자기소개서 문항 ID'],
+      ['/api/applications/1/questions/x', { method: 'DELETE' }, 'Invalid cover letter question ID'],
     ] as const) {
       const { status, data } = await call(path, request);
       assert.equal(status, 400);

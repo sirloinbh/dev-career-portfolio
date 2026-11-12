@@ -34,7 +34,7 @@ function serve(skills: { status: number; body: object } | 'offline') {
   );
 }
 
-/** The skills listed under a category heading such as "언어 2건". */
+/** The skills listed under a category heading such as "Language 2 entries". */
 const groupList = (heading: string) =>
   within(
     screen.getByRole('heading', { level: 2, name: heading }).parentElement as HTMLElement,
@@ -50,43 +50,46 @@ test('the main menu leads to the skill list', async () => {
   window.history.replaceState(null, '', '/');
   render(<App />);
   const menu = screen.getByRole('navigation', { name: 'Main menu' });
-  fireEvent.click(within(menu).getByRole('link', { name: '스킬' }));
+  fireEvent.click(within(menu).getByRole('link', { name: 'Skills' }));
   expect(window.location.pathname).toBe('/skills');
-  expect(await screen.findByRole('heading', { level: 1, name: '스킬' })).toBeInTheDocument();
-  expect(within(menu).getByRole('link', { name: '스킬' })).toHaveAttribute('aria-current', 'page');
+  expect(await screen.findByRole('heading', { level: 1, name: 'Skills' })).toBeInTheDocument();
+  expect(within(menu).getByRole('link', { name: 'Skills' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
 });
 
 test('skills are grouped by category in the fixed order, empty categories left out', async () => {
   // Deliberately out of category order: the groups must follow the fixed order.
   serve({ status: 200, body: { skills: [docker, typescript, go, postgres] } });
   openSkills();
-  await screen.findByRole('heading', { level: 2, name: '언어 2건' });
-  expect(screen.getByRole('status')).toHaveTextContent('스킬 4건');
-  expect(screen.getByRole('region', { name: '스킬' })).toHaveAttribute('aria-busy', 'false');
+  await screen.findByRole('heading', { level: 2, name: 'Language 2 entries' });
+  expect(screen.getByRole('status')).toHaveTextContent('4 entries');
+  expect(screen.getByRole('region', { name: 'Skills' })).toHaveAttribute('aria-busy', 'false');
   expect(
     screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
-  ).toEqual(['언어 2건', '데이터베이스 1건', '인프라·클라우드 1건']);
+  ).toEqual(['Language 2 entries', 'Database 1 entry', 'Infrastructure / cloud 1 entry']);
   // Groups are not landmarks, so the landmark list is not crowded with six categories.
-  expect(screen.queryByRole('region', { name: /언어/ })).not.toBeInTheDocument();
-  const languages = groupList('언어 2건');
+  expect(screen.queryByRole('region', { name: /Language/ })).not.toBeInTheDocument();
+  const languages = groupList('Language 2 entries');
   expect(
     within(languages)
       .getAllByRole('heading', { level: 3 })
       .map((heading) => heading.textContent),
   ).toEqual(['TypeScript', 'Go']);
   expect(screen.queryByRole('heading', { name: /프레임워크/ })).not.toBeInTheDocument();
-  expect(screen.queryByRole('heading', { name: /도구/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: /Tool/ })).not.toBeInTheDocument();
 });
 
 test('a skill shows its proficiency as dots, a short count and a full sentence', async () => {
   serve({ status: 200, body: { skills: [typescript, go] } });
   openSkills();
   const item = await screen.findByRole('listitem', { name: 'TypeScript' });
-  expect(within(item).getByText('숙련도 5점 중 5점, 전문')).toHaveClass('sr-only');
+  expect(within(item).getByText('Proficiency 5 of 5, Expert')).toHaveClass('sr-only');
   // The short count is for the eye only; a screen reader hears the sentence alone.
-  expect(within(item).getByText('5/5 · 전문')).toHaveAttribute('aria-hidden', 'true');
+  expect(within(item).getByText('5/5 · Expert')).toHaveAttribute('aria-hidden', 'true');
   const weaker = screen.getByRole('listitem', { name: 'Go' });
-  expect(within(weaker).getByText('숙련도 5점 중 3점, 실무')).toBeInTheDocument();
+  expect(within(weaker).getByText('Proficiency 3 of 5, Working')).toBeInTheDocument();
   // Three of the five dots are filled.
   const dots = weaker.querySelectorAll('[aria-hidden] > span');
   expect(dots).toHaveLength(5);
@@ -97,7 +100,7 @@ test('a memo is shown with its label only when it was entered', async () => {
   serve({ status: 200, body: { skills: [typescript, go] } });
   openSkills();
   const withMemo = await screen.findByRole('listitem', { name: 'TypeScript' });
-  expect(within(withMemo).getByRole('term')).toHaveTextContent('메모');
+  expect(within(withMemo).getByRole('term')).toHaveTextContent('Notes');
   expect(within(withMemo).getByRole('definition')).toHaveTextContent('실무 4년');
   const withoutMemo = screen.getByRole('listitem', { name: 'Go' });
   expect(within(withoutMemo).queryByRole('term')).not.toBeInTheDocument();
@@ -109,25 +112,23 @@ test('a placeholder shows while the list loads', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openSkills();
-  expect(screen.getByRole('status')).toHaveTextContent('스킬을 불러오는 중');
-  expect(screen.getByRole('region', { name: '스킬' })).toHaveAttribute('aria-busy', 'true');
+  expect(screen.getByRole('status')).toHaveTextContent('Loading skills');
+  expect(screen.getByRole('region', { name: 'Skills' })).toHaveAttribute('aria-busy', 'true');
 });
 
 test('an empty list explains what will appear', async () => {
   serve({ status: 200, body: { skills: [] } });
   openSkills();
-  expect(
-    await screen.findByRole('heading', { name: '아직 등록한 스킬이 없습니다' }),
-  ).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('스킬 0건');
-  expect(screen.queryByRole('heading', { level: 2, name: /건$/ })).not.toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'No skills added yet' })).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('0 entries');
+  expect(screen.queryByRole('heading', { level: 2, name: /entr(y|ies)$/ })).not.toBeInTheDocument();
 });
 
-test('a server error is shown in Korean', async () => {
-  serve({ status: 503, body: { error: '데이터베이스에 연결할 수 없습니다' } });
+test('a server error is shown in English', async () => {
+  serve({ status: 503, body: { error: 'Cannot connect to the database' } });
   openSkills();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '스킬을 불러오지 못했습니다. 데이터베이스에 연결할 수 없습니다',
+    'Could not load skills. Cannot connect to the database',
   );
 });
 
@@ -135,15 +136,15 @@ test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openSkills();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '스킬을 불러오지 못했습니다. Could not process the request',
+    'Could not load skills. Could not process the request',
   );
 });
 
-test('an unreachable server is shown in Korean', async () => {
+test('an unreachable server is shown in English', async () => {
   serve('offline');
   openSkills();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '스킬을 불러오지 못했습니다. Cannot reach the server',
+    'Could not load skills. Cannot reach the server',
   );
 });
 
@@ -153,5 +154,5 @@ test('grouping keeps the API order within a group', () => {
   expect(groups.map((group) => group.category)).toEqual(['language', 'database']);
   // The API sends the strongest first; the screen does not re-sort.
   expect(groups[0].skills.map((item) => item.name)).toEqual(['Go', 'TypeScript']);
-  expect(proficiencyText(1)).toBe('숙련도 5점 중 1점, 입문');
+  expect(proficiencyText(1)).toBe('Proficiency 1 of 5, Beginner');
 });

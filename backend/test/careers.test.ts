@@ -29,37 +29,43 @@ async function expectRefused(body: unknown, message: string) {
   });
 }
 
-test('a leaving date before the joining date is refused in Korean', async () => {
-  await expectRefused({ ...valid, endDate: '2019-03-03' }, '퇴사일은 입사일보다 빠를 수 없습니다');
+test('a leaving date before the joining date is refused in English', async () => {
+  await expectRefused(
+    { ...valid, endDate: '2019-03-03' },
+    'End date cannot be earlier than start date',
+  );
 });
 
 test('a bad date reports only its own error, not a false ordering error', async () => {
   await expectRefused(
     { ...valid, startDate: '2019-02-30', endDate: '2019-01-01' },
-    '입사일은(는) YYYY-MM-DD 형식의 날짜여야 합니다',
+    'Start date must be a date in YYYY-MM-DD format',
   );
 });
 
 test('a blank company name is refused', async () => {
-  await expectRefused({ ...valid, company: '   ' }, '회사명을(를) 입력해 주세요');
+  await expectRefused({ ...valid, company: '   ' }, 'Company is required');
 });
 
 test('a missing or unknown employment type is refused', async () => {
   await expectRefused(
     { ...valid, employmentType: undefined },
-    '고용 형태는 정규직, 계약직, 인턴, 프리랜서, 기타 중 하나여야 합니다',
+    'Employment type must be one of full-time, contract, intern, freelance, other',
   );
   await expectRefused(
     { ...valid, employmentType: 'part_time' },
-    '고용 형태는 정규직, 계약직, 인턴, 프리랜서, 기타 중 하나여야 합니다',
+    'Employment type must be one of full-time, contract, intern, freelance, other',
   );
 });
 
 test('long text is refused with its own limit', async () => {
-  await expectRefused({ ...valid, position: '가'.repeat(101) }, '직책은(는) 100자 이하여야 합니다');
+  await expectRefused(
+    { ...valid, position: '가'.repeat(101) },
+    'Job title must be at most 100 characters',
+  );
   await expectRefused(
     { ...valid, achievements: '가'.repeat(2001) },
-    '주요 성과은(는) 2000자 이하여야 합니다',
+    'Achievements must be at most 2000 characters',
   );
 });
 
@@ -70,12 +76,12 @@ test('an update is validated the same way as a create', async () => {
       body: { ...valid, endDate: '2019-03-03' },
     });
     assert.equal(status, 400);
-    assert.equal(data.error, '퇴사일은 입사일보다 빠를 수 없습니다');
+    assert.equal(data.error, 'End date cannot be earlier than start date');
   });
 });
 
-test('a body that is not an object is refused in Korean', async () => {
-  await expectRefused([], '요청 본문은 JSON 객체여야 합니다');
+test('a body that is not an object is refused in English', async () => {
+  await expectRefused([], 'Request body must be a JSON object');
 });
 
 test('a malformed id is refused before any query', async () => {
@@ -83,7 +89,7 @@ test('a malformed id is refused before any query', async () => {
     for (const request of [{ method: 'PUT', body: valid }, { method: 'DELETE' }]) {
       const { status, data } = await call('/api/careers/abc', request);
       assert.equal(status, 400);
-      assert.equal(data.error, 'Invalid 이력 ID');
+      assert.equal(data.error, 'Invalid career ID');
     }
   });
 });

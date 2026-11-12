@@ -9,12 +9,12 @@ import { RequestError } from './lib/api';
 import { errorText, useNotice } from './lib/use-notice';
 
 // What every portfolio item form shares (#39 structure, shared from #41): the server validates, and
-// its Korean messages are shown under the field they are about.
+// its messages are shown under the field they are about.
 
 /**
  * The value to send for a date input. A date typed only in part ("2023-12-__") reads as '' in the
  * browser, which an optional date would save as "no date" (a job still held, say). It goes as text
- * the server refuses instead, so the Korean message appears under that field. A disabled input is
+ * the server refuses instead, so the message appears under that field. A disabled input is
  * not the user's to finish, so it sends its value as is.
  */
 export function typedDate(input: HTMLInputElement | null, value: string) {
@@ -59,7 +59,7 @@ export function useServerForm<F extends string>(split: (message: string) => Fiel
     notice.clear();
     save().catch((error: unknown) => {
       setPending(false);
-      const message = errorText(error, '저장하지 못했습니다');
+      const message = errorText(error, 'Could not save');
       // 400 is a rule an input broke; 409 is a value taken by another row (a skill name). Both can be
       // about one field, so both are split; any other failure goes in the notice.
       const aboutInput =
@@ -76,7 +76,7 @@ export function useServerForm<F extends string>(split: (message: string) => Fiel
         requestAnimationFrame(() => submitButton.current?.focus());
         return;
       }
-      // Show each Korean message under its input and move to the first, so it is read with the field.
+      // Show each message under its input and move to the first, so it is read with the field.
       setErrors(byField);
       requestAnimationFrame(() => document.getElementById(fieldId(first))?.focus());
     });
@@ -92,11 +92,11 @@ export function useServerForm<F extends string>(split: (message: string) => Fiel
           disabled={pending}
           aria-busy={pending || undefined}
         >
-          {pending ? <Spinner size="sm" label="저장하는 중" /> : null}
+          {pending ? <Spinner size="sm" label="Saving" /> : null}
           {submitLabel}
         </Button>
         <Button asChild variant="outline">
-          <Link to={cancelTo}>취소</Link>
+          <Link to={cancelTo}>Cancel</Link>
         </Button>
       </div>
     </>

@@ -69,7 +69,7 @@ test('skills are stored, listed by category, updated and deleted', { skip: !url 
     ]) {
       const duplicate = await call('/api/skills', { method: 'POST', body });
       assert.equal(duplicate.status, 409);
-      assert.equal(duplicate.data.error, '이미 등록된 스킬입니다');
+      assert.equal(duplicate.data.error, 'This skill is already registered');
     }
 
     // Renaming another skill to a taken name is refused too, and that row stays as it was.
@@ -80,7 +80,7 @@ test('skills are stored, listed by category, updated and deleted', { skip: !url 
       body: { name: 'react', category: 'framework', proficiency: 1, memo: '바뀌면 안 됨' },
     });
     assert.equal(taken.status, 409);
-    assert.equal(taken.data.error, '이미 등록된 스킬입니다');
+    assert.equal(taken.data.error, 'This skill is already registered');
     const kept = await call('/api/skills');
     assert.deepEqual(
       (kept.data.skills as Skill[]).find((skill) => skill.id === docker.id),
@@ -116,7 +116,7 @@ test('skills are stored, listed by category, updated and deleted', { skip: !url 
     ]) {
       const missing = await call(`/api/skills/${String(typescript.id)}`, request);
       assert.equal(missing.status, 404);
-      assert.equal(missing.data.error, '스킬을 찾을 수 없습니다');
+      assert.equal(missing.data.error, 'Skill not found');
     }
   });
 });

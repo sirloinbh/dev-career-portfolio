@@ -3,16 +3,16 @@
 export type FieldError<F extends string> = { field: F | undefined; message: string };
 
 /**
- * The server answers one Korean message that starts with the field's label, and joins several with
- * ", " (backend/src/standard/http.ts). A message can hold commas itself ("고등학교, 전문학사, …"), so a
+ * The server answers one message that starts with the field's label, and joins several with
+ * ", " (backend/src/standard/http.ts). A message can hold commas itself ("High school, Associate, …"), so a
  * piece that names no field stays with the one before. Messages about the same field are joined even
  * when another field's message sits between them (zod reports per-field issues before the
- * cross-field ones); the same message twice (one per list item, "사용 기술 항목은 50자 …") is shown once.
+ * cross-field ones); the same message twice (one per list item, "Technologies items must be at most 50 characters") is shown once.
  * Fields come in screen order, so the screen focuses the topmost one; a piece
  * that names no field goes last.
  *
- * `labels` maps a message start to its field; put longer labels first so "재학 중이면 졸업일" is not
- * read as another field. `order` is the order the inputs appear on screen.
+ * `labels` maps a message start to its field; put longer labels first so a label that starts with another
+ * one is not read as the shorter field. `order` is the order the inputs appear on screen.
  */
 /** The count the server adds when it shows only the first ten issues (backend/src/standard/http.ts). */
 const overflow = /, and \d+ more$/;

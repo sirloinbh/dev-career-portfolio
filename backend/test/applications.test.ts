@@ -24,18 +24,18 @@ async function expectRefused(body: unknown, message: string) {
   });
 }
 
-test('a blank, missing or too long company name is refused in Korean', async () => {
+test('a blank, missing or too long company name is refused in English', async () => {
   for (const companyName of ['', '   ', undefined, null]) {
-    await expectRefused({ ...valid, companyName }, '기업명을(를) 입력해 주세요');
+    await expectRefused({ ...valid, companyName }, 'Company name is required');
   }
   await expectRefused(
     { ...valid, companyName: '가'.repeat(101) },
-    '기업명은(는) 100자 이하여야 합니다',
+    'Company name must be at most 100 characters',
   );
 });
 
 test('the status must be one of the three', async () => {
-  const message = '지원 상태는 작성 중, 제출 완료, 종료 중 하나여야 합니다';
+  const message = 'Application status must be one of drafting, submitted, closed';
   for (const status of ['passed', 'Drafting', '', undefined]) {
     await expectRefused({ ...valid, status }, message);
   }
@@ -45,26 +45,29 @@ test('the posting link must be an http(s) address', async () => {
   for (const postingUrl of ['javascript:alert(1)', 'example.com/jobs', 'https:example.com']) {
     await expectRefused(
       { ...valid, postingUrl },
-      '채용 공고 링크은(는) http:// 또는 https://로 시작하는 주소여야 합니다',
+      'Job posting link must start with http:// or https://',
     );
   }
   await expectRefused(
     { ...valid, postingUrl: 'https://example.com/a b' },
-    '채용 공고 링크에는 공백을 넣을 수 없습니다',
+    'Job posting link must not contain spaces',
   );
 });
 
 test('a bad deadline, a long position or a long memo is refused', async () => {
   await expectRefused(
     { ...valid, deadline: '2026-02-30' },
-    '마감일은(는) YYYY-MM-DD 형식의 날짜여야 합니다',
+    'Deadline must be a date in YYYY-MM-DD format',
   );
-  await expectRefused({ ...valid, deadline: '' }, '마감일은(는) YYYY-MM-DD 형식의 날짜여야 합니다');
+  await expectRefused({ ...valid, deadline: '' }, 'Deadline must be a date in YYYY-MM-DD format');
   await expectRefused(
     { ...valid, position: 'a'.repeat(101) },
-    '지원 직무은(는) 100자 이하여야 합니다',
+    'Position must be at most 100 characters',
   );
-  await expectRefused({ ...valid, memo: '가'.repeat(2001) }, '메모은(는) 2000자 이하여야 합니다');
+  await expectRefused(
+    { ...valid, memo: '가'.repeat(2001) },
+    'Notes must be at most 2000 characters',
+  );
 });
 
 test('an update is validated the same way as a create', async () => {
@@ -74,12 +77,12 @@ test('an update is validated the same way as a create', async () => {
       body: { ...valid, companyName: ' ' },
     });
     assert.equal(status, 400);
-    assert.equal(data.error, '기업명을(를) 입력해 주세요');
+    assert.equal(data.error, 'Company name is required');
   });
 });
 
-test('a body that is not an object is refused in Korean', async () => {
-  await expectRefused([], '요청 본문은 JSON 객체여야 합니다');
+test('a body that is not an object is refused in English', async () => {
+  await expectRefused([], 'Request body must be a JSON object');
 });
 
 test('a malformed id is refused before any query', async () => {
@@ -87,7 +90,7 @@ test('a malformed id is refused before any query', async () => {
     for (const request of [{ method: 'PUT', body: valid }, { method: 'DELETE' }]) {
       const { status, data } = await call('/api/applications/abc', request);
       assert.equal(status, 400);
-      assert.equal(data.error, 'Invalid 지원 기업 ID');
+      assert.equal(data.error, 'Invalid application ID');
     }
   });
 });

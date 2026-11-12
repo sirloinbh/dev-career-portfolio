@@ -9,7 +9,7 @@ export function OutLink({ href, label, owner }: { href: string; label: string; o
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={`${owner} ${label} (새 탭에서 열림)`}
+      aria-label={`${label} of ${owner} (opens in a new tab)`}
       className="inline-flex min-h-9 items-center gap-1 rounded-sm text-body-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:min-h-11"
     >
       {label}

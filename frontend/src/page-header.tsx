@@ -29,7 +29,7 @@ export function PageHeader({
   );
 }
 
-/** "← 학력 목록": back to an item's list from its form. */
+/** "← Education list": back to an item's list from its form. */
 export function BackLink({ to, label }: { to: string; label: string }) {
   return (
     <Button asChild variant="ghost" size="sm" className="w-fit">

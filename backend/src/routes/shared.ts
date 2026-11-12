@@ -8,26 +8,26 @@ import { z } from 'zod/v4';
  */
 export const calendarDate = (label: string) =>
   z.iso
-    .date({ error: `${label}은(는) YYYY-MM-DD 형식의 날짜여야 합니다`, abort: true })
+    .date({ error: `${label} must be a date in YYYY-MM-DD format`, abort: true })
     .refine((value) => value >= '0001-01-01', {
-      error: `${label}은(는) 0001-01-01 이후여야 합니다`,
+      error: `${label} must be on or after 0001-01-01`,
       abort: true,
     });
 
 /** Required text: surrounding spaces are removed and an empty value is rejected. */
 export const requiredText = (label: string, max: number) =>
   z
-    .string({ error: `${label}을(를) 입력해 주세요` })
+    .string({ error: `${label} is required` })
     .trim()
-    .min(1, `${label}을(를) 입력해 주세요`)
-    .max(max, `${label}은(는) ${max}자 이하여야 합니다`);
+    .min(1, `${label} is required`)
+    .max(max, `${label} must be at most ${String(max)} characters`);
 
 /** Optional text: a missing or blank value is stored as NULL, not as an empty string. */
 export const optionalText = (label: string, max: number) =>
   z
-    .string({ error: `${label}은(는) 문자열이어야 합니다` })
+    .string({ error: `${label} must be text` })
     .trim()
-    .max(max, `${label}은(는) ${max}자 이하여야 합니다`)
+    .max(max, `${label} must be at most ${String(max)} characters`)
     .nullable()
     .default(null)
     .transform((value) => (value === '' ? null : value));
@@ -47,19 +47,19 @@ const isWebAddress = (value: string) => {
  */
 export const optionalLink = (label: string) =>
   z
-    .string({ error: `${label}은(는) 문자열이어야 합니다` })
+    .string({ error: `${label} must be text` })
     .trim()
-    .max(500, `${label}은(는) 500자 이하여야 합니다`)
+    .max(500, `${label} must be at most 500 characters`)
     .superRefine((value, ctx) => {
       if (value === '') return;
       // URL silently drops tabs and line breaks, so the stored text would differ from the opened
       // link. Spaces get their own message because the address may already start with https://.
       if (/\s/.test(value)) {
-        ctx.addIssue({ code: 'custom', message: `${label}에는 공백을 넣을 수 없습니다` });
+        ctx.addIssue({ code: 'custom', message: `${label} must not contain spaces` });
       } else if (!isWebAddress(value)) {
         ctx.addIssue({
           code: 'custom',
-          message: `${label}은(는) http:// 또는 https://로 시작하는 주소여야 합니다`,
+          message: `${label} must start with http:// or https://`,
         });
       }
     })
@@ -68,4 +68,4 @@ export const optionalLink = (label: string) =>
     .transform((value) => (value === '' ? null : value));
 
 /** The body must be a JSON object; express.json() also accepts arrays and bare values. */
-export const objectBodyError = { error: '요청 본문은 JSON 객체여야 합니다' };
+export const objectBodyError = { error: 'Request body must be a JSON object' };

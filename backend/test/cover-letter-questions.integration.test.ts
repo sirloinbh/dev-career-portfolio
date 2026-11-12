@@ -112,7 +112,7 @@ test(
       assert.equal(foreign.status, 409);
       assert.equal(
         foreign.data.error,
-        '이 지원 기업에 없는 문항이 있습니다. 목록을 다시 불러와 주세요',
+        'Some questions do not belong to this application. Please reload the list',
       );
       assert.deepEqual(await list(first), current);
       assert.deepEqual(await list(second), [teamwork]);
@@ -120,7 +120,7 @@ test(
       // One question can be deleted on its own, but only through its own application.
       const wrongOwner = await call(`${path(first)}/${String(teamwork.id)}`, { method: 'DELETE' });
       assert.equal(wrongOwner.status, 404);
-      assert.equal(wrongOwner.data.error, '자기소개서 문항을 찾을 수 없습니다');
+      assert.equal(wrongOwner.data.error, 'Cover letter question not found');
       const removed = await call(`${path(first)}/${String(motive.id)}`, { method: 'DELETE' });
       assert.equal(removed.status, 204);
       assert.deepEqual(await list(first), [current[0], current[2]]);
@@ -146,7 +146,7 @@ test(
         await call(`${path(first)}/${String(current[0].id)}`, { method: 'DELETE' }),
       ]) {
         assert.equal(response.status, 404);
-        assert.equal(response.data.error, '지원 기업을 찾을 수 없습니다');
+        assert.equal(response.data.error, 'Application not found');
       }
     });
   },

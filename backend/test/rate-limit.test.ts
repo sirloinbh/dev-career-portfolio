@@ -5,7 +5,7 @@ import type { Pool } from 'pg';
 
 import { withApi } from './helpers.js';
 
-test('requests over the limit get a Korean 429 and never reach the database', async () => {
+test('requests over the limit get an English 429 and never reach the database', async () => {
   let queries = 0;
   const pool = {
     query: async () => {
@@ -21,7 +21,7 @@ test('requests over the limit get a Korean 429 and never reach the database', as
       assert.equal((await call('/api/educations')).status, 200);
       const refused = await call('/api/educations');
       assert.equal(refused.status, 429);
-      assert.equal(refused.data.error, '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요');
+      assert.equal(refused.data.error, 'Too many requests. Please try again in a moment');
     },
     { rateLimit: { limit: 2 } },
   );

@@ -1,5 +1,6 @@
 import { splitFieldErrors } from './field-errors';
 import { requestJson } from './lib/api';
+import { formatDate } from './service-date';
 
 // Certifications (#35 API, #46 list, #47 form): API calls and display rules. The screens are in
 // certifications.tsx.
@@ -11,7 +12,7 @@ export type Certification = {
   acquiredDate: string;
   /** null means the certification never expires (#35: never a placeholder date). */
   expiryDate: string | null;
-  /** Text, not a number: "905점", "1급", "IH". */
+  /** Text, not a number: "905", "Grade 1", "IH". */
   score: string | null;
   memo: string | null;
 };
@@ -23,14 +24,16 @@ export type Certification = {
 export const isExpired = (certification: Pick<Certification, 'expiryDate'>, today: string) =>
   certification.expiryDate !== null && certification.expiryDate < today;
 
-/** "취득 2024-05-17 · 만료 2026-05-16", or "· 만료 없음" when it never expires. */
+/** "Earned May 17, 2024 · Expires May 16, 2026", or "· No expiry" when it never expires. */
 export function certificationPeriodText(
   certification: Pick<Certification, 'acquiredDate' | 'expiryDate'>,
 ) {
-  return `취득 ${certification.acquiredDate} · 만료 ${certification.expiryDate ?? '없음'}`;
+  return `Earned ${formatDate(certification.acquiredDate)} · ${
+    certification.expiryDate ? `Expires ${formatDate(certification.expiryDate)}` : 'No expiry'
+  }`;
 }
 
-/** "한국산업인력공단 · 905점": the issuer, then the score or grade when one was entered. */
+/** "Korea Issuer · 905": the issuer, then the score or grade when one was entered. */
 export function issuerText(certification: Pick<Certification, 'issuer' | 'score'>) {
   return [certification.issuer, certification.score].filter(Boolean).join(' · ');
 }
@@ -76,7 +79,7 @@ export function toCertificationForm(certification: Certification): Certification
 /**
  * A blank expiry date means the certification never expires, so it goes as null. Blank text goes
  * as '' and the server stores it as NULL; a blank acquired date goes as '' so the server answers in
- * Korean.
+ * English.
  */
 export function toCertificationInput(form: CertificationForm): CertificationInput {
   return { ...form, expiryDate: form.expiryDate === '' ? null : form.expiryDate };
@@ -84,12 +87,12 @@ export function toCertificationInput(form: CertificationForm): CertificationInpu
 
 // The server's messages start with these labels (backend/src/routes/certifications.ts).
 const fieldLabels: [string, keyof CertificationForm][] = [
-  ['자격증명', 'name'],
-  ['발급 기관', 'issuer'],
-  ['취득일', 'acquiredDate'],
-  ['만료일', 'expiryDate'],
-  ['점수·등급', 'score'],
-  ['메모', 'memo'],
+  ['Certification name', 'name'],
+  ['Issuer', 'issuer'],
+  ['Date earned', 'acquiredDate'],
+  ['Expiry date', 'expiryDate'],
+  ['Score or grade', 'score'],
+  ['Notes', 'memo'],
 ];
 
 // The order the inputs appear on screen (certifications.tsx CertificationFields).

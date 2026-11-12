@@ -1,5 +1,6 @@
 import { splitFieldErrors } from './field-errors';
 import { requestJson } from './lib/api';
+import { formatDate } from './service-date';
 
 // Projects (#33 API, #42 list, #43 form): API calls and display rules. The screens are in
 // projects.tsx.
@@ -22,12 +23,12 @@ export type Project = {
 /** A project with no end date is still running. */
 export const isRunning = (project: Pick<Project, 'endDate'>) => project.endDate === null;
 
-/** "2023-03-02 ~ 2023-12-29", or "2024-05-01 ~ 진행 중" while the project runs. */
+/** "March 2, 2023 – December 29, 2023", or "May 1, 2024 – Present" while the project runs. */
 export function projectPeriodText(project: Pick<Project, 'startDate' | 'endDate'>) {
-  return `${project.startDate} ~ ${project.endDate ?? '진행 중'}`;
+  return `${formatDate(project.startDate)} – ${project.endDate ? formatDate(project.endDate) : 'Present'}`;
 }
 
-/** "커머스개발팀 · 백엔드 개발": the organization and role that were entered. */
+/** "Commerce team · Backend development": the organization and role that were entered. */
 export function projectRoleText(project: Pick<Project, 'organization' | 'role'>) {
   return [project.organization, project.role].filter(Boolean).join(' · ');
 }
@@ -95,7 +96,7 @@ export function splitTechnologies(text: string) {
 
 /**
  * A blank end date means the project is still running, so it goes as null. Blank text goes as ''
- * and the server stores it as NULL; a blank start date goes as '' so the server answers in Korean.
+ * and the server stores it as NULL; a blank start date goes as '' so the server answers in English.
  */
 export function toProjectInput(form: ProjectForm): ProjectInput {
   return {
@@ -107,16 +108,16 @@ export function toProjectInput(form: ProjectForm): ProjectInput {
 
 // The server's messages start with these labels (backend/src/routes/projects.ts, shared.ts).
 const fieldLabels: [string, keyof ProjectForm][] = [
-  ['프로젝트명', 'name'],
-  ['소속', 'organization'],
-  ['시작일', 'startDate'],
-  ['종료일', 'endDate'],
-  ['역할', 'role'],
-  ['요약', 'summary'],
-  ['기여와 성과', 'contributions'],
-  ['사용 기술', 'technologies'],
-  ['저장소 링크', 'repositoryUrl'],
-  ['서비스 링크', 'serviceUrl'],
+  ['Project name', 'name'],
+  ['Organization', 'organization'],
+  ['Start date', 'startDate'],
+  ['End date', 'endDate'],
+  ['Role', 'role'],
+  ['Summary', 'summary'],
+  ['Contributions', 'contributions'],
+  ['Technologies', 'technologies'],
+  ['Repository link', 'repositoryUrl'],
+  ['Service link', 'serviceUrl'],
 ];
 
 // The order the inputs appear on screen (projects.tsx ProjectFields).

@@ -28,6 +28,7 @@ import {
   toEducationForm,
   toEducationInput,
 } from './education-data';
+import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
@@ -75,23 +76,23 @@ function EducationItem({
       ) : null}
       <div className="flex flex-wrap gap-2 pt-1">
         <Button asChild variant="outline" size="sm">
-          <Link to={paths.edit(education.id)} aria-label={`${education.school} 수정`}>
+          <Link to={paths.edit(education.id)} aria-label={`Edit ${education.school}`}>
             <Pencil aria-hidden />
-            수정
+            Edit
           </Link>
         </Button>
         <ConfirmDialog
-          title="학력을 지울까요?"
+          title="Delete this education?"
           description={
             <span className="break-keep">
-              &apos;{education.school}&apos; 학력을 지웁니다. 지운 뒤에는 되돌릴 수 없습니다.
+              &apos;{education.school}&apos; will be deleted. This cannot be undone.
             </span>
           }
           onConfirm={() => onDelete(education)}
           trigger={
-            <Button variant="outline" size="sm" aria-label={`${education.school} 삭제`}>
+            <Button variant="outline" size="sm" aria-label={`Delete ${education.school}`}>
               <Trash2 aria-hidden />
-              삭제
+              Delete
             </Button>
           }
         />
@@ -110,7 +111,7 @@ export function EducationList({ paths }: { paths: EducationPaths }) {
   const remove = async (education: Education) => {
     await deleteItem({
       remove: () => educationApi.remove(education.id),
-      noun: '학력',
+      noun: 'education',
       name: education.school,
     });
     reload((current) => ({
@@ -123,40 +124,40 @@ export function EducationList({ paths }: { paths: EducationPaths }) {
   return (
     <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
       <PageHeader
-        title="학력"
-        description="학교와 전공, 재학 기간을 최근 입학 순으로 봅니다."
+        title="Education"
+        description="See your schools, majors, and study periods, newest enrollment first."
         headingRef={heading}
       >
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
-          {firstLoad ? '학력을 불러오는 중' : ''}
-          {data ? `학력 ${educations.length}건` : ''}
+          {firstLoad ? 'Loading education' : ''}
+          {data ? entryCount(educations.length) : ''}
         </p>
       </PageHeader>
       <Button asChild className="w-fit">
         <Link to={paths.create}>
           <Plus aria-hidden />
-          학력 추가
+          Add education
         </Link>
       </Button>
       {firstLoad ? <SkeletonList rows={3} /> : null}
       {loaded.state === 'error' && data === undefined ? (
         // Say what failed first: a proxy error without a server message only carries the generic text.
         <Notice
-          notice={{ kind: 'error', text: `학력을 불러오지 못했습니다. ${errorText(loaded.error)}` }}
+          notice={{ kind: 'error', text: `Could not load education. ${errorText(loaded.error)}` }}
         />
       ) : null}
       {data && educations.length === 0 ? (
         <EmptyState
           className="break-keep"
           icon={<GraduationCap />}
-          title="아직 등록한 학력이 없습니다"
-          description="학력 추가를 누르면 최근 입학 순으로 여기에 보입니다."
+          title="No education added yet"
+          description="Choose Add education and it will appear here, newest enrollment first."
         />
       ) : null}
       {educations.length > 0 ? (
         <ul
-          aria-label="학력 목록"
+          aria-label="Education list"
           className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
         >
           {educations.map((education) => (
@@ -193,7 +194,7 @@ function EducationFields({
 
   const enrolled = form.status === 'enrolled';
   return (
-    // The server checks every rule and answers in Korean, so the browser's own checks are off.
+    // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
       onSubmit={submit(() =>
@@ -203,34 +204,34 @@ function EducationFields({
       aria-busy={pending || undefined}
     >
       <div className="flex flex-col gap-2">
-        <Label htmlFor={fieldId('school')}>학교명</Label>
+        <Label htmlFor={fieldId('school')}>School</Label>
         <Input
           id={fieldId('school')}
           maxLength={100}
           autoComplete="off"
           value={form.school}
           onChange={(e) => set('school')(e.target.value)}
-          placeholder="예: 한국대학교"
+          placeholder="e.g. Hanguk University"
           {...describe('school')}
         />
         {errorFor('school')}
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor={fieldId('major')}>전공</Label>
+        <Label htmlFor={fieldId('major')}>Major</Label>
         <Input
           id={fieldId('major')}
           maxLength={100}
           autoComplete="off"
           value={form.major}
           onChange={(e) => set('major')(e.target.value)}
-          placeholder="예: 컴퓨터공학"
+          placeholder="e.g. Computer Science"
           {...describe('major')}
         />
         {errorFor('major')}
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('degree')}>학위</Label>
+          <Label htmlFor={fieldId('degree')}>Degree</Label>
           <select
             id={fieldId('degree')}
             className={cn(controlClass, 'h-9')}
@@ -247,7 +248,7 @@ function EducationFields({
           {errorFor('degree')}
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('status')}>상태</Label>
+          <Label htmlFor={fieldId('status')}>Status</Label>
           <select
             id={fieldId('status')}
             className={cn(controlClass, 'h-9')}
@@ -280,7 +281,7 @@ function EducationFields({
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('startDate')}>입학일</Label>
+          <Label htmlFor={fieldId('startDate')}>Enrollment date</Label>
           <Input
             id={fieldId('startDate')}
             type="date"
@@ -291,7 +292,7 @@ function EducationFields({
           {errorFor('startDate')}
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('endDate')}>졸업일</Label>
+          <Label htmlFor={fieldId('endDate')}>Graduation date</Label>
           <Input
             id={fieldId('endDate')}
             ref={endDateInput}
@@ -306,37 +307,37 @@ function EducationFields({
             className="text-caption break-keep text-muted-foreground"
           >
             {enrolled
-              ? '재학 중에는 졸업일을 넣지 않습니다.'
-              : '휴학·중퇴로 정해진 날이 없으면 비워 둡니다.'}
+              ? 'Leave the graduation date empty while enrolled.'
+              : 'Leave it empty if a leave or withdrawal has no set date.'}
           </p>
           {errorFor('endDate')}
         </div>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('gpa')}>학점</Label>
+          <Label htmlFor={fieldId('gpa')}>GPA</Label>
           <Input
             id={fieldId('gpa')}
             // Text, not type="number": a number input empties text it cannot read ("3..5"), so the
-            // server would never see it and explain in Korean.
+            // server would never see it and explain in English.
             inputMode="decimal"
             autoComplete="off"
             value={form.gpa}
             onChange={(e) => set('gpa')(e.target.value)}
-            placeholder="예: 3.75"
+            placeholder="e.g. 3.75"
             {...describe('gpa', `${fieldId('gpa')}-hint`)}
           />
           {errorFor('gpa')}
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor={fieldId('gpaScale')}>만점</Label>
+          <Label htmlFor={fieldId('gpaScale')}>Maximum GPA</Label>
           <Input
             id={fieldId('gpaScale')}
             inputMode="decimal"
             autoComplete="off"
             value={form.gpaScale}
             onChange={(e) => set('gpaScale')(e.target.value)}
-            placeholder="예: 4.5"
+            placeholder="e.g. 4.5"
             {...describe('gpaScale', `${fieldId('gpa')}-hint`)}
           />
           {errorFor('gpaScale')}
@@ -345,11 +346,11 @@ function EducationFields({
           id={`${fieldId('gpa')}-hint`}
           className="text-caption break-keep text-muted-foreground sm:col-span-2"
         >
-          학점과 만점은 함께 넣거나 함께 비워 둡니다. 소수 둘째 자리까지 넣을 수 있습니다.
+          Enter the GPA and maximum GPA together, or leave both empty. Up to two decimal places.
         </p>
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor={fieldId('memo')}>메모</Label>
+        <Label htmlFor={fieldId('memo')}>Notes</Label>
         <textarea
           id={fieldId('memo')}
           rows={4}
@@ -357,7 +358,7 @@ function EducationFields({
           className={cn(controlClass, 'min-h-24 py-2')}
           value={form.memo}
           onChange={(e) => set('memo')(e.target.value)}
-          placeholder="졸업 작품, 수상, 논문 등"
+          placeholder="Capstone project, awards, thesis, etc."
           {...describe('memo')}
         />
         {errorFor('memo')}
@@ -371,19 +372,19 @@ export function NewEducation({ paths }: { paths: EducationPaths }) {
   const navigate = useNavigate();
   const create = async (form: EducationForm) => {
     const { education } = await educationApi.create(toEducationInput(form));
-    toast.success(`'${education.school}' 학력을 추가했습니다`);
+    toast.success(`Added '${education.school}'`);
     void navigate(paths.list);
   };
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="학력 목록" />
+      <BackLink to={paths.list} label="Education list" />
       <PageHeader
-        title="학력 추가"
-        description="학교명, 학위, 상태, 입학일만 있으면 됩니다. 나머지는 비워 둘 수 있습니다."
+        title="Add education"
+        description="School, degree, status, and enrollment date are all you need. The rest can stay empty."
       />
       <EducationFields
         initial={emptyEducationForm}
-        submitLabel="추가"
+        submitLabel="Add"
         cancelTo={paths.list}
         onSubmit={create}
       />
@@ -402,7 +403,7 @@ export function EditEducation({ paths }: { paths: EducationPaths }) {
       : undefined;
   const update = async (form: EducationForm) => {
     await educationApi.update(Number(id), toEducationInput(form));
-    toast.success('저장했습니다');
+    toast.success('Saved');
     void navigate(paths.list);
   };
   return (
@@ -411,17 +412,17 @@ export function EditEducation({ paths }: { paths: EducationPaths }) {
       aria-busy={loaded.state === 'loading'}
       className="flex flex-col gap-6"
     >
-      <BackLink to={paths.list} label="학력 목록" />
-      <PageHeader title="학력 수정" description="바꿀 내용을 고친 뒤 저장합니다." />
+      <BackLink to={paths.list} label="Education list" />
+      <PageHeader title="Edit education" description="Change what you need, then save." />
       {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
       {loaded.state === 'error' ? (
         <Notice
-          notice={{ kind: 'error', text: `학력을 불러오지 못했습니다. ${errorText(loaded.error)}` }}
+          notice={{ kind: 'error', text: `Could not load education. ${errorText(loaded.error)}` }}
         />
       ) : null}
       {loaded.state === 'ok' && !education ? (
         <Notice
-          notice={{ kind: 'error', text: '학력을 찾을 수 없습니다. 이미 지웠을 수 있습니다.' }}
+          notice={{ kind: 'error', text: 'Education not found. It may already be deleted.' }}
         />
       ) : null}
       {education ? (
@@ -429,7 +430,7 @@ export function EditEducation({ paths }: { paths: EducationPaths }) {
           // A new id starts a fresh form instead of keeping the previous row's typing.
           key={education.id}
           initial={toEducationForm(education)}
-          submitLabel="저장"
+          submitLabel="Save"
           cancelTo={paths.list}
           onSubmit={update}
         />

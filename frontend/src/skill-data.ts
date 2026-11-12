@@ -25,27 +25,27 @@ export type Skill = {
 };
 
 export const skillCategoryLabels: Record<SkillCategory, string> = {
-  language: '언어',
-  framework: '프레임워크·라이브러리',
-  database: '데이터베이스',
-  infrastructure: '인프라·클라우드',
-  tool: '도구',
-  other: '기타',
+  language: 'Language',
+  framework: 'Framework / library',
+  database: 'Database',
+  infrastructure: 'Infrastructure / cloud',
+  tool: 'Tool',
+  other: 'Other',
 };
 
 /** What each proficiency step means (#45 decision), from 1 to 5. */
 export const proficiencyLevels = [
-  { value: 1, name: '입문', criterion: '예제를 따라 해 봤습니다' },
-  { value: 2, name: '기초', criterion: '문서를 보며 작은 기능을 만들 수 있습니다' },
-  { value: 3, name: '실무', criterion: '혼자 실무 기능을 만들고 고칠 수 있습니다' },
-  { value: 4, name: '숙련', criterion: '설계를 정하고 다른 사람의 코드를 검토할 수 있습니다' },
-  { value: 5, name: '전문', criterion: '어려운 문제를 풀고 팀에 가르칠 수 있습니다' },
+  { value: 1, name: 'Beginner', criterion: 'I have followed examples' },
+  { value: 2, name: 'Basic', criterion: 'I can build small features with the docs' },
+  { value: 3, name: 'Working', criterion: 'I can build and fix production features on my own' },
+  { value: 4, name: 'Advanced', criterion: 'I can decide a design and review code from others' },
+  { value: 5, name: 'Expert', criterion: 'I can solve hard problems and teach the team' },
 ] as const;
 
 /** The highest proficiency step. */
 export const maxProficiency = proficiencyLevels.length;
 
-/** "숙련", or '' for a value outside 1–5 (the database allows only 1–5). */
+/** "Advanced", or '' for a value outside 1–5 (the database allows only 1–5). */
 export const proficiencyName = (proficiency: number) =>
   proficiencyLevels.find((level) => level.value === proficiency)?.name ?? '';
 
@@ -62,10 +62,10 @@ export function groupSkills(skills: Skill[]) {
     .filter((group) => group.skills.length > 0);
 }
 
-/** "숙련도 5점 중 4점, 숙련": the proficiency read out in full. */
+/** "Proficiency 4 of 5, Advanced": the proficiency read out in full. */
 export function proficiencyText(proficiency: number) {
   const name = proficiencyName(proficiency);
-  return `숙련도 ${maxProficiency}점 중 ${proficiency}점${name ? `, ${name}` : ''}`;
+  return `Proficiency ${String(proficiency)} of ${String(maxProficiency)}${name ? `, ${name}` : ''}`;
 }
 
 export type SkillPaths = {
@@ -106,7 +106,7 @@ type SkillInput = {
 };
 
 /**
- * The proficiency goes as a number, or null when none was chosen so the server answers in Korean.
+ * The proficiency goes as a number, or null when none was chosen so the server answers in English.
  * A blank memo goes as '' and the server stores it as NULL.
  */
 export function toSkillInput(form: SkillForm): SkillInput {
@@ -116,11 +116,11 @@ export function toSkillInput(form: SkillForm): SkillInput {
 // The server's messages start with these labels (backend/src/routes/skills.ts, shared.ts). The 409
 // for a taken name names no label, so its own start ties it to the name field.
 const fieldLabels: [string, keyof SkillForm][] = [
-  ['스킬명', 'name'],
-  ['이미 등록된 스킬', 'name'],
-  ['분류', 'category'],
-  ['숙련도', 'proficiency'],
-  ['메모', 'memo'],
+  ['Skill name', 'name'],
+  ['This skill is already registered', 'name'],
+  ['Category', 'category'],
+  ['Proficiency', 'proficiency'],
+  ['Notes', 'memo'],
 ];
 
 // The order the inputs appear on screen (skills.tsx SkillFields).

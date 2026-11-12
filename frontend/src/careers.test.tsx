@@ -57,19 +57,22 @@ test('the main menu leads to the career list', async () => {
   window.history.replaceState(null, '', '/');
   render(<App />);
   const menu = screen.getByRole('navigation', { name: 'Main menu' });
-  fireEvent.click(within(menu).getByRole('link', { name: '이력' }));
+  fireEvent.click(within(menu).getByRole('link', { name: 'Career' }));
   expect(window.location.pathname).toBe('/careers');
-  expect(await screen.findByRole('heading', { level: 1, name: '이력' })).toBeInTheDocument();
-  expect(within(menu).getByRole('link', { name: '이력' })).toHaveAttribute('aria-current', 'page');
+  expect(await screen.findByRole('heading', { level: 1, name: 'Career' })).toBeInTheDocument();
+  expect(within(menu).getByRole('link', { name: 'Career' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
 });
 
 test('careers are listed in the order the API gives, not re-sorted', async () => {
   // Deliberately oldest first: the screen must keep the server's order.
   serve({ status: 200, body: { careers: [past, current] } });
   openCareers();
-  const list = await screen.findByRole('list', { name: '이력 목록' });
-  expect(screen.getByRole('status')).toHaveTextContent('이력 2건');
-  expect(screen.getByRole('region', { name: '이력' })).toHaveAttribute('aria-busy', 'false');
+  const list = await screen.findByRole('list', { name: 'Career list' });
+  expect(screen.getByRole('status')).toHaveTextContent('2 entries');
+  expect(screen.getByRole('region', { name: 'Career' })).toHaveAttribute('aria-busy', 'false');
   const items = within(list).getAllByRole('listitem');
   expect(items.map((item) => within(item).getByRole('heading', { level: 2 }).textContent)).toEqual([
     '새벽랩',
@@ -80,21 +83,21 @@ test('careers are listed in the order the API gives, not re-sorted', async () =>
 /** The badge text next to a company name, if any. */
 const badgeOf = (item: HTMLElement) => item.querySelector('[data-slot="badge"]')?.textContent;
 
-test('a job still held shows "재직 중"; a finished one does not', async () => {
+test('a job still held shows "Current"; a finished one does not', async () => {
   serve({ status: 200, body: { careers: [current, past] } });
   openCareers();
-  const list = await screen.findByRole('list', { name: '이력 목록' });
+  const list = await screen.findByRole('list', { name: 'Career list' });
 
   const held = within(list).getByRole('listitem', { name: '한빛소프트' });
-  expect(badgeOf(held)).toBe('재직 중');
-  expect(held).toHaveTextContent('플랫폼팀 · 선임 · 정규직');
-  expect(held).toHaveTextContent('2024-01-02 ~ 재직 중');
+  expect(badgeOf(held)).toBe('Current');
+  expect(held).toHaveTextContent('플랫폼팀 · 선임 · Full-time');
+  expect(held).toHaveTextContent('January 2, 2024 – Present');
   // Each label is the term of its own text, so a screen reader can tell the blocks apart.
   expect(
     within(held)
       .getAllByRole('term')
       .map((term) => term.textContent),
-  ).toEqual(['담당 업무', '주요 성과']);
+  ).toEqual(['Duties', 'Achievements']);
   expect(
     within(held)
       .getAllByRole('definition')
@@ -103,12 +106,12 @@ test('a job still held shows "재직 중"; a finished one does not', async () =>
 
   const finished = within(list).getByRole('listitem', { name: '새벽랩' });
   expect(badgeOf(finished)).toBeUndefined();
-  expect(finished).not.toHaveTextContent('재직 중');
-  expect(finished).toHaveTextContent('인턴');
-  expect(finished).toHaveTextContent('2019-07-01 ~ 2019-12-31');
+  expect(finished).not.toHaveTextContent('Current');
+  expect(finished).toHaveTextContent('Intern');
+  expect(finished).toHaveTextContent('July 1, 2019 – December 31, 2019');
   // Blank duties and achievements leave no empty labels behind.
-  expect(finished).not.toHaveTextContent('담당 업무');
-  expect(finished).not.toHaveTextContent('주요 성과');
+  expect(finished).not.toHaveTextContent('Duties');
+  expect(finished).not.toHaveTextContent('Achievements');
   expect(within(finished).queryByRole('term')).not.toBeInTheDocument();
 });
 
@@ -118,25 +121,23 @@ test('a placeholder shows while the list loads', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openCareers();
-  expect(screen.getByRole('status')).toHaveTextContent('이력을 불러오는 중');
-  expect(screen.getByRole('region', { name: '이력' })).toHaveAttribute('aria-busy', 'true');
+  expect(screen.getByRole('status')).toHaveTextContent('Loading career');
+  expect(screen.getByRole('region', { name: 'Career' })).toHaveAttribute('aria-busy', 'true');
 });
 
 test('an empty list explains what will appear', async () => {
   serve({ status: 200, body: { careers: [] } });
   openCareers();
-  expect(
-    await screen.findByRole('heading', { name: '아직 등록한 이력이 없습니다' }),
-  ).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('이력 0건');
-  expect(screen.queryByRole('list', { name: '이력 목록' })).not.toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'No career added yet' })).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('0 entries');
+  expect(screen.queryByRole('list', { name: 'Career list' })).not.toBeInTheDocument();
 });
 
-test('a server error is shown in Korean', async () => {
-  serve({ status: 503, body: { error: '데이터베이스에 연결할 수 없습니다' } });
+test('a server error is shown in English', async () => {
+  serve({ status: 503, body: { error: 'Cannot connect to the database' } });
   openCareers();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '이력을 불러오지 못했습니다. 데이터베이스에 연결할 수 없습니다',
+    'Could not load career. Cannot connect to the database',
   );
 });
 
@@ -144,27 +145,29 @@ test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openCareers();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '이력을 불러오지 못했습니다. Could not process the request',
+    'Could not load career. Could not process the request',
   );
 });
 
-test('an unreachable server is shown in Korean', async () => {
+test('an unreachable server is shown in English', async () => {
   serve('offline');
   openCareers();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '이력을 불러오지 못했습니다. Cannot reach the server',
+    'Could not load career. Cannot reach the server',
   );
 });
 
 test('period and role text', () => {
   expect(careerPeriodText({ startDate: '2020-03-02', endDate: '2023-12-29' })).toBe(
-    '2020-03-02 ~ 2023-12-29',
+    'March 2, 2020 – December 29, 2023',
   );
-  expect(careerPeriodText({ startDate: '2024-01-02', endDate: null })).toBe('2024-01-02 ~ 재직 중');
+  expect(careerPeriodText({ startDate: '2024-01-02', endDate: null })).toBe(
+    'January 2, 2024 – Present',
+  );
   expect(roleText({ department: '백엔드팀', position: null, employmentType: 'contract' })).toBe(
-    '백엔드팀 · 계약직',
+    '백엔드팀 · Contract',
   );
   expect(roleText({ department: null, position: null, employmentType: 'freelance' })).toBe(
-    '프리랜서',
+    'Freelance',
   );
 });

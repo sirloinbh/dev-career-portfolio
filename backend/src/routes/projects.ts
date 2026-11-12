@@ -15,33 +15,33 @@ import {
 const technologies = z
   .array(
     z
-      .string({ error: '사용 기술 항목은 문자열이어야 합니다' })
+      .string({ error: 'Technologies items must be text' })
       .trim()
-      .min(1, '사용 기술 항목을 비울 수 없습니다')
-      .max(50, '사용 기술 항목은 50자 이하여야 합니다'),
-    { error: '사용 기술은(는) 목록이어야 합니다' },
+      .min(1, 'Technologies items cannot be empty')
+      .max(50, 'Technologies items must be at most 50 characters'),
+    { error: 'Technologies must be a list' },
   )
-  .max(30, '사용 기술은 30개까지 입력할 수 있습니다')
+  .max(30, 'Technologies can have at most 30 items')
   .default([])
   .refine(
     (names) => new Set(names.map((name) => name.toLowerCase())).size === names.length,
-    '사용 기술에 중복된 항목이 있습니다',
+    'Technologies contain a duplicate item',
   );
 
 // An empty end date means the project is still running, so there is no separate status field.
 const projectInput = z
   .object(
     {
-      name: requiredText('프로젝트명', 100),
-      organization: optionalText('소속', 100),
-      startDate: calendarDate('시작일'),
-      endDate: calendarDate('종료일').nullable().default(null),
-      role: optionalText('역할', 100),
-      summary: optionalText('요약', 500),
-      contributions: optionalText('기여와 성과', 2000),
+      name: requiredText('Project name', 100),
+      organization: optionalText('Organization', 100),
+      startDate: calendarDate('Start date'),
+      endDate: calendarDate('End date').nullable().default(null),
+      role: optionalText('Role', 100),
+      summary: optionalText('Summary', 500),
+      contributions: optionalText('Contributions', 2000),
       technologies,
-      repositoryUrl: optionalLink('저장소 링크'),
-      serviceUrl: optionalLink('서비스 링크'),
+      repositoryUrl: optionalLink('Repository link'),
+      serviceUrl: optionalLink('Service link'),
     },
     objectBodyError,
   )
@@ -50,7 +50,7 @@ const projectInput = z
       ctx.addIssue({
         code: 'custom',
         path: ['endDate'],
-        message: '종료일은 시작일보다 빠를 수 없습니다',
+        message: 'End date cannot be earlier than start date',
       });
     }
   });
@@ -64,7 +64,7 @@ const columns = `id::text AS id, name, organization, start_date AS "startDate", 
 
 const toProject = (row: ProjectRow) => ({ ...row, id: Number(row.id) });
 
-const notFoundError = () => new HttpError(404, '프로젝트를 찾을 수 없습니다');
+const notFoundError = () => new HttpError(404, 'Project not found');
 
 export function registerProjectRoutes(app: Express, pool: Pool) {
   app.get('/api/projects', async (_req, res) => {
@@ -99,7 +99,7 @@ export function registerProjectRoutes(app: Express, pool: Pool) {
   });
 
   app.put('/api/projects/:id', async (req, res) => {
-    const id = parseId(req.params.id, '프로젝트');
+    const id = parseId(req.params.id, 'project');
     const input = projectInput.parse(req.body);
     const { rows } = await pool.query<ProjectRow>(
       `UPDATE projects
@@ -127,7 +127,7 @@ export function registerProjectRoutes(app: Express, pool: Pool) {
   });
 
   app.delete('/api/projects/:id', async (req, res) => {
-    const id = parseId(req.params.id, '프로젝트');
+    const id = parseId(req.params.id, 'project');
     const { rowCount } = await pool.query('DELETE FROM projects WHERE id = $1', [id]);
     if (rowCount === 0) throw notFoundError();
     res.status(204).end();

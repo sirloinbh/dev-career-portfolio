@@ -38,7 +38,7 @@ type Call = { method: string; url: string; body: unknown };
 
 /**
  * A small in-memory API: GET lists the rows, POST and PUT store the body, DELETE removes. `refuse`
- * answers the next POST or PUT with a 400 and that Korean message, as the server would.
+ * answers the next POST or PUT with a 400 and that message, as the server would.
  */
 function fakeApi(rows: Project[]) {
   const store = [...rows];
@@ -74,7 +74,7 @@ function fakeApi(rows: Project[]) {
         store.unshift(project);
         return json({ project }, 201);
       }
-      if (index === -1) return json({ error: '프로젝트를 찾을 수 없습니다' }, 404);
+      if (index === -1) return json({ error: 'Project not found' }, 404);
       if (method === 'PUT') {
         store[index] = saved({ ...(body as Project), id });
         return json({ project: store[index] });
@@ -106,22 +106,20 @@ const field = (name: string) => screen.getByLabelText(name);
 const type = (name: string, value: string) => fireEvent.change(field(name), { target: { value } });
 const postBody = (api: { calls: Call[] }) => api.calls.find((call) => call.method === 'POST')?.body;
 
-test('a new project with no end date is sent as running and listed as 진행 중', async () => {
+test('a new project with no end date is sent as running and listed as Ongoing', async () => {
   const api = fakeApi([]);
   open('/projects');
-  fireEvent.click(await screen.findByRole('link', { name: '프로젝트 추가' }));
-  expect(
-    await screen.findByRole('heading', { level: 1, name: '프로젝트 추가' }),
-  ).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Add project' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Add project' })).toBeInTheDocument();
 
-  type('프로젝트명', '주문 정산 자동화');
-  type('역할', '백엔드 개발');
-  type('시작일', '2024-05-01');
-  type('사용 기술', ' TypeScript, PostgreSQL ,, AWS Lambda, ');
-  type('저장소 링크', 'https://github.com/example/settlement');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  type('Project name', '주문 정산 자동화');
+  type('Role', '백엔드 개발');
+  type('Start date', '2024-05-01');
+  type('Technologies', ' TypeScript, PostgreSQL ,, AWS Lambda, ');
+  type('Repository link', 'https://github.com/example/settlement');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  expect(await screen.findByRole('heading', { level: 1, name: '프로젝트' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Projects' })).toBeInTheDocument();
   expect(window.location.pathname).toBe('/projects');
   expect(postBody(api)).toEqual({
     name: '주문 정산 자동화',
@@ -137,70 +135,70 @@ test('a new project with no end date is sent as running and listed as 진행 중
     serviceUrl: '',
   });
   const item = await screen.findByRole('listitem', { name: '주문 정산 자동화' });
-  expect(item).toHaveTextContent('2024-05-01 ~ 진행 중');
-  expect(within(item).getByRole('link', { name: /저장소/ })).toHaveAttribute(
+  expect(item).toHaveTextContent('May 1, 2024 – Present');
+  expect(within(item).getByRole('link', { name: /Repository/ })).toHaveAttribute(
     'href',
     'https://github.com/example/settlement',
   );
-  expect(await screen.findByText("'주문 정산 자동화' 프로젝트를 추가했습니다")).toBeInTheDocument();
+  expect(await screen.findByText("Added '주문 정산 자동화'")).toBeInTheDocument();
 });
 
 test('the hints say how to leave a project running and how to list technologies', async () => {
   fakeApi([]);
   open('/projects/new');
-  await screen.findByRole('heading', { level: 1, name: '프로젝트 추가' });
-  expect(field('종료일')).toHaveAccessibleDescription(
-    '진행 중인 프로젝트면 비워 둡니다. 목록에 "진행 중"으로 보입니다.',
+  await screen.findByRole('heading', { level: 1, name: 'Add project' });
+  expect(field('End date')).toHaveAccessibleDescription(
+    'Leave it empty if the project is still running. The list shows "Ongoing".',
   );
-  expect(field('사용 기술')).toHaveAccessibleDescription(
-    '쉼표(,)로 나눠 적습니다. 항목마다 50자, 30개까지 넣을 수 있습니다.',
+  expect(field('Technologies')).toHaveAccessibleDescription(
+    'Separate items with commas. Up to 30 items, 50 characters each.',
   );
-  expect(field('저장소 링크')).toHaveAccessibleDescription(
-    'http:// 또는 https://로 시작하는 주소를 넣습니다.',
+  expect(field('Repository link')).toHaveAccessibleDescription(
+    'Use an address that starts with http:// or https://.',
   );
-  expect(field('저장소 링크')).toHaveAttribute('type', 'url');
+  expect(field('Repository link')).toHaveAttribute('type', 'url');
 });
 
 test('the server message is shown under the field it is about, and focus moves there', async () => {
   const api = fakeApi([]);
   open('/projects/new');
-  await screen.findByRole('heading', { level: 1, name: '프로젝트 추가' });
-  type('프로젝트명', '사내 위키 검색');
-  type('시작일', '2021-03-02');
-  type('저장소 링크', 'github.com/example/wiki');
-  api.refuseNext('저장소 링크은(는) http:// 또는 https://로 시작하는 주소여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('heading', { level: 1, name: 'Add project' });
+  type('Project name', '사내 위키 검색');
+  type('Start date', '2021-03-02');
+  type('Repository link', 'github.com/example/wiki');
+  api.refuseNext('Repository link must start with http:// or https://');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  await waitFor(() => expect(field('저장소 링크')).toHaveFocus());
-  expect(field('저장소 링크')).toHaveAttribute('aria-invalid', 'true');
-  expect(field('저장소 링크')).toHaveAccessibleDescription(
-    expect.stringContaining('저장소 링크은(는) http:// 또는 https://로 시작하는 주소여야 합니다'),
+  await waitFor(() => expect(field('Repository link')).toHaveFocus());
+  expect(field('Repository link')).toHaveAttribute('aria-invalid', 'true');
+  expect(field('Repository link')).toHaveAccessibleDescription(
+    expect.stringContaining('Repository link must start with http:// or https://'),
   );
-  expect(field('서비스 링크')).not.toHaveAttribute('aria-invalid');
+  expect(field('Service link')).not.toHaveAttribute('aria-invalid');
   // The form keeps what was typed.
-  expect(field('프로젝트명')).toHaveValue('사내 위키 검색');
+  expect(field('Project name')).toHaveValue('사내 위키 검색');
   expect(window.location.pathname).toBe('/projects/new');
 });
 
 test('a repeated message about technologies is shown once, topmost field focused', async () => {
   const api = fakeApi([]);
   open('/projects/new');
-  await screen.findByRole('heading', { level: 1, name: '프로젝트 추가' });
+  await screen.findByRole('heading', { level: 1, name: 'Add project' });
   // One issue per item that is too long, then the name; as the server joins them.
   api.refuseNext(
-    '사용 기술 항목은 50자 이하여야 합니다, 사용 기술 항목은 50자 이하여야 합니다, 프로젝트명을(를) 입력해 주세요',
+    'Technologies items must be at most 50 characters, Technologies items must be at most 50 characters, Project name is required',
   );
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('프로젝트명')).toHaveFocus());
-  expect(field('프로젝트명')).toHaveAccessibleDescription('프로젝트명을(를) 입력해 주세요');
-  expect(field('사용 기술')).toHaveAccessibleDescription(
-    '쉼표(,)로 나눠 적습니다. 항목마다 50자, 30개까지 넣을 수 있습니다. 사용 기술 항목은 50자 이하여야 합니다',
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('Project name')).toHaveFocus());
+  expect(field('Project name')).toHaveAccessibleDescription('Project name is required');
+  expect(field('Technologies')).toHaveAccessibleDescription(
+    'Separate items with commas. Up to 30 items, 50 characters each. Technologies items must be at most 50 characters',
   );
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
 test('a long list of the same message keeps the count of the ones not shown', () => {
-  const message = '사용 기술 항목은 50자 이하여야 합니다';
+  const message = 'Technologies items must be at most 50 characters';
   // Ten issues, then the count of the rest; as backend/src/standard/http.ts joins them.
   expect(projectFieldErrors([...Array<string>(10).fill(message), 'and 1 more'].join(', '))).toEqual(
     [{ field: 'technologies', message: `${message}, and 1 more` }],
@@ -210,43 +208,43 @@ test('a long list of the same message keeps the count of the ones not shown', ()
 test('a half-typed end date is sent as text the server refuses, not as running', async () => {
   const api = fakeApi([]);
   open('/projects/new');
-  await screen.findByRole('heading', { level: 1, name: '프로젝트 추가' });
+  await screen.findByRole('heading', { level: 1, name: 'Add project' });
   // A browser reads an unfinished date ("2023-12-__") as '' and flags it as bad input.
-  Object.defineProperty(field('종료일'), 'validity', { value: { badInput: true } });
-  api.refuseNext('종료일은(는) YYYY-MM-DD 형식의 날짜여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('종료일')).toHaveFocus());
+  Object.defineProperty(field('End date'), 'validity', { value: { badInput: true } });
+  api.refuseNext('End date must be a date in YYYY-MM-DD format');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('End date')).toHaveFocus());
   expect(postBody(api)).toMatchObject({ endDate: 'incomplete' });
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {
   const api = fakeApi([]);
   open('/projects/new');
-  await screen.findByRole('heading', { level: 1, name: '프로젝트 추가' });
-  api.refuseNext('요청 본문은 JSON 객체여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('요청 본문은 JSON 객체여야 합니다');
-  await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
+  await screen.findByRole('heading', { level: 1, name: 'Add project' });
+  api.refuseNext('Request body must be a JSON object');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Request body must be a JSON object');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('a project is edited with its saved values filled in', async () => {
   const api = fakeApi([past]);
   open('/projects');
-  fireEvent.click(await screen.findByRole('link', { name: '사내 위키 검색 수정' }));
+  fireEvent.click(await screen.findByRole('link', { name: 'Edit 사내 위키 검색' }));
   expect(
-    await screen.findByRole('heading', { level: 1, name: '프로젝트 수정' }),
+    await screen.findByRole('heading', { level: 1, name: 'Edit project' }),
   ).toBeInTheDocument();
   expect(window.location.pathname).toBe('/projects/1/edit');
-  expect(field('프로젝트명')).toHaveValue('사내 위키 검색');
-  expect(field('종료일')).toHaveValue('2021-08-31');
-  expect(field('사용 기술')).toHaveValue('React, Elasticsearch');
-  expect(field('저장소 링크')).toHaveValue('https://github.com/example/wiki');
-  expect(field('서비스 링크')).toHaveValue('');
+  expect(field('Project name')).toHaveValue('사내 위키 검색');
+  expect(field('End date')).toHaveValue('2021-08-31');
+  expect(field('Technologies')).toHaveValue('React, Elasticsearch');
+  expect(field('Repository link')).toHaveValue('https://github.com/example/wiki');
+  expect(field('Service link')).toHaveValue('');
 
-  type('사용 기술', 'React, Elasticsearch, Redis');
-  type('저장소 링크', '');
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '프로젝트' })).toBeInTheDocument();
+  type('Technologies', 'React, Elasticsearch, Redis');
+  type('Repository link', '');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Projects' })).toBeInTheDocument();
   const put = api.calls.find((call) => call.method === 'PUT');
   expect(put?.url).toBe('/api/projects/1');
   expect(put?.body).toMatchObject({
@@ -257,59 +255,59 @@ test('a project is edited with its saved values filled in', async () => {
   const item = await screen.findByRole('listitem', { name: '사내 위키 검색' });
   expect(item).toHaveTextContent('Redis');
   // The cleared link is gone from the list.
-  expect(within(item).queryByRole('link', { name: /저장소/ })).not.toBeInTheDocument();
+  expect(within(item).queryByRole('link', { name: /Repository/ })).not.toBeInTheDocument();
 });
 
 test('a refused edit shows the message under its field and stays on the form', async () => {
   const api = fakeApi([past]);
   open('/projects/1/edit');
-  await screen.findByRole('heading', { level: 1, name: '프로젝트 수정' });
-  type('시작일', '2022-01-03');
-  api.refuseNext('종료일은 시작일보다 빠를 수 없습니다');
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
-  await waitFor(() => expect(field('종료일')).toHaveFocus());
-  expect(field('종료일')).toHaveAccessibleDescription(
-    expect.stringContaining('종료일은 시작일보다 빠를 수 없습니다'),
+  await screen.findByRole('heading', { level: 1, name: 'Edit project' });
+  type('Start date', '2022-01-03');
+  api.refuseNext('End date cannot be earlier than start date');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(field('End date')).toHaveFocus());
+  expect(field('End date')).toHaveAccessibleDescription(
+    expect.stringContaining('End date cannot be earlier than start date'),
   );
   expect(api.calls.find((call) => call.method === 'PUT')?.url).toBe('/api/projects/1');
-  expect(field('시작일')).toHaveValue('2022-01-03');
+  expect(field('Start date')).toHaveValue('2022-01-03');
   expect(window.location.pathname).toBe('/projects/1/edit');
 });
 
 test('saving a project deleted after the form opened says it is gone', async () => {
   const api = fakeApi([past]);
   open('/projects/1/edit');
-  await screen.findByRole('heading', { level: 1, name: '프로젝트 수정' });
+  await screen.findByRole('heading', { level: 1, name: 'Edit project' });
   // Someone else deleted it after the form loaded.
   api.store.splice(0, 1);
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('프로젝트를 찾을 수 없습니다');
-  await waitFor(() => expect(screen.getByRole('button', { name: '저장' })).toHaveFocus());
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Project not found');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toHaveFocus());
   expect(window.location.pathname).toBe('/projects/1/edit');
 });
 
-test('clearing the end date of a finished project makes it 진행 중', async () => {
+test('clearing the end date of a finished project makes it Ongoing', async () => {
   const api = fakeApi([past]);
   open('/projects/1/edit');
-  await screen.findByRole('heading', { level: 1, name: '프로젝트 수정' });
-  type('종료일', '');
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
+  await screen.findByRole('heading', { level: 1, name: 'Edit project' });
+  type('End date', '');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const item = await screen.findByRole('listitem', { name: '사내 위키 검색' });
   expect(api.calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ endDate: null });
-  expect(item).toHaveTextContent('2021-03-02 ~ 진행 중');
+  expect(item).toHaveTextContent('March 2, 2021 – Present');
 });
 
 test('editing a project that no longer exists says so', async () => {
   fakeApi([]);
   open('/projects/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('프로젝트를 찾을 수 없습니다');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Project not found');
 });
 
 test('cancelling the delete dialog keeps the project', async () => {
   const api = fakeApi([past]);
   open('/projects');
-  fireEvent.click(await screen.findByRole('button', { name: '사내 위키 검색 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '프로젝트를 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 사내 위키 검색' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this project?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
@@ -320,32 +318,29 @@ test('cancelling the delete dialog keeps the project', async () => {
 test('confirming the delete removes the project and moves focus to the page title', async () => {
   const api = fakeApi([past]);
   open('/projects');
-  fireEvent.click(await screen.findByRole('button', { name: '사내 위키 검색 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '프로젝트를 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 사내 위키 검색' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this project?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
-  expect(
-    await screen.findByRole('heading', { name: '아직 등록한 프로젝트가 없습니다' }),
-  ).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'No projects added yet' })).toBeInTheDocument();
   expect(api.calls.find((call) => call.method === 'DELETE')?.url).toBe('/api/projects/1');
   expect(api.store).toHaveLength(0);
-  // 프로젝트 ends in a vowel, so the particle is 를.
-  expect(await screen.findByText("'사내 위키 검색' 프로젝트를 지웠습니다")).toBeInTheDocument();
+  expect(await screen.findByText("Deleted '사내 위키 검색'")).toBeInTheDocument();
   await waitFor(() =>
-    expect(screen.getByRole('heading', { level: 1, name: '프로젝트' })).toHaveFocus(),
+    expect(screen.getByRole('heading', { level: 1, name: 'Projects' })).toHaveFocus(),
   );
 });
 
 test('a failed delete keeps the dialog open and the row on screen', async () => {
   const api = fakeApi([past]);
-  api.failDeletes(503, '데이터베이스에 연결할 수 없습니다');
+  api.failDeletes(503, 'Cannot connect to the database');
   open('/projects');
-  fireEvent.click(await screen.findByRole('button', { name: '사내 위키 검색 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '프로젝트를 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 사내 위키 검색' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this project?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
-    await screen.findByText('프로젝트를 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
+    await screen.findByText('Could not delete the project. Cannot connect to the database'),
   ).toBeInTheDocument();
-  expect(screen.getByRole('dialog', { name: '프로젝트를 지울까요?' })).toBeInTheDocument();
+  expect(screen.getByRole('dialog', { name: 'Delete this project?' })).toBeInTheDocument();
   expect(
     screen.getByRole('listitem', { hidden: true, name: '사내 위키 검색' }),
   ).toBeInTheDocument();
@@ -353,21 +348,26 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
 
 test('server messages map to the field they start with', () => {
   const fieldOf = (message: string) => projectFieldErrors(message)[0]?.field;
-  expect(fieldOf('프로젝트명을(를) 입력해 주세요')).toBe('name');
-  expect(fieldOf('소속은(는) 100자 이하여야 합니다')).toBe('organization');
-  expect(fieldOf('시작일은(는) YYYY-MM-DD 형식의 날짜여야 합니다')).toBe('startDate');
-  expect(fieldOf('종료일은 시작일보다 빠를 수 없습니다')).toBe('endDate');
-  expect(fieldOf('역할은(는) 100자 이하여야 합니다')).toBe('role');
-  expect(fieldOf('요약은(는) 500자 이하여야 합니다')).toBe('summary');
-  expect(fieldOf('기여와 성과은(는) 2000자 이하여야 합니다')).toBe('contributions');
-  expect(fieldOf('사용 기술에 중복된 항목이 있습니다')).toBe('technologies');
-  expect(fieldOf('사용 기술은 30개까지 입력할 수 있습니다')).toBe('technologies');
-  expect(fieldOf('저장소 링크에는 공백을 넣을 수 없습니다')).toBe('repositoryUrl');
-  expect(fieldOf('서비스 링크은(는) 500자 이하여야 합니다')).toBe('serviceUrl');
-  expect(fieldOf('요청 본문은 JSON 객체여야 합니다')).toBeUndefined();
+  expect(fieldOf('Project name is required')).toBe('name');
+  expect(fieldOf('Organization must be at most 100 characters')).toBe('organization');
+  expect(fieldOf('Start date must be a date in YYYY-MM-DD format')).toBe('startDate');
+  expect(fieldOf('End date cannot be earlier than start date')).toBe('endDate');
+  expect(fieldOf('Role must be at most 100 characters')).toBe('role');
+  expect(fieldOf('Summary must be at most 500 characters')).toBe('summary');
+  expect(fieldOf('Contributions must be at most 2000 characters')).toBe('contributions');
+  expect(fieldOf('Technologies contain a duplicate item')).toBe('technologies');
+  expect(fieldOf('Technologies can have at most 30 items')).toBe('technologies');
+  expect(fieldOf('Repository link must not contain spaces')).toBe('repositoryUrl');
+  expect(fieldOf('Service link must be at most 500 characters')).toBe('serviceUrl');
+  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
   // More than ten issues end with "and N more", which stays with the message before it.
-  expect(projectFieldErrors('사용 기술 항목은 50자 이하여야 합니다, and 3 more')).toEqual([
-    { field: 'technologies', message: '사용 기술 항목은 50자 이하여야 합니다, and 3 more' },
+  expect(
+    projectFieldErrors('Technologies items must be at most 50 characters, and 3 more'),
+  ).toEqual([
+    {
+      field: 'technologies',
+      message: 'Technologies items must be at most 50 characters, and 3 more',
+    },
   ]);
 });
 

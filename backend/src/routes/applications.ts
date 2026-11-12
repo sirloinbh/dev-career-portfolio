@@ -16,15 +16,15 @@ const statuses = ['drafting', 'submitted', 'closed'] as const;
 
 const applicationInput = z.object(
   {
-    companyName: requiredText('기업명', 100),
-    position: optionalText('지원 직무', 100),
-    postingUrl: optionalLink('채용 공고 링크'),
+    companyName: requiredText('Company name', 100),
+    position: optionalText('Position', 100),
+    postingUrl: optionalLink('Job posting link'),
     // No deadline stays NULL. A deadline already past is still stored: it is a past application.
-    deadline: calendarDate('마감일').nullable().default(null),
+    deadline: calendarDate('Deadline').nullable().default(null),
     status: z.enum(statuses, {
-      error: '지원 상태는 작성 중, 제출 완료, 종료 중 하나여야 합니다',
+      error: 'Application status must be one of drafting, submitted, closed',
     }),
-    memo: optionalText('메모', 2000),
+    memo: optionalText('Notes', 2000),
   },
   objectBodyError,
 );
@@ -37,7 +37,7 @@ const columns = `id::text AS id, company_name AS "companyName", position,
 
 const toApplication = (row: ApplicationRow) => ({ ...row, id: Number(row.id) });
 
-const notFoundError = () => new HttpError(404, '지원 기업을 찾을 수 없습니다');
+const notFoundError = () => new HttpError(404, 'Application not found');
 
 export function registerApplicationRoutes(app: Express, pool: Pool) {
   app.get('/api/applications', async (_req, res) => {
@@ -70,7 +70,7 @@ export function registerApplicationRoutes(app: Express, pool: Pool) {
   });
 
   app.put('/api/applications/:id', async (req, res) => {
-    const id = parseId(req.params.id, '지원 기업');
+    const id = parseId(req.params.id, 'application');
     const input = applicationInput.parse(req.body);
     const { rows } = await pool.query<ApplicationRow>(
       `UPDATE applications
@@ -93,7 +93,7 @@ export function registerApplicationRoutes(app: Express, pool: Pool) {
   });
 
   app.delete('/api/applications/:id', async (req, res) => {
-    const id = parseId(req.params.id, '지원 기업');
+    const id = parseId(req.params.id, 'application');
     const { rowCount } = await pool.query('DELETE FROM applications WHERE id = $1', [id]);
     if (rowCount === 0) throw notFoundError();
     res.status(204).end();

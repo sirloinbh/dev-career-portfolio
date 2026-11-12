@@ -34,7 +34,7 @@ type Call = { method: string; url: string; body: unknown };
 
 /**
  * A small in-memory API: GET lists the rows, POST and PUT store the body, DELETE removes. `refuse`
- * answers the next POST or PUT with a 400 and that Korean message, as the server would.
+ * answers the next POST or PUT with a 400 and that message, as the server would.
  */
 function fakeApi(rows: Certification[]) {
   const store = [...rows];
@@ -70,7 +70,7 @@ function fakeApi(rows: Certification[]) {
         store.unshift(certification);
         return json({ certification }, 201);
       }
-      if (index === -1) return json({ error: '자격증을 찾을 수 없습니다' }, 404);
+      if (index === -1) return json({ error: 'Certification not found' }, 404);
       if (method === 'PUT') {
         store[index] = saved({ ...(body as Certification), id });
         return json({ certification: store[index] });
@@ -101,19 +101,23 @@ function open(path: string) {
 const field = (name: string) => screen.getByLabelText(name);
 const type = (name: string, value: string) => fireEvent.change(field(name), { target: { value } });
 
-test('a new certification with no expiry date is sent as null and listed as 만료 없음', async () => {
+test('a new certification with no expiry date is sent as null and listed as No expiry', async () => {
   const api = fakeApi([]);
   open('/certifications');
-  fireEvent.click(await screen.findByRole('link', { name: '자격증 추가' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '자격증 추가' })).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Add certification' }));
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Add certification' }),
+  ).toBeInTheDocument();
 
-  type('자격증명', '정보처리기사');
-  type('발급 기관', '한국산업인력공단');
-  type('취득일', '2021-08-20');
-  type('메모', '실기 2회 응시');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  type('Certification name', '정보처리기사');
+  type('Issuer', '한국산업인력공단');
+  type('Date earned', '2021-08-20');
+  type('Notes', '실기 2회 응시');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  expect(await screen.findByRole('heading', { level: 1, name: '자격증' })).toBeInTheDocument();
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Certifications' }),
+  ).toBeInTheDocument();
   expect(window.location.pathname).toBe('/certifications');
   expect(api.calls.find((call) => call.method === 'POST')?.body).toEqual({
     name: '정보처리기사',
@@ -123,117 +127,123 @@ test('a new certification with no expiry date is sent as null and listed as 만�
     score: '',
     memo: '실기 2회 응시',
   });
-  const list = await screen.findByRole('list', { name: '자격증 목록' });
+  const list = await screen.findByRole('list', { name: 'Certification list' });
   const item = within(list).getByRole('listitem', { name: '정보처리기사' });
-  expect(item).toHaveTextContent('취득 2021-08-20 · 만료 없음');
+  expect(item).toHaveTextContent('Earned August 20, 2021 · No expiry');
   expect(item).toHaveTextContent('실기 2회 응시');
-  expect(await screen.findByText("'정보처리기사' 자격증을 추가했습니다")).toBeInTheDocument();
+  expect(await screen.findByText("Added '정보처리기사'")).toBeInTheDocument();
 });
 
 test('the expiry date hint says an empty date means it never expires', async () => {
   fakeApi([]);
   open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
-  expect(field('만료일')).toHaveAccessibleDescription(
-    '만료일이 없는 자격증이면 비워 둡니다. 목록에 "만료 없음"으로 보입니다.',
+  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
+  expect(field('Expiry date')).toHaveAccessibleDescription(
+    'Leave it empty if the certification does not expire. The list shows "No expiry".',
   );
 });
 
 test('the server message is shown under the field it is about, and focus moves there', async () => {
   const api = fakeApi([]);
   open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
-  type('자격증명', 'TOEIC');
-  type('발급 기관', 'ETS');
-  type('취득일', '2025-03-09');
-  type('만료일', '2024-03-08');
-  api.refuseNext('만료일은 취득일보다 빠를 수 없습니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
+  type('Certification name', 'TOEIC');
+  type('Issuer', 'ETS');
+  type('Date earned', '2025-03-09');
+  type('Expiry date', '2024-03-08');
+  api.refuseNext('Expiry date cannot be earlier than the date earned');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  await waitFor(() => expect(field('만료일')).toHaveAttribute('aria-invalid', 'true'));
-  expect(field('만료일')).toHaveAccessibleDescription(
-    expect.stringContaining('만료일은 취득일보다 빠를 수 없습니다'),
+  await waitFor(() => expect(field('Expiry date')).toHaveAttribute('aria-invalid', 'true'));
+  expect(field('Expiry date')).toHaveAccessibleDescription(
+    expect.stringContaining('Expiry date cannot be earlier than the date earned'),
   );
-  await waitFor(() => expect(field('만료일')).toHaveFocus());
-  expect(field('취득일')).not.toHaveAttribute('aria-invalid');
+  await waitFor(() => expect(field('Expiry date')).toHaveFocus());
+  expect(field('Date earned')).not.toHaveAttribute('aria-invalid');
   // The form keeps what was typed.
-  expect(field('자격증명')).toHaveValue('TOEIC');
+  expect(field('Certification name')).toHaveValue('TOEIC');
   expect(window.location.pathname).toBe('/certifications/new');
 });
 
 test('each joined server message is shown under its own field, topmost focused', async () => {
   const api = fakeApi([]);
   open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
+  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
   api.refuseNext(
-    '점수·등급은(는) 50자 이하여야 합니다, 발급 기관을(를) 입력해 주세요, 자격증명을(를) 입력해 주세요',
+    'Score or grade must be at most 50 characters, Issuer is required, Certification name is required',
   );
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('자격증명')).toHaveFocus());
-  expect(field('자격증명')).toHaveAccessibleDescription('자격증명을(를) 입력해 주세요');
-  expect(field('발급 기관')).toHaveAccessibleDescription('발급 기관을(를) 입력해 주세요');
-  expect(field('점수·등급')).toHaveAccessibleDescription('점수·등급은(는) 50자 이하여야 합니다');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('Certification name')).toHaveFocus());
+  expect(field('Certification name')).toHaveAccessibleDescription('Certification name is required');
+  expect(field('Issuer')).toHaveAccessibleDescription('Issuer is required');
+  expect(field('Score or grade')).toHaveAccessibleDescription(
+    'Score or grade must be at most 50 characters',
+  );
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {
   const api = fakeApi([]);
   open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
-  api.refuseNext('입력에 사용할 수 없는 문자(NUL)가 있습니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
+  api.refuseNext('Input contains a character that is not allowed (NUL)');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    '입력에 사용할 수 없는 문자(NUL)가 있습니다',
+    'Input contains a character that is not allowed (NUL)',
   );
-  await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('a certification is edited with its saved values filled in', async () => {
   const api = fakeApi([toeic]);
   open('/certifications');
-  fireEvent.click(await screen.findByRole('link', { name: 'TOEIC 수정' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '자격증 수정' })).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Edit TOEIC' }));
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Edit certification' }),
+  ).toBeInTheDocument();
   expect(window.location.pathname).toBe('/certifications/1/edit');
-  expect(field('자격증명')).toHaveValue('TOEIC');
-  expect(field('발급 기관')).toHaveValue('ETS');
-  expect(field('취득일')).toHaveValue('2025-03-09');
-  expect(field('만료일')).toHaveValue('2027-03-08');
-  expect(field('점수·등급')).toHaveValue('905점');
-  expect(field('메모')).toHaveValue('');
+  expect(field('Certification name')).toHaveValue('TOEIC');
+  expect(field('Issuer')).toHaveValue('ETS');
+  expect(field('Date earned')).toHaveValue('2025-03-09');
+  expect(field('Expiry date')).toHaveValue('2027-03-08');
+  expect(field('Score or grade')).toHaveValue('905점');
+  expect(field('Notes')).toHaveValue('');
 
-  type('점수·등급', '950점');
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '자격증' })).toBeInTheDocument();
+  type('Score or grade', '950점');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Certifications' }),
+  ).toBeInTheDocument();
   const put = api.calls.find((call) => call.method === 'PUT');
   expect(put?.url).toBe('/api/certifications/1');
   expect(put?.body).toMatchObject({ score: '950점', expiryDate: '2027-03-08' });
   expect(await screen.findByText('ETS · 950점')).toBeInTheDocument();
 });
 
-test('clearing the expiry date makes the certification 만료 없음', async () => {
+test('clearing the expiry date makes the certification No expiry', async () => {
   const api = fakeApi([toeic]);
   open('/certifications/1/edit');
-  await screen.findByRole('heading', { level: 1, name: '자격증 수정' });
-  type('만료일', '');
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
+  await screen.findByRole('heading', { level: 1, name: 'Edit certification' });
+  type('Expiry date', '');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const item = await screen.findByRole('listitem', { name: 'TOEIC' });
   expect(api.calls.find((call) => call.method === 'PUT')?.body).toMatchObject({
     expiryDate: null,
   });
-  expect(item).toHaveTextContent('취득 2025-03-09 · 만료 없음');
+  expect(item).toHaveTextContent('Earned March 9, 2025 · No expiry');
 });
 
 test('editing a certification that no longer exists says so', async () => {
   fakeApi([]);
   open('/certifications/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('자격증을 찾을 수 없습니다');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Certification not found');
 });
 
 test('cancelling the delete dialog keeps the certification', async () => {
   const api = fakeApi([toeic]);
   open('/certifications');
-  fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete TOEIC' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this certification?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
@@ -244,100 +254,102 @@ test('cancelling the delete dialog keeps the certification', async () => {
 test('confirming the delete removes the certification and moves focus to the page title', async () => {
   const api = fakeApi([toeic]);
   open('/certifications');
-  fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete TOEIC' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this certification?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
-    await screen.findByRole('heading', { name: '아직 등록한 자격증이 없습니다' }),
+    await screen.findByRole('heading', { name: 'No certifications added yet' }),
   ).toBeInTheDocument();
   expect(api.calls.find((call) => call.method === 'DELETE')?.url).toBe('/api/certifications/1');
   expect(api.store).toHaveLength(0);
-  expect(await screen.findByText("'TOEIC' 자격증을 지웠습니다")).toBeInTheDocument();
+  expect(await screen.findByText("Deleted 'TOEIC'")).toBeInTheDocument();
   await waitFor(() =>
-    expect(screen.getByRole('heading', { level: 1, name: '자격증' })).toHaveFocus(),
+    expect(screen.getByRole('heading', { level: 1, name: 'Certifications' })).toHaveFocus(),
   );
 });
 
 test('a failed delete keeps the dialog open and the row on screen', async () => {
   const api = fakeApi([toeic]);
-  api.failDeletes(503, '데이터베이스에 연결할 수 없습니다');
+  api.failDeletes(503, 'Cannot connect to the database');
   open('/certifications');
-  fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete TOEIC' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this certification?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
-    await screen.findByText('자격증을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
+    await screen.findByText('Could not delete the certification. Cannot connect to the database'),
   ).toBeInTheDocument();
-  expect(screen.getByRole('dialog', { name: '자격증을 지울까요?' })).toBeInTheDocument();
+  expect(screen.getByRole('dialog', { name: 'Delete this certification?' })).toBeInTheDocument();
   expect(screen.getByRole('listitem', { hidden: true, name: 'TOEIC' })).toBeInTheDocument();
 });
 
 test('a half-typed expiry date is sent as text the server refuses, not as never expiring', async () => {
   const api = fakeApi([]);
   open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
-  type('자격증명', 'TOEIC');
-  type('발급 기관', 'ETS');
-  type('취득일', '2025-03-09');
+  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
+  type('Certification name', 'TOEIC');
+  type('Issuer', 'ETS');
+  type('Date earned', '2025-03-09');
   // A browser reads an unfinished date ("2027-03-__") as '' and flags it as bad input.
-  Object.defineProperty(field('만료일'), 'validity', { value: { badInput: true } });
-  api.refuseNext('만료일은(는) YYYY-MM-DD 형식의 날짜여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('만료일')).toHaveFocus());
+  Object.defineProperty(field('Expiry date'), 'validity', { value: { badInput: true } });
+  api.refuseNext('Expiry date must be a date in YYYY-MM-DD format');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('Expiry date')).toHaveFocus());
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
     expiryDate: 'incomplete',
   });
-  expect(field('만료일')).toHaveAccessibleDescription(
-    expect.stringContaining('만료일은(는) YYYY-MM-DD 형식의 날짜여야 합니다'),
+  expect(field('Expiry date')).toHaveAccessibleDescription(
+    expect.stringContaining('Expiry date must be a date in YYYY-MM-DD format'),
   );
   expect(api.store).toHaveLength(0);
 });
 
 test('a row that is already gone (404) counts as deleted', async () => {
   const api = fakeApi([toeic]);
-  api.failDeletes(404, '자격증을 찾을 수 없습니다');
+  api.failDeletes(404, 'Certification not found');
   open('/certifications');
   await screen.findByRole('listitem', { name: 'TOEIC' });
   // Someone else deleted it after the list loaded.
   api.store.splice(0, 1);
-  fireEvent.click(await screen.findByRole('button', { name: 'TOEIC 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '자격증을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete TOEIC' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this certification?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('listitem', { name: 'TOEIC' })).not.toBeInTheDocument();
   expect(
-    await screen.findByRole('heading', { name: '아직 등록한 자격증이 없습니다' }),
+    await screen.findByRole('heading', { name: 'No certifications added yet' }),
   ).toBeInTheDocument();
-  expect(await screen.findByText("'TOEIC' 자격증을 지웠습니다")).toBeInTheDocument();
-  expect(screen.queryByText(/지우지 못했습니다/)).not.toBeInTheDocument();
+  expect(await screen.findByText("Deleted 'TOEIC'")).toBeInTheDocument();
+  expect(screen.queryByText(/Could not delete/)).not.toBeInTheDocument();
 });
 
 test('the form can be filled and saved with Tab and Enter alone', async () => {
   const api = fakeApi([]);
   const user = userEvent.setup();
   open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
+  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
   // Start from the back link just above the form, as a keyboard user would.
-  screen.getByRole('link', { name: '자격증 목록' }).focus();
+  screen.getByRole('link', { name: 'Certification list' }).focus();
   await user.tab();
-  expect(field('자격증명')).toHaveFocus();
+  expect(field('Certification name')).toHaveFocus();
   await user.keyboard('SQLD');
   await user.tab();
-  expect(field('발급 기관')).toHaveFocus();
+  expect(field('Issuer')).toHaveFocus();
   await user.keyboard('한국데이터산업진흥원');
   await user.tab();
-  expect(field('취득일')).toHaveFocus();
+  expect(field('Date earned')).toHaveFocus();
   await user.keyboard('2023-06-23');
   await user.tab();
-  expect(field('만료일')).toHaveFocus();
+  expect(field('Expiry date')).toHaveFocus();
   await user.tab();
-  expect(field('점수·등급')).toHaveFocus();
+  expect(field('Score or grade')).toHaveFocus();
   await user.keyboard('합격{Enter}');
 
   // Checked first, so a broken Enter fails here ("no POST") rather than as a missing heading.
   const posts = () => api.calls.filter((call) => call.method === 'POST');
   await waitFor(() => expect(posts()).toHaveLength(1));
-  expect(await screen.findByRole('heading', { level: 1, name: '자격증' })).toBeInTheDocument();
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Certifications' }),
+  ).toBeInTheDocument();
   expect(posts()[0].body).toEqual({
     name: 'SQLD',
     issuer: '한국데이터산업진흥원',
@@ -352,8 +364,15 @@ test('the form can be filled and saved with Tab and Enter alone', async () => {
 test('the form is built for keyboard use: native controls in order and a submit button', async () => {
   fakeApi([]);
   open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: '자격증 추가' });
-  const inputs = ['자격증명', '발급 기관', '취득일', '만료일', '점수·등급', '메모'].map(field);
+  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
+  const inputs = [
+    'Certification name',
+    'Issuer',
+    'Date earned',
+    'Expiry date',
+    'Score or grade',
+    'Notes',
+  ].map(field);
   for (const input of inputs) expect(['INPUT', 'TEXTAREA']).toContain(input.tagName);
   for (let index = 1; index < inputs.length; index++) {
     expect(
@@ -361,7 +380,7 @@ test('the form is built for keyboard use: native controls in order and a submit 
     ).toBeTruthy();
   }
   const form = inputs[0].closest('form');
-  const submit = screen.getByRole('button', { name: '추가' });
+  const submit = screen.getByRole('button', { name: 'Add' });
   expect(submit).toHaveAttribute('type', 'submit');
   expect(form).toContainElement(submit);
   for (const input of inputs) expect(form).toContainElement(input);
@@ -373,13 +392,13 @@ test('the form is built for keyboard use: native controls in order and a submit 
 
 test('server messages map to the field they start with', () => {
   const fieldOf = (message: string) => certificationFieldErrors(message)[0]?.field;
-  expect(fieldOf('자격증명을(를) 입력해 주세요')).toBe('name');
-  expect(fieldOf('발급 기관은(는) 100자 이하여야 합니다')).toBe('issuer');
-  expect(fieldOf('취득일은(는) YYYY-MM-DD 형식의 날짜여야 합니다')).toBe('acquiredDate');
-  expect(fieldOf('만료일은 취득일보다 빠를 수 없습니다')).toBe('expiryDate');
-  expect(fieldOf('점수·등급은(는) 문자열이어야 합니다')).toBe('score');
-  expect(fieldOf('메모은(는) 2000자 이하여야 합니다')).toBe('memo');
-  expect(fieldOf('요청 본문은 JSON 객체여야 합니다')).toBeUndefined();
+  expect(fieldOf('Certification name is required')).toBe('name');
+  expect(fieldOf('Issuer must be at most 100 characters')).toBe('issuer');
+  expect(fieldOf('Date earned must be a date in YYYY-MM-DD format')).toBe('acquiredDate');
+  expect(fieldOf('Expiry date cannot be earlier than the date earned')).toBe('expiryDate');
+  expect(fieldOf('Score or grade must be text')).toBe('score');
+  expect(fieldOf('Notes must be at most 2000 characters')).toBe('memo');
+  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
 });
 
 test('form values become the API input and back', () => {

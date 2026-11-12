@@ -26,7 +26,7 @@ type Call = { method: string; url: string; body: unknown };
 
 /**
  * A small in-memory API: GET lists the rows, POST and PUT store the body, DELETE removes. `refuse`
- * answers the next POST or PUT with that status and Korean message, as the server would.
+ * answers the next POST or PUT with that status and message, as the server would.
  */
 function fakeApi(rows: Skill[]) {
   const store = [...rows];
@@ -58,7 +58,7 @@ function fakeApi(rows: Skill[]) {
         store.unshift(skill);
         return json({ skill }, 201);
       }
-      if (index === -1) return json({ error: '스킬을 찾을 수 없습니다' }, 404);
+      if (index === -1) return json({ error: 'Skill not found' }, 404);
       if (method === 'PUT') {
         store[index] = saved({ ...(body as Skill), id });
         return json({ skill: store[index] });
@@ -92,15 +92,15 @@ const level = (name: RegExp) => screen.getByRole('radio', { name });
 test('a new skill is sent with its category and chosen proficiency, and listed', async () => {
   const api = fakeApi([]);
   open('/skills');
-  fireEvent.click(await screen.findByRole('link', { name: '스킬 추가' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '스킬 추가' })).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Add skill' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Add skill' })).toBeInTheDocument();
 
-  fireEvent.change(field('스킬명'), { target: { value: 'PostgreSQL' } });
-  fireEvent.change(field('분류'), { target: { value: 'database' } });
-  fireEvent.click(level(/^4점 · 숙련/));
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  fireEvent.change(field('Skill name'), { target: { value: 'PostgreSQL' } });
+  fireEvent.change(field('Category'), { target: { value: 'database' } });
+  fireEvent.click(level(/^4 · Advanced/));
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-  expect(await screen.findByRole('heading', { level: 1, name: '스킬' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Skills' })).toBeInTheDocument();
   expect(api.calls.find((call) => call.method === 'POST')?.body).toEqual({
     name: 'PostgreSQL',
     category: 'database',
@@ -108,26 +108,26 @@ test('a new skill is sent with its category and chosen proficiency, and listed',
     memo: '',
   });
   expect(
-    await screen.findByRole('heading', { level: 2, name: '데이터베이스 1건' }),
+    await screen.findByRole('heading', { level: 2, name: 'Database 1 entry' }),
   ).toBeInTheDocument();
   const item = screen.getByRole('listitem', { name: 'PostgreSQL' });
-  expect(within(item).getByText('숙련도 5점 중 4점, 숙련')).toBeInTheDocument();
-  expect(await screen.findByText("'PostgreSQL' 스킬을 추가했습니다")).toBeInTheDocument();
+  expect(within(item).getByText('Proficiency 4 of 5, Advanced')).toBeInTheDocument();
+  expect(await screen.findByText("Added 'PostgreSQL'")).toBeInTheDocument();
 });
 
 test('the five steps each say what they mean, and none is chosen for a new skill', async () => {
   fakeApi([]);
   open('/skills/new');
-  await screen.findByRole('heading', { level: 1, name: '스킬 추가' });
-  const group = screen.getByRole('group', { name: '숙련도' });
-  expect(group).toHaveAccessibleDescription('지금 할 수 있는 일에 가장 가까운 단계를 고릅니다.');
+  await screen.findByRole('heading', { level: 1, name: 'Add skill' });
+  const group = screen.getByRole('group', { name: 'Proficiency' });
+  expect(group).toHaveAccessibleDescription('Choose the step closest to what you can do today.');
   const radios = within(group).getAllByRole('radio');
   expect(radios.map((radio) => radio.getAttribute('value'))).toEqual(['1', '2', '3', '4', '5']);
   expect(radios.every((radio) => !(radio as HTMLInputElement).checked)).toBe(true);
   // Each step is named by its title and described by its criterion.
   for (const step of proficiencyLevels) {
     expect(
-      within(group).getByRole('radio', { name: `${step.value}점 · ${step.name}` }),
+      within(group).getByRole('radio', { name: `${String(step.value)} · ${step.name}` }),
     ).toHaveAccessibleDescription(step.criterion);
   }
 });
@@ -135,74 +135,74 @@ test('the five steps each say what they mean, and none is chosen for a new skill
 test('no proficiency chosen: the server message is tied to the steps and focus goes to the first', async () => {
   const api = fakeApi([]);
   open('/skills/new');
-  await screen.findByRole('heading', { level: 1, name: '스킬 추가' });
-  fireEvent.change(field('스킬명'), { target: { value: 'Rust' } });
-  api.refuseNext(400, '숙련도는 1~5 사이의 정수여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(level(/^1점/)).toHaveFocus());
+  await screen.findByRole('heading', { level: 1, name: 'Add skill' });
+  fireEvent.change(field('Skill name'), { target: { value: 'Rust' } });
+  api.refuseNext(400, 'Proficiency must be a whole number from 1 to 5');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(level(/^1 · /)).toHaveFocus());
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
     proficiency: null,
   });
-  expect(screen.getByRole('group', { name: '숙련도' })).toHaveAccessibleDescription(
-    expect.stringContaining('숙련도는 1~5 사이의 정수여야 합니다'),
+  expect(screen.getByRole('group', { name: 'Proficiency' })).toHaveAccessibleDescription(
+    expect.stringContaining('Proficiency must be a whole number from 1 to 5'),
   );
   // The focused radio carries the message too, for readers that announce only the control.
-  expect(level(/^1점/)).toHaveAccessibleDescription(
-    '예제를 따라 해 봤습니다 숙련도는 1~5 사이의 정수여야 합니다',
+  expect(level(/^1 · /)).toHaveAccessibleDescription(
+    'I have followed examples Proficiency must be a whole number from 1 to 5',
   );
-  expect(field('스킬명')).toHaveValue('Rust');
+  expect(field('Skill name')).toHaveValue('Rust');
 });
 
 test('a taken name (409) is shown under the name field, not as a general error', async () => {
   const api = fakeApi([go]);
   open('/skills/new');
-  await screen.findByRole('heading', { level: 1, name: '스킬 추가' });
-  fireEvent.change(field('스킬명'), { target: { value: 'go' } });
-  fireEvent.click(level(/^2점/));
-  api.refuseNext(409, '이미 등록된 스킬입니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  await waitFor(() => expect(field('스킬명')).toHaveFocus());
-  expect(field('스킬명')).toHaveAttribute('aria-invalid', 'true');
-  expect(field('스킬명')).toHaveAccessibleDescription('이미 등록된 스킬입니다');
+  await screen.findByRole('heading', { level: 1, name: 'Add skill' });
+  fireEvent.change(field('Skill name'), { target: { value: 'go' } });
+  fireEvent.click(level(/^2 · /));
+  api.refuseNext(409, 'This skill is already registered');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('Skill name')).toHaveFocus());
+  expect(field('Skill name')).toHaveAttribute('aria-invalid', 'true');
+  expect(field('Skill name')).toHaveAccessibleDescription('This skill is already registered');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
 test('a 409 that names no field still goes below the form', async () => {
   const api = fakeApi([]);
   open('/skills/new');
-  await screen.findByRole('heading', { level: 1, name: '스킬 추가' });
+  await screen.findByRole('heading', { level: 1, name: 'Add skill' });
   // The generic unique-violation answer (backend/src/standard/http.ts).
   api.refuseNext(409, 'This item already exists');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('This item already exists');
-  await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
-  expect(field('스킬명')).not.toHaveAttribute('aria-invalid');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
+  expect(field('Skill name')).not.toHaveAttribute('aria-invalid');
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {
   const api = fakeApi([]);
   open('/skills/new');
-  await screen.findByRole('heading', { level: 1, name: '스킬 추가' });
-  api.refuseNext(400, '요청 본문은 JSON 객체여야 합니다');
-  fireEvent.click(screen.getByRole('button', { name: '추가' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('요청 본문은 JSON 객체여야 합니다');
-  await waitFor(() => expect(screen.getByRole('button', { name: '추가' })).toHaveFocus());
+  await screen.findByRole('heading', { level: 1, name: 'Add skill' });
+  api.refuseNext(400, 'Request body must be a JSON object');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Request body must be a JSON object');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('a skill is edited with its saved values filled in', async () => {
   const api = fakeApi([go]);
   open('/skills');
-  fireEvent.click(await screen.findByRole('link', { name: 'Go 수정' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '스킬 수정' })).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Edit Go' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Edit skill' })).toBeInTheDocument();
   expect(window.location.pathname).toBe('/skills/1/edit');
-  expect(field('스킬명')).toHaveValue('Go');
-  expect(field('분류')).toHaveValue('language');
-  expect(level(/^3점/)).toBeChecked();
+  expect(field('Skill name')).toHaveValue('Go');
+  expect(field('Category')).toHaveValue('language');
+  expect(level(/^3 · /)).toBeChecked();
 
-  fireEvent.click(level(/^5점/));
-  fireEvent.change(field('메모'), { target: { value: '사이드 프로젝트 2개' } });
-  fireEvent.click(screen.getByRole('button', { name: '저장' }));
-  expect(await screen.findByRole('heading', { level: 1, name: '스킬' })).toBeInTheDocument();
+  fireEvent.click(level(/^5 · /));
+  fireEvent.change(field('Notes'), { target: { value: '사이드 프로젝트 2개' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Skills' })).toBeInTheDocument();
   const put = api.calls.find((call) => call.method === 'PUT');
   expect(put?.url).toBe('/api/skills/1');
   expect(put?.body).toEqual({
@@ -212,21 +212,21 @@ test('a skill is edited with its saved values filled in', async () => {
     memo: '사이드 프로젝트 2개',
   });
   const item = await screen.findByRole('listitem', { name: 'Go' });
-  expect(within(item).getByText('숙련도 5점 중 5점, 전문')).toBeInTheDocument();
+  expect(within(item).getByText('Proficiency 5 of 5, Expert')).toBeInTheDocument();
   expect(item).toHaveTextContent('사이드 프로젝트 2개');
 });
 
 test('editing a skill that no longer exists says so', async () => {
   fakeApi([]);
   open('/skills/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('스킬을 찾을 수 없습니다');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Skill not found');
 });
 
 test('cancelling the delete dialog keeps the skill', async () => {
   const api = fakeApi([go]);
   open('/skills');
-  fireEvent.click(await screen.findByRole('button', { name: 'Go 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '스킬을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete Go' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this skill?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
@@ -237,45 +237,43 @@ test('cancelling the delete dialog keeps the skill', async () => {
 test('confirming the delete removes the skill and moves focus to the page title', async () => {
   const api = fakeApi([go]);
   open('/skills');
-  fireEvent.click(await screen.findByRole('button', { name: 'Go 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '스킬을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete Go' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this skill?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
-  expect(
-    await screen.findByRole('heading', { name: '아직 등록한 스킬이 없습니다' }),
-  ).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'No skills added yet' })).toBeInTheDocument();
   expect(api.calls.find((call) => call.method === 'DELETE')?.url).toBe('/api/skills/1');
   expect(api.store).toHaveLength(0);
-  expect(await screen.findByText("'Go' 스킬을 지웠습니다")).toBeInTheDocument();
+  expect(await screen.findByText("Deleted 'Go'")).toBeInTheDocument();
   await waitFor(() =>
-    expect(screen.getByRole('heading', { level: 1, name: '스킬' })).toHaveFocus(),
+    expect(screen.getByRole('heading', { level: 1, name: 'Skills' })).toHaveFocus(),
   );
 });
 
 test('a failed delete keeps the dialog open and the row on screen', async () => {
   const api = fakeApi([go]);
-  api.failDeletes(503, '데이터베이스에 연결할 수 없습니다');
+  api.failDeletes(503, 'Cannot connect to the database');
   open('/skills');
-  fireEvent.click(await screen.findByRole('button', { name: 'Go 삭제' }));
-  const dialog = await screen.findByRole('dialog', { name: '스킬을 지울까요?' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete Go' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this skill?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
   expect(
-    await screen.findByText('스킬을 지우지 못했습니다. 데이터베이스에 연결할 수 없습니다'),
+    await screen.findByText('Could not delete the skill. Cannot connect to the database'),
   ).toBeInTheDocument();
-  expect(screen.getByRole('dialog', { name: '스킬을 지울까요?' })).toBeInTheDocument();
+  expect(screen.getByRole('dialog', { name: 'Delete this skill?' })).toBeInTheDocument();
 });
 
 test('server messages map to the field they start with', () => {
   const fieldOf = (message: string) => skillFieldErrors(message)[0]?.field;
-  expect(fieldOf('스킬명을(를) 입력해 주세요')).toBe('name');
-  expect(fieldOf('스킬명은(는) 50자 이하여야 합니다')).toBe('name');
-  expect(fieldOf('이미 등록된 스킬입니다')).toBe('name');
-  expect(fieldOf('숙련도는 1~5 사이의 정수여야 합니다')).toBe('proficiency');
-  expect(fieldOf('메모은(는) 2000자 이하여야 합니다')).toBe('memo');
-  expect(fieldOf('요청 본문은 JSON 객체여야 합니다')).toBeUndefined();
+  expect(fieldOf('Skill name is required')).toBe('name');
+  expect(fieldOf('Skill name must be at most 50 characters')).toBe('name');
+  expect(fieldOf('This skill is already registered')).toBe('name');
+  expect(fieldOf('Proficiency must be a whole number from 1 to 5')).toBe('proficiency');
+  expect(fieldOf('Notes must be at most 2000 characters')).toBe('memo');
+  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
   // The category message holds commas of its own; it stays one message.
   expect(
     skillFieldErrors(
-      '분류는 언어, 프레임워크·라이브러리, 데이터베이스, 인프라·클라우드, 도구, 기타 중 하나여야 합니다',
+      'Category must be one of language, framework, database, infrastructure, tool, other',
     ),
   ).toHaveLength(1);
 });
