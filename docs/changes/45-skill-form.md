@@ -1,73 +1,75 @@
-# #45 스킬 등록·수정·삭제 화면
+# #45 Skill create, update, and delete screens
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/45> (상위 이슈 #67 이력서 항목 화면)
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/45> (parent issue #67, resume item screens)
 
-## 목적
+Note: UI text and fixture data are quoted in Korean as they appear on screen, with an English gloss in parentheses where needed.
 
-스킬을 화면에서 등록·수정·삭제합니다. #41에서 꺼낸 공통 폼 모듈을 그대로 쓰고, #34에서 미룬 숙련도 단계별 기준 문구를 정합니다.
+## Purpose
 
-## 변경
+Create, update, and delete skills from the screen. It uses the shared form modules pulled out in #41 as they are, and settles the wording of the criteria for each proficiency level that #34 postponed.
 
-- `frontend/src/skills.tsx`: 목록에 "스킬 추가" 버튼과 항목별 수정·삭제, `NewSkill`, `EditSkill`, 입력 폼 `SkillFields`. 목록은 삭제 뒤 행을 유지하는 `useReloading`으로 바꿨고, 숙련도 옆에 단계 이름("4/5 · 숙련")을 보입니다.
-- `frontend/src/skill-data.ts`: 숙련도 단계 `proficiencyLevels`와 `proficiencyName`, 폼 상태 타입과 변환(`toSkillForm`, `toSkillInput`), 서버 오류 문구를 칸별로 나누는 `skillFieldErrors`, `skillApi.create/update/remove`. 분류 목록 `skillCategories`는 폼이 쓰므로 다시 내보냅니다.
-- `frontend/src/form-state.tsx`: 400과 함께 409도 칸별로 나눕니다. 409 "이미 등록된 스킬입니다"를 스킬명 칸 아래에 보이기 위해서입니다. 다른 API도 DB 고유 제약에 걸리면 일반 409 "이미 등록된 항목입니다"를 낼 수 있지만(`backend/src/standard/http.ts`), 이 문구는 어느 칸 이름과도 맞지 않아 전처럼 폼 아래 안내로 갑니다. 지금 고유 제약은 스킬명뿐입니다.
-- `frontend/src/app.tsx`: `/skills/new`, `/skills/:id/edit` 경로와 `skillPaths`.
-- `frontend/src/skill-form.test.tsx`: 메모리 안의 가짜 API로 등록·수정·삭제·오류 표시를 검사합니다(처음 12건, 1차 리뷰 반영 뒤 13건). `skills.test.tsx`는 단계 이름이 붙은 숙련도 문장에 맞췄습니다.
+## Changes
 
-## 판단한 내용
+- `frontend/src/skills.tsx`: a "스킬 추가" (Add skill) button on the list, edit and delete for each item, `NewSkill`, `EditSkill`, and the input form `SkillFields`. The list now uses `useReloading`, which keeps the rows after a delete, and shows the level name next to the proficiency ("4/5 · 숙련", 4/5 · skilled).
+- `frontend/src/skill-data.ts`: the proficiency levels `proficiencyLevels` and `proficiencyName`, the form state type and conversions (`toSkillForm`, `toSkillInput`), `skillFieldErrors` that splits a server error message per field, and `skillApi.create/update/remove`. The category list `skillCategories` is exported again because the form uses it.
+- `frontend/src/form-state.tsx`: it splits a 409 per field as well as a 400. This is so the 409 "이미 등록된 스킬입니다" (The skill is already registered) shows under the skill name field. Other APIs can also return the general 409 "이미 등록된 항목입니다" (The item is already registered) when they hit a DB unique constraint (`backend/src/standard/http.ts`), but that message matches no field name, so it goes to the guidance below the form as before. The only unique constraint now is the skill name.
+- `frontend/src/app.tsx`: the routes `/skills/new` and `/skills/:id/edit`, and `skillPaths`.
+- `frontend/src/skill-form.test.tsx`: checks create, update, delete, and error display with an in-memory fake API (12 tests at first, 13 after the first review). `skills.test.tsx` was adjusted to the proficiency sentence with the level name.
 
-- **숙련도 기준(#45 이슈 코멘트로 확정):** 사용자가 선택지는 추천안으로 정해 달라고 해, 아래 추천안으로 정했습니다. 문구만 바뀌므로 바꾸고 싶으면 `proficiencyLevels`만 고치면 됩니다.
+## Decisions
 
-| 점수 | 이름 | 기준                                                |
-| ---- | ---- | --------------------------------------------------- |
-| 1    | 입문 | 예제를 따라 해 봤습니다                             |
-| 2    | 기초 | 문서를 보며 작은 기능을 만들 수 있습니다            |
-| 3    | 실무 | 혼자 실무 기능을 만들고 고칠 수 있습니다            |
-| 4    | 숙련 | 설계를 정하고 다른 사람의 코드를 검토할 수 있습니다 |
-| 5    | 전문 | 어려운 문제를 풀고 팀에 가르칠 수 있습니다          |
+- **Proficiency criteria (confirmed in the #45 issue comment):** the user asked me to settle the choices with the recommendation, so I settled them with the recommendation below. Only the wording changes, so if you want to change it, fix only `proficiencyLevels`.
 
-- **숙련도 입력:** 다섯 단계의 네이티브 라디오 버튼을 `fieldset`·`legend`("숙련도")로 묶었습니다. 화살표 키로 단계를 옮기고, 각 단계의 이름과 기준이 라디오 이름에 들어 있어 화면 낭독기가 함께 읽습니다. 안내 문구와 서버 메시지는 `fieldset`의 `aria-describedby`로 묶었습니다. 라디오는 `aria-invalid`를 지원하지 않아 붙이지 않았습니다. 새 스킬은 단계를 미리 골라 두지 않고, 고르지 않고 저장하면 서버의 "숙련도는 1~5 사이의 정수여야 합니다"가 보이며 포커스가 첫 단계로 갑니다.
-- **중복 이름:** 서버는 대소문자를 무시하고 이름 중복을 409로 거절합니다(#34). 이 메시지를 스킬명 칸 아래에 보이고 포커스를 그 칸으로 옮깁니다.
-- **분류:** 학력·이력과 같이 네이티브 `select`이고, 새 스킬은 "언어"로 시작합니다.
+| Score | Name            | Criterion                                                                                             |
+| ----- | --------------- | ----------------------------------------------------------------------------------------------------- |
+| 1     | 입문 (Beginner) | 예제를 따라 해 봤습니다 (I have followed along with examples)                                         |
+| 2     | 기초 (Basic)    | 문서를 보며 작은 기능을 만들 수 있습니다 (I can build a small feature with the docs)                  |
+| 3     | 실무 (Working)  | 혼자 실무 기능을 만들고 고칠 수 있습니다 (I can build and fix real features on my own)                |
+| 4     | 숙련 (Skilled)  | 설계를 정하고 다른 사람의 코드를 검토할 수 있습니다 (I can decide the design and review others' code) |
+| 5     | 전문 (Expert)   | 어려운 문제를 풀고 팀에 가르칠 수 있습니다 (I can solve hard problems and teach the team)             |
 
-## 검증
+- **Proficiency input:** five native radio buttons grouped with a `fieldset` and `legend` ("숙련도", Proficiency). The arrow keys move between levels, and the name and criterion of each level are in the radio's name, so a screen reader reads them together. The guidance text and the server message are tied to the `fieldset` with `aria-describedby`. Radios do not support `aria-invalid`, so I did not add it. A new skill has no level preselected, and if you save without choosing, the server's "숙련도는 1~5 사이의 정수여야 합니다" (Proficiency must be an integer from 1 to 5) shows and focus goes to the first level.
+- **Duplicate name:** the server rejects a duplicate name with 409, ignoring case (#34). This message shows under the skill name field and focus moves to that field.
+- **Category:** a native `select` like education and career, and a new skill starts with "언어" (Language).
 
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과(종료 코드 0). 백엔드 78건 통과·건너뜀 0건, 프론트엔드 165건 통과·2건 건너뜀(기존 테마 조건부 테스트, 새 스킬 폼 테스트 12건 포함), 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
-- 실제 브라우저: 설치된 Chrome(헤드리스 156)을 DevTools 프로토콜로 조작했습니다. 개발 서버(API 3108, Vite 5208)를 이 PC의 Docker PostgreSQL 17 `career_test`에 붙이고, 지어낸 스킬 8건(Go 포함)으로 시작했습니다. 모든 단계는 마우스 없이 키 입력(`Tab`, `Enter`, `Escape`, `Ctrl+A`, 화살표·글자 키)만으로 했습니다.
+## Verification
 
-키보드 흐름(390×844, 1440×900 모두 같은 결과):
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed (exit code 0). Backend: 78 passed and 0 skipped. Frontend: 165 passed and 2 skipped (the existing theme-conditional tests, including 12 new skill form tests). Skill check: 4 passed. Build: passed. `npm run knip`: passed.
+- Real browser: I drove the installed Chrome (headless 156) through the DevTools protocol. I pointed the dev servers (API 3108, Vite 5208) at `career_test` on the Docker PostgreSQL 17 on this PC and started with 8 made-up skills (including Go). Every step used only key input (`Tab`, `Enter`, `Escape`, `Ctrl+A`, arrow and letter keys), no mouse.
 
-| 단계                                                                      | 결과                                                                                      |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 목록에서 `Tab`으로 "스킬 추가" → `Enter`                                  | `/skills/new`로 이동                                                                      |
-| 스킬명 "go"(이미 있는 Go와 대소문자만 다름), 숙련도 첫 단계에서 `↓` 두 번 | 3점이 골라짐                                                                              |
-| "추가"                                                                    | 스킬명 칸 아래 "이미 등록된 스킬입니다", `aria-invalid`, 포커스가 스킬명으로, 입력값 유지 |
-| `Ctrl+A`로 이름을 "키보드스킬"로 고쳐 "추가"                              | 목록으로 돌아가 "스킬 9건", 새로고침 뒤 "3/5 · 실무"                                      |
-| "키보드스킬 수정" → 골라진 3점에서 `↓` → "저장" → 새로고침                | "4/5 · 숙련", 화면 낭독기 문장 "숙련도 5점 중 4점, 숙련"                                  |
-| "키보드스킬 삭제" → 확인 창 → `Escape`                                    | 창이 닫히고 포커스가 삭제 버튼으로 돌아옴, 새로고침 뒤에도 9건                            |
-| 다시 "키보드스킬 삭제" → 창의 "삭제" → `Enter`                            | "스킬 8건", 포커스가 페이지 제목(`h1`)으로, 새로고침 뒤에도 8건                           |
+Keyboard flow (same result at both 390×844 and 1440×900):
 
-두 크기 모두 목록과 오류가 난 폼에서 가로 넘침이 없고, 보이는 글자는 최소 14px입니다.
+| Step                                                                                                  | Result                                                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| On the list, `Tab` to "스킬 추가" (Add skill) → `Enter`                                               | Moved to `/skills/new`                                                                                                                                               |
+| Skill name "go" (differs from the existing Go only by case), `↓` twice at the first proficiency level | 3 points are chosen                                                                                                                                                  |
+| "추가" (Add)                                                                                          | Under the skill name field "이미 등록된 스킬입니다" (The skill is already registered), `aria-invalid`, focus moved to the skill name, and the input values were kept |
+| Fix the name to "키보드스킬" (keyboard skill) with `Ctrl+A` and "추가"                                | Returned to the list with "스킬 9건" (9 skills), and "3/5 · 실무" after a reload                                                                                     |
+| "키보드스킬 수정" (Edit keyboard skill) → `↓` from the chosen 3 points → "저장" (Save) → reload       | "4/5 · 숙련", and the screen reader sentence "숙련도 5점 중 4점, 숙련" (proficiency 4 out of 5, skilled)                                                             |
+| "키보드스킬 삭제" (Delete keyboard skill) → dialog → `Escape`                                         | The dialog closes, focus returns to the delete button, and still 9 after a reload                                                                                    |
+| "키보드스킬 삭제" again → "삭제" (Delete) in the dialog → `Enter`                                     | "스킬 8건" (8 skills), focus on the page title (`h1`), and still 8 after a reload                                                                                    |
 
-| 목록 390                                | 오류가 난 폼 390                              | 수정 폼 1440                              | 삭제 확인 390                                         |
-| --------------------------------------- | --------------------------------------------- | ----------------------------------------- | ----------------------------------------------------- |
-| ![목록 390](45-skill-form/list-390.png) | ![오류 390](45-skill-form/form-error-390.png) | ![수정 1440](45-skill-form/form-1440.png) | ![삭제 확인 390](45-skill-form/delete-dialog-390.png) |
+At both sizes there is no horizontal overflow in the list and in the form with an error, and the smallest visible text is 14px.
 
-## 1차 리뷰 반영
+| List 390                                | Form with an error 390                         | Edit form 1440                            | Delete confirmation 390                                         |
+| --------------------------------------- | ---------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------- |
+| ![List 390](45-skill-form/list-390.png) | ![Error 390](45-skill-form/form-error-390.png) | ![Edit 1440](45-skill-form/form-1440.png) | ![Delete confirmation 390](45-skill-form/delete-dialog-390.png) |
 
-읽기 전용 리뷰 에이전트가 PR 전체 diff와 화면 사진을 확인했습니다. 막을 결함은 없었고, 409 처리 변경이 다른 폼에 안전하다고 확인했습니다. 지적 5건(낮음 2, 참고 3)을 모두 고쳤습니다.
+## First review applied
 
-| 지적                                                                                                                     | 반영                                                                                                                            |
-| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| (낮음) 숙련도 오류 때 포커스가 첫 라디오로 가지만 오류는 `fieldset`에만 묶여, 포커스한 칸만 읽는 낭독기는 오류를 못 읽음 | 오류가 있는 동안 각 라디오의 `aria-describedby`에도 오류를 묶음. 첫 라디오의 설명에 오류가 들어가는지 테스트                    |
-| (낮음) 라디오 이름이 단계와 기준 전체라 화살표로 옮길 때마다 길게 읽힘                                                   | 이름은 "4점 · 숙련", 기준은 설명으로 나눔. 실제 Chrome 접근성 트리에서 이름 "1점 · 입문", 설명 "예제를 따라 해 봤습니다"로 확인 |
-| (참고) `form-state.tsx` 주석이 400만 말함                                                                                | 400·409로 고침                                                                                                                  |
-| (참고) 칸 이름이 없는 409 테스트 없음                                                                                    | 일반 409 "이미 등록된 항목입니다"가 폼 아래 안내로 가고 포커스가 저장 버튼으로 돌아오는지 테스트                                |
-| (참고) 문서가 "다른 API는 409를 내지 않는다"고 적음                                                                      | 일반 409는 낼 수 있지만 칸 이름과 맞지 않아 안내로 간다고 고침                                                                  |
+A read-only review agent looked at the whole PR diff and the screen pictures. There was no defect to block, and it confirmed that the 409 handling change is safe for the other forms. It fixed all 5 findings (2 low, 3 notes).
 
-- 실제 브라우저(390×844)에서 키보드 흐름을 다시 돌려 결과가 같음을 확인했습니다. 스킬 폼 테스트는 13건이 됐습니다.
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과. 백엔드 78건 통과·건너뜀 0건, 프론트엔드 166건 통과·2건 건너뜀, 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
+| Finding                                                                                                                                                                              | Applied                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (Low) On a proficiency error focus goes to the first radio, but the error is tied only to the `fieldset`, so a screen reader that reads only the focused field cannot read the error | While an error exists, also tie the error to each radio's `aria-describedby`. Added a test that the error is in the first radio's description                                                              |
+| (Low) The radio name is the whole level and criterion, so it is read long each time you move with the arrows                                                                         | Split it into the name "4점 · 숙련" (4 points · skilled) and the criterion as the description. I confirmed in the real Chrome accessibility tree: name "1점 · 입문", description "예제를 따라 해 봤습니다" |
+| (Note) The `form-state.tsx` comment mentioned only 400                                                                                                                               | Fixed to 400 and 409                                                                                                                                                                                       |
+| (Note) No test for a 409 with no field name                                                                                                                                          | Added a test that the general 409 "이미 등록된 항목입니다" goes to the guidance below the form and focus returns to the save button                                                                        |
+| (Note) The document said "other APIs do not return 409"                                                                                                                              | Fixed: they can return the general 409, but it matches no field name, so it goes to the guidance                                                                                                           |
 
-## 2차 리뷰 결과
+- I ran the keyboard flow again in the real browser (390×844) and confirmed the same result. There are now 13 skill form tests.
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed. Backend: 78 passed and 0 skipped. Frontend: 166 passed and 2 skipped. Skill check: 4 passed. Build: passed. `npm run knip`: passed.
 
-1차 지적이 맞게 반영됐는지 확인했습니다. 라디오마다 id가 `useId`로 겹치지 않고, 오류 id는 오류 문구가 보일 때만 묶이며, 라벨을 눌러 고르는 동작도 그대로입니다. 최종 전체 diff에서 정확성·회귀·접근성 지적은 없었습니다. 변경 절의 테스트 수(13건)와 라디오 주석만 고쳤습니다. 오류가 묶음과 라디오 양쪽에서 두 번 읽힐 수 있는 점은 포커스한 칸만 읽는 낭독기를 위해 받아들였습니다. 리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
+## Second review result
+
+It confirmed that the first-round findings were applied correctly. The ids of the radios do not collide because of `useId`, the error id is tied only while the error text is visible, and choosing by clicking the label still works. In the final whole diff there were no findings on correctness, regressions, or accessibility. I only fixed the test count (13) in the Changes section and a radio comment. That an error can be read twice, from both the group and the radio, I accepted for screen readers that read only the focused field. Reviews end at 2. No issue was split off.

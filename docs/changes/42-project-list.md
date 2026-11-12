@@ -1,53 +1,55 @@
-# #42 프로젝트 목록 화면과 메뉴
+# #42 Project list screen and menu
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/42> (상위 이슈 #67 이력서 항목 화면)
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/42> (parent issue #67, resume item screens)
 
-## 목적
+Note: UI text and fixture data are quoted in Korean as they appear on screen, with an English gloss in parentheses where needed.
 
-#33 API의 프로젝트 데이터를 화면에서 봅니다. #40 이력 목록과 같은 구조입니다. 등록·수정·삭제는 #43에서 만듭니다.
+## Purpose
 
-## 변경
+Show the project data of the #33 API on screen. It has the same structure as the #40 career list. Create, update, and delete are built in #43.
 
-- `frontend/src/app.tsx`: `pages.projects = '/projects'`, 메뉴 "프로젝트"(아이콘 `FolderKanban`, 이력 다음), 경로 연결.
-- `frontend/src/project-data.ts`: `Project` 타입, 진행 여부(`isRunning`), 기간·소속 문구, 웹 주소만 링크로 쓰는 `webLink`, `projectApi.list`.
-- `frontend/src/projects.tsx`: `ProjectList` 화면. 로딩 `SkeletonList`, 빈 목록 `EmptyState`, 오류 `Notice`(`role="alert"`), 페이지 `section`의 `aria-busy`와 항상 붙어 있는 `sr-only` 상태 문구("프로젝트를 불러오는 중" → "프로젝트 N건")는 이력과 같습니다.
-- `frontend/src/text-blocks.tsx`: 이력 화면 안에 있던 `TextBlocks`(제목 붙은 설명 목록 `dl`)를 항목 화면들이 함께 쓰도록 옮겼습니다. 글 대신 요소(사용 기술 태그)도 받습니다. 이력 화면의 동작은 같습니다.
-- `frontend/src/projects.test.tsx`: 메뉴 이동, API 순서 유지, 진행 중 표시, 빈 칸 생략, 링크, 로딩·빈 목록·오류 상태, 문구 함수 테스트(처음 11건, 1차 리뷰 반영 뒤 12건).
+## Changes
 
-## 판단한 내용
+- `frontend/src/app.tsx`: `pages.projects = '/projects'`, the menu "프로젝트" (Projects, icon `FolderKanban`, after Career), and the route wiring.
+- `frontend/src/project-data.ts`: the `Project` type, whether it is in progress (`isRunning`), the period and affiliation wording, `webLink` that uses only web addresses as links, and `projectApi.list`.
+- `frontend/src/projects.tsx`: the `ProjectList` screen. Loading `SkeletonList`, an empty list `EmptyState`, an error `Notice` (`role="alert"`), `aria-busy` on the page `section`, and an always-present `sr-only` status text ("프로젝트를 불러오는 중", Loading projects → "프로젝트 N건", N projects) are the same as career.
+- `frontend/src/text-blocks.tsx`: moved `TextBlocks` (a description list `dl` with titles), which was inside the career screen, so the item screens share it. It also accepts an element (technology tags) instead of text. The career screen behaves the same.
+- `frontend/src/projects.test.tsx`: tests for menu navigation, keeping the API order, the in-progress display, omitting empty fields, links, the loading, empty, and error states, and the wording functions (11 at first, 12 after the first review).
 
-- **진행 중:** 종료일이 없으면 진행 중입니다(#33 결정, 상태 칸 없음). 프로젝트명 옆 배지와 기간 끝("2024-05-01 ~ 진행 중")에 보입니다.
-- **소속 줄:** 소속 · 역할 중 입력한 것만 " · "로 잇고, 둘 다 비면 줄을 두지 않습니다.
-- **요약·기여와 성과·사용 기술:** 입력한 것만 제목과 함께 설명 목록으로 보입니다(#40 리뷰 결정). 사용 기술은 태그 목록이고, 띄어쓰기 없는 50자 이름도 390px에서 줄바꿈됩니다.
-- **링크:** "저장소", "서비스"를 새 탭으로 엽니다(`rel="noopener noreferrer"`). 화면 낭독기 이름은 "주문 정산 자동화 저장소 (새 탭에서 열림)"처럼 어느 프로젝트의 링크인지와 새 탭이 열린다는 것을 말합니다. 서버는 `http(s)` 주소만 저장하지만(#33), 화면도 다른 형식(`javascript:` 등)은 링크로 만들지 않습니다. 키보드 포커스가 보이도록 2px 테두리를 둡니다.
-- **정렬:** 화면은 API가 준 순서(시작일 최신 순)를 그대로 씁니다.
+## Decisions
 
-## 검증
+- **In progress:** with no end date, the project is in progress (a #33 decision, no status field). It shows in a badge next to the project name and at the end of the period ("2024-05-01 ~ 진행 중", in progress).
+- **Affiliation line:** of organization · role, only the ones entered are joined with " · ", and if both are empty there is no line.
+- **Summary, contributions and results, technologies:** only the ones entered are shown as a description list with titles (a #40 review decision). Technologies are a tag list, and even a 50-character name with no spaces wraps at 390px.
+- **Links:** "저장소" (Repository) and "서비스" (Service) open in a new tab (`rel="noopener noreferrer"`). The screen reader name says which project the link belongs to and that a new tab opens, like "주문 정산 자동화 저장소 (새 탭에서 열림)" (Order settlement automation repository (opens in a new tab)). The server stores only `http(s)` addresses (#33), and the screen also does not make other formats (`javascript:` and so on) into links. I added a 2px border so the keyboard focus is visible.
+- **Sorting:** the screen uses the order the API gave (newest start date first) as it is.
 
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과(종료 코드 0). 백엔드 78건 통과·건너뜀 0건, 프론트엔드 125건 통과·2건 건너뜀(기존 테마 조건부 테스트, 새 프로젝트 테스트 11건 포함), 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
-- 실제 브라우저: 설치된 Chrome(헤드리스 156)을 DevTools 프로토콜로 조작했습니다. 개발 서버(API 3108, Vite 5208)를 이 PC의 Docker PostgreSQL 17 `career_test`에 붙이고, 지어낸 프로젝트를 API로 넣었습니다. 오류 상태는 브라우저에서 `/api/projects` 요청을 막아 만들었습니다. 측정값은 페이지의 가로 넘침 여부와 보이는 글자의 최소 크기입니다.
+## Verification
 
-| 상태                                                                     | 390×844                                                                                                                                   | 1440×900                                                                   |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| 목록 3건                                                                 | 가로 넘침 없음, 최소 글자 14px, 시작일 최신 순, 진행 중인 것만 배지 ([라이트](42-project-list/list-390-light.png))                        | 같음, 다크 모드도 글자 구분됨 ([다크](42-project-list/list-1440-dark.png)) |
-| 긴 이름(띄어쓰기 없음)·긴 URL·50자 기술 이름·기술 30개·120자 저장소 주소 | 가로 넘침 없음, 줄바꿈됨 ([라이트](42-project-list/long-text-390-light.png))                                                              | 가로 넘침 없음(측정값만)                                                   |
-| 빈 목록                                                                  | "아직 등록한 프로젝트가 없습니다" 표시, 상태 문구 "프로젝트 0건" ([라이트](42-project-list/empty-390-light.png))                          | 같음(측정값만)                                                             |
-| 요청 실패                                                                | "프로젝트를 불러오지 못했습니다. 서버에 연결할 수 없습니다" 경고 ([라이트](42-project-list/error-390-light.png))                          | 같음(측정값만)                                                             |
-| 키보드                                                                   | `Tab`으로 "주문 정산 자동화 저장소 (새 탭에서 열림)"에 포커스, 2px 테두리, 높이 36px ([라이트](42-project-list/link-focus-390-light.png)) | —                                                                          |
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed (exit code 0). Backend: 78 passed and 0 skipped. Frontend: 125 passed and 2 skipped (the existing theme-conditional tests, including 11 new project tests). Skill check: 4 passed. Build: passed. `npm run knip`: passed.
+- Real browser: I drove the installed Chrome (headless 156) through the DevTools protocol. I pointed the dev servers (API 3108, Vite 5208) at `career_test` on the Docker PostgreSQL 17 on this PC and put in made-up projects through the API. I made the error state by blocking the `/api/projects` request in the browser. The measurements are whether the page overflows horizontally and the smallest visible text size.
 
-## 1차 리뷰 반영
+| State                                                                                                                        | 390×844                                                                                                                                                                                             | 1440×900                                                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| List of 3                                                                                                                    | No horizontal overflow, smallest text 14px, newest start date first, only the in-progress one has the badge ([light](42-project-list/list-390-light.png))                                           | Same, and dark mode text is distinguishable ([dark](42-project-list/list-1440-dark.png)) |
+| A long name (no spaces), a long URL, a 50-character technology name, 30 technologies, and a 120-character repository address | No horizontal overflow, text wraps ([light](42-project-list/long-text-390-light.png))                                                                                                               | No horizontal overflow (measurements only)                                               |
+| Empty list                                                                                                                   | "아직 등록한 프로젝트가 없습니다" (No project registered yet) is shown, and the status text is "프로젝트 0건" (0 projects) ([light](42-project-list/empty-390-light.png))                           | Same (measurements only)                                                                 |
+| Request failed                                                                                                               | The alert "프로젝트를 불러오지 못했습니다. 서버에 연결할 수 없습니다" (Could not load projects. Cannot connect to the server) ([light](42-project-list/error-390-light.png))                        | Same (measurements only)                                                                 |
+| Keyboard                                                                                                                     | `Tab` focuses "주문 정산 자동화 저장소 (새 탭에서 열림)" (Order settlement automation repository (opens in a new tab)), 2px border, height 36px ([light](42-project-list/link-focus-390-light.png)) | —                                                                                        |
 
-읽기 전용 리뷰 에이전트가 PR 전체 diff와 화면 사진을 확인했습니다. 정확성·회귀·보안 지적은 없었습니다. 이력 화면은 `TextBlocks` 위치만 바뀌어 같고, `webLink`는 `http(s)`만 링크로 만들며, `dd` 안의 `ul`은 올바른 구조라고 확인했습니다. 낮음 2건은 고쳤고, 참고 1건은 그대로 두었습니다.
+## First review applied
 
-| 지적                                                               | 반영                                                                                                                                                           |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| (낮음) 링크 테스트가 두 링크가 모두 잘못된 경우만 확인함           | 저장소는 올바르고 서비스는 `javascript:`인 경우 링크가 저장소 하나뿐인지 확인하는 테스트 추가. 서비스 링크를 저장소 주소로 바꾸면 실패하는 것을 확인           |
-| (낮음) "진행 중" 배지를 `h2`의 부모 요소로 찾아 구조가 바뀌면 깨짐 | 행 안에서 글자 "진행 중"인 배지를 찾도록 바꿈                                                                                                                  |
-| (참고) 링크 이름이 보이는 글자("저장소")로 시작하지 않음           | 그대로 둠. 보이는 글자가 이름에 들어 있어 WCAG 2.5.3을 만족하고, 목록의 다른 버튼("한빛소프트 수정", "한빛소프트 삭제")과 같은 "<이름> <동작>" 순서를 지킵니다 |
+A read-only review agent looked at the whole PR diff and the screen pictures. There were no findings on correctness, regressions, or security. It confirmed that the career screen is the same apart from the location of `TextBlocks`, that `webLink` makes only `http(s)` into links, and that a `ul` inside a `dd` is a valid structure. It fixed 2 low findings and left 1 note as it is.
 
-- 프론트엔드 프로젝트 테스트는 12건이 됐습니다.
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과. 백엔드 78건 통과·건너뜀 0건, 프론트엔드 126건 통과·2건 건너뜀, 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
+| Finding                                                                                                                    | Applied                                                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (Low) The link test checked only the case where both links are bad                                                         | Added a test that checks that, when the repository link is valid and the service link is `javascript:`, only one link (the repository) exists. I confirmed it fails if the service link is changed to the repository address |
+| (Low) The "진행 중" (in progress) badge was found as the parent element of the `h2`, so it breaks if the structure changes | Changed to find the badge whose text is "진행 중" inside the row                                                                                                                                                             |
+| (Note) The link name does not start with the visible text ("저장소")                                                       | Left as it is. The visible text is in the name, so it satisfies WCAG 2.5.3, and it keeps the same "<name> <action>" order as the other buttons in the list ("한빛소프트 수정", "한빛소프트 삭제")                            |
 
-## 2차 리뷰 결과
+- There are now 12 frontend project tests.
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed. Backend: 78 passed and 0 skipped. Frontend: 126 passed and 2 skipped. Skill check: 4 passed. Build: passed. `npm run knip`: passed.
 
-1차 지적 2건이 맞게 고쳐졌는지 확인했습니다(링크 수 1개 확인, 배지 글자로 찾기). 최종 전체 diff에서 정확성·회귀·접근성 지적은 없었습니다. 변경 절의 테스트 수가 11건으로 남아 있다는 지적만 있어 고쳤습니다. 리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
+## Second review result
+
+It confirmed that both first-round findings were fixed correctly (checking that the link count is 1, and finding the badge by its text). In the final whole diff there were no findings on correctness, regressions, or accessibility. The only finding was that the test count in the Changes section still said 11, and I fixed it. Reviews end at 2. No issue was split off.

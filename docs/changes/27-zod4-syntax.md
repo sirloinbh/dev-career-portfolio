@@ -1,24 +1,24 @@
-# #27 백엔드 검증 코드를 zod 4 문법으로 옮기기
+# #27 Move the backend validation code to zod 4 syntax
 
-- 이슈: [#27](https://github.com/sirloinbh/dev-career-portfolio/issues/27)
-- 브랜치: `chore/27-zod4-syntax`
+- Issue: [#27](https://github.com/sirloinbh/dev-career-portfolio/issues/27)
+- Branch: `chore/27-zod4-syntax`
 
-## 목적
+## Purpose
 
-중앙 `sirloinbh/project-standards#386`의 1단계다. 중앙이 `zod`를 4.6.7로 올릴 때 이 앱이 깨지지 않도록 코드를 먼저 옮긴다. 보안 권고 GHSA-mrhx-c7xc-m3w5의 Dependabot 알림은 그 동기화로 닫힌다. 이 PR만으로는 닫히지 않는다.
+This is step 1 of the central `sirloinbh/project-standards#386`. Move the code first so this app does not break when the central repository raises `zod` to 4.6.7. The Dependabot alert for security advisory GHSA-mrhx-c7xc-m3w5 closes with that sync. This PR alone does not close it.
 
-## 변경 — 2026-11-01
+## Changes — 2026-11-01
 
-- `backend/src/app.ts`의 `ZodError`를 `zod/v4`에서 불러온다. 설치된 3.25.76에 이 경로가 들어 있어 설치와 잠금 파일은 바꾸지 않았다.
-- 이 앱에는 아직 zod 스키마가 없어 `z.record`, `.default()`, `z.array`를 살필 곳이 없다.
-- zod 4 스키마의 오류가 400과 그 메시지로 응답되는지 확인하는 테스트를 `backend/test/health.test.ts`에 넣었다.
+- `backend/src/app.ts` imports `ZodError` from `zod/v4`. The installed 3.25.76 contains this path, so the install and the lockfile are unchanged.
+- This app has no zod schema yet, so there is no `z.record`, `.default()`, or `z.array` to review.
+- Added a test in `backend/test/health.test.ts` that checks an error from a zod 4 schema is answered with 400 and its message.
 
-## 바뀌는 응답
+## Response changes
 
-없다. 지금은 `ZodError`를 던지는 경로가 없다.
+None. No path throws `ZodError` today.
 
-## 검증
+## Verification
 
-- `npm run check`: 통과. 백엔드 6개 중 5개 통과, 1개 건너뜀(`TEST_DATABASE_URL`을 비워 DB 통합 테스트 제외). 프론트엔드 57개 중 55개 통과, 2개 건너뜀. 스킬 테스트 4개 통과.
-- DB 통합 테스트는 PR CI로 확인한다.
-- 4.6.7에서의 동작은 아직 확인하지 못했다. 중앙 동기화 PR의 CI로 확인한다.
+- `npm run check`: passed. Backend: 5 of 6 passed and 1 skipped (the DB integration test was excluded by leaving `TEST_DATABASE_URL` empty). Frontend: 55 of 57 passed and 2 skipped. Skill tests: 4 passed.
+- The DB integration test is confirmed by the PR CI.
+- The behavior on 4.6.7 is not confirmed yet. It is confirmed by the CI of the central sync PR.

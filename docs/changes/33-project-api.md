@@ -1,84 +1,84 @@
-# #33 프로젝트 저장 API와 테이블
+# #33 Project storage API and table
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/33>
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/33>
 
-## 목적
+## Purpose
 
-프로젝트를 저장하는 테이블과 조회·등록·수정·삭제 API를 만듭니다. #31에서 정한 백엔드 구조를 따릅니다. 입력 항목은 추천안대로 확정했고 [이슈 코멘트](https://github.com/sirloinbh/dev-career-portfolio/issues/33#issuecomment-6618198926)에 기록했습니다.
+Build the table that stores projects and the list, create, update, and delete API. It follows the backend structure settled in #31. The input fields were confirmed as recommended and recorded in an [issue comment](https://github.com/sirloinbh/dev-career-portfolio/issues/33#issuecomment-6618198926).
 
-## 변경
+## Changes
 
-- `database/migrations/004_projects.sql`: `projects` 테이블. 기간 순서, 사용 기술 30개 한도, 링크 주소 형식을 DB 제약으로도 막습니다.
-- `backend/src/routes/projects.ts`: `GET`·`POST /api/projects`, `PUT`·`DELETE /api/projects/:id`.
-- `backend/src/routes/shared.ts`: 링크 검증 도우미 `optionalLink`. 이후 자격증·활동 항목도 씁니다.
-- `backend/src/app.ts`: 프로젝트 경로 등록.
-- `backend/test/projects.test.ts`: DB 없이 입력 검증. `backend/test/projects.integration.test.ts`: `career_test` DB 통합.
+- `database/migrations/004_projects.sql`: the `projects` table. DB constraints also block a wrong period order, more than 30 technologies, and a bad link format.
+- `backend/src/routes/projects.ts`: `GET` and `POST /api/projects`, `PUT` and `DELETE /api/projects/:id`.
+- `backend/src/routes/shared.ts`: the link validation helper `optionalLink`. Later certification and activity items use it too.
+- `backend/src/app.ts`: registered the project routes.
+- `backend/test/projects.test.ts`: input validation without a DB. `backend/test/projects.integration.test.ts`: `career_test` DB integration.
 
 ## API
 
-| 항목        | 이름            | 규칙                                                                                                   |
-| ----------- | --------------- | ------------------------------------------------------------------------------------------------------ |
-| 프로젝트명  | `name`          | 필수, 100자 이하, 앞뒤 공백 제거                                                                       |
-| 소속        | `organization`  | 선택, 100자 이하. 이력과 연결하지 않고 글자로 입력                                                     |
-| 시작일      | `startDate`     | 필수, `YYYY-MM-DD`                                                                                     |
-| 종료일      | `endDate`       | 선택. 비어 있으면(`null`) 진행 중. 시작일보다 빠를 수 없음                                             |
-| 역할        | `role`          | 선택, 100자 이하                                                                                       |
-| 요약        | `summary`       | 선택, 500자 이하                                                                                       |
-| 기여와 성과 | `contributions` | 선택, 2000자 이하                                                                                      |
-| 사용 기술   | `technologies`  | 문자열 목록, 기본값 `[]`. 항목당 50자, 최대 30개. 앞뒤 공백 제거, 빈 항목과 중복(대소문자 무시)은 거절 |
-| 저장소 링크 | `repositoryUrl` | 선택, 500자 이하, `http://`·`https://` 주소만, 공백 문자 불가                                          |
-| 서비스 링크 | `serviceUrl`    | 선택, 500자 이하, `http://`·`https://` 주소만, 공백 문자 불가                                          |
+| Item                      | Name            | Rule                                                                                                                                                                                    |
+| ------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project name              | `name`          | Required, up to 100 characters, leading and trailing spaces removed                                                                                                                     |
+| Organization              | `organization`  | Optional, up to 100 characters. Typed as text, not linked to a career                                                                                                                   |
+| Start date                | `startDate`     | Required, `YYYY-MM-DD`                                                                                                                                                                  |
+| End date                  | `endDate`       | Optional. Empty (`null`) means in progress. It cannot be earlier than the start date                                                                                                    |
+| Role                      | `role`          | Optional, up to 100 characters                                                                                                                                                          |
+| Summary                   | `summary`       | Optional, up to 500 characters                                                                                                                                                          |
+| Contributions and results | `contributions` | Optional, up to 2000 characters                                                                                                                                                         |
+| Technologies              | `technologies`  | A list of strings, default `[]`. Up to 50 characters per item and at most 30 items. Leading and trailing spaces removed, and empty items and duplicates (case-insensitive) are rejected |
+| Repository link           | `repositoryUrl` | Optional, up to 500 characters, only `http://` and `https://` addresses, no whitespace characters                                                                                       |
+| Service link              | `serviceUrl`    | Optional, up to 500 characters, only `http://` and `https://` addresses, no whitespace characters                                                                                       |
 
-- 응답은 `{ "projects": [...] }`, `{ "project": {...} }`입니다. 생성은 201, 삭제는 204, 없는 대상은 404 "프로젝트를 찾을 수 없습니다"입니다.
-- 목록은 시작일 최신순이고, 같은 날이면 나중에 등록한 것이 먼저입니다.
-- 빈 선택 칸은 `null`로 저장합니다. 사용 기술은 입력 순서를 그대로 보존합니다.
+- Responses are `{ "projects": [...] }` and `{ "project": {...} }`. Create returns 201, delete returns 204, and a missing target is 404 "프로젝트를 찾을 수 없습니다" (Project not found).
+- The list is newest start date first, and for the same day the one registered later comes first.
+- An empty optional field is stored as `null`. Technologies keep the input order as it is.
 
-## 판단한 내용
+## Decisions
 
-- **링크는 http(s)만 받습니다.** 화면에서 링크로 열 값이므로 `javascript:`, `file:` 같은 주소가 저장되지 않게 서버와 DB 양쪽에서 막습니다. 서버는 공백·탭·줄바꿈이 있으면 "공백을 넣을 수 없습니다"로 거절하고, 원문이 `http://`·`https://`로 시작하는지(대소문자 무시) DB 제약과 같은 기준으로 확인한 뒤 Node의 `URL`로 해석합니다. 호스트가 없는 `https://`도 거절합니다. DB 제약도 대소문자를 구별하지 않아(`~*`) 서버가 받은 `HTTPS://…`를 DB가 500으로 거절하지 않습니다.
-- **사용 기술은 `text[]`입니다.** 스킬 항목과 연결하지 않기로 해서(이슈 결정) 별도 테이블 대신 한 열에 목록으로 둡니다. 화면에서 순서대로 보여 주므로 입력 순서를 보존합니다.
-- **정렬:** #32에서 찾은 문제대로 `ORDER BY`에 `projects.id`를 써서 id를 숫자로 비교합니다. 통합 테스트가 id 시퀀스를 8로 맞춰 9→10을 넘는 경우를 확인합니다.
-- **마이그레이션 번호:** `004`를 예약했습니다.
+- **Links accept only http(s).** The value is opened as a link on screen, so both the server and the DB block addresses such as `javascript:` and `file:`. If there is a space, tab, or line break, the server rejects it with "공백을 넣을 수 없습니다" (spaces are not allowed). It checks, by the same rule as the DB constraint, whether the original text starts with `http://` or `https://` (case-insensitive), and then parses it with Node's `URL`. It also rejects an `https://` with no host. The DB constraint is also case-insensitive (`~*`), so the DB does not reject an `HTTPS://…` that the server accepted with a 500.
+- **Technologies are a `text[]`.** Since they are not linked to skill items (an issue decision), they are kept as a list in one column instead of a separate table. The screen shows them in order, so the input order is kept.
+- **Sorting:** as found in #32, `ORDER BY` uses `projects.id` so ids compare as numbers. The integration test sets the id sequence to 8 to check the case that crosses 9 → 10.
+- **Migration number:** reserved `004`.
 
-## 검증
+## Verification
 
-- `npm run check`: 통과. 백엔드 46건 통과·건너뜀 0건(임시 PostgreSQL 17의 `career_test`, DB 통합 테스트 포함), 프론트엔드 86건 통과·2건 건너뜀(기존 테마 조건부 테스트).
-- `npm run knip`: 통과.
-- `004_projects.sql` 2회 적용: 두 번째는 `already exists, skipping` 알림만 있고 오류 없음.
+- `npm run check`: passed. Backend: 46 passed and 0 skipped (`career_test` on a temporary PostgreSQL 17, including the DB integration tests). Frontend: 86 passed and 2 skipped (the existing theme-conditional tests).
+- `npm run knip`: passed.
+- Applying `004_projects.sql` twice: the second time had only the `already exists, skipping` notice and no error.
 
-## 1차 리뷰 반영
+## First review applied
 
-| 지적                                                                                                                                                                         | 반영                                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| (중간) `URL`이 `https:example.com`, `https:/example.com`, `https:\\example.com`을 `https://example.com/`으로 고쳐 읽어 통과시키고, 원문을 DB 제약이 거절해 400 대신 500이 남 | `optionalLink`가 원문의 `http(s)://` 접두를 직접 확인. 세 주소를 단위 테스트 거절 목록에 추가         |
-| (낮음) `URL`이 탭·줄바꿈을 조용히 지워 저장된 원문과 실제로 열리는 주소가 달라짐                                                                                             | 공백 문자가 있는 주소를 거절(정규화하지 않고 입력을 그대로 저장). 탭·줄바꿈·공백 사례를 테스트에 추가 |
-| (낮음) 변경 기록의 "DB가 500으로 거절하는 일이 없다" 설명이 사실과 다름                                                                                                      | 위 판단 내용 설명을 고침                                                                              |
+| Finding                                                                                                                                                                                                                 | Applied                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| (Medium) `URL` reads `https:example.com`, `https:/example.com`, and `https:\\example.com` as `https://example.com/` and lets them pass, and the DB constraint rejects the original text, leaving a 500 instead of a 400 | `optionalLink` checks the original `http(s)://` prefix directly. Added the three addresses to the unit test's rejection list                    |
+| (Low) `URL` silently removes tabs and line breaks, so the stored original differs from the address that actually opens                                                                                                  | Reject addresses with whitespace characters (store the input as it is, without normalizing). Added tab, line break, and space cases to the test |
+| (Low) The change record's statement that "the DB never rejects with a 500" was wrong                                                                                                                                    | Fixed the explanation in the Decisions section above                                                                                            |
 
-1차 보완 검증:
+Verification of the first fix round:
 
-- `npm run check`: 통과. 이 PC에는 PostgreSQL이 없어 백엔드는 46건 중 36건 통과·10건 건너뜀(DB 통합 테스트), 프론트엔드 86건 통과·2건 건너뜀. DB 통합 테스트는 `career_test` DB를 쓰는 CI `verify` 결과로 확인합니다.
-- 바뀐 동작은 DB 없이 도는 `projects.test.ts`의 링크 거절 목록이 확인합니다.
-- CI `verify`(62be063): 백엔드 46건 통과·건너뜀 0건(`career_test` DB 통합 테스트 포함).
+- `npm run check`: passed. This PC has no PostgreSQL, so the backend had 36 of 46 passed and 10 skipped (DB integration tests), and the frontend had 86 passed and 2 skipped. The DB integration tests are confirmed by the CI `verify` result, which uses the `career_test` DB.
+- The changed behavior is checked by the link rejection list in `projects.test.ts`, which runs without a DB.
+- CI `verify` (62be063): backend 46 passed and 0 skipped (including the `career_test` DB integration tests).
 
-## 2차 리뷰 반영
+## Second review applied
 
-1차 지적 3건이 모두 해결됐고, 서버 검증을 통과했는데 DB 제약에 걸려 500이 나는 입력이 더 없다는 결과였습니다. 정상 주소(대문자 `HTTP://`, 한글 도메인, `user:pw@`)가 잘못 거절되지 않는 것도 확인했습니다.
+All 3 first-round findings were resolved, and the result was that no more input passes the server validation but hits a DB constraint with a 500. I also confirmed that valid addresses (uppercase `HTTP://`, a Korean domain, `user:pw@`) are not rejected by mistake.
 
-| 지적                                                                                                                            | 반영                                                                                                                          |
-| ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| (낮음) 공백이 든 `https://example.com/my file`을 거절할 때 "http:// 또는 https://로 시작하는 주소여야 합니다"라고 안내해 헷갈림 | 공백 검사를 따로 두고 "저장소 링크에는 공백을 넣을 수 없습니다"로 안내. 탭·줄바꿈·공백·전각 공백(U+3000) 사례를 테스트로 확인 |
-| (참고) `\u0001` 같은 제어 문자는 `URL`이 지워 원문과 열리는 주소가 다를 수 있음                                                 | JSON에 직접 적어야만 생기고 500도 나지 않아 조치하지 않음                                                                     |
+| Finding                                                                                                                                           | Applied                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (Low) When it rejected `https://example.com/my file` with a space, it said "the address must start with http:// or https://", which was confusing | Added a separate whitespace check and the message "저장소 링크에는 공백을 넣을 수 없습니다" (no spaces are allowed in the repository link). Checked tab, line break, space, and full-width space (U+3000) cases with tests |
+| (Note) A control character such as `\u0001` is removed by `URL`, so the original and the address that opens can differ                            | No action, since it happens only when written directly in JSON and does not cause a 500                                                                                                                                    |
 
-리뷰는 2회까지이므로 2차 보완 뒤 추가 리뷰는 하지 않습니다. 분리한 이슈는 없습니다.
+Reviews are at most 2, so no further review is done after the second round of fixes. No issue was split off.
 
-- 앞뒤 공백은 지금처럼 `trim()`으로 지운 뒤 검사합니다. 그래서 공백 거절 테스트는 공백이 주소 가운데 있는 경우(`a　b`, `my file` 등)로 확인합니다.
-- 수정 요청 테스트의 잘못된 링크 예시를 `not a link`에서 `not-a-link`로 바꿨습니다. 공백이 들어 있으면 이제 공백 안내가 먼저 나오므로, 접두 안내를 확인하려는 원래 의도에 맞췄습니다.
+- Leading and trailing spaces are still removed with `trim()` before the check. So the whitespace rejection tests use cases with a space in the middle of the address (`a　b`, `my file`, and so on).
+- I changed the invalid link example in the update request test from `not a link` to `not-a-link`. With a space, the whitespace message now comes first, so this matches the original intent of checking the prefix message.
 
-2차 보완 검증:
+Verification of the second fix round:
 
-- `npm run check`: 통과(종료 코드 0). 이 PC에는 PostgreSQL이 없어 백엔드는 46건 중 36건 통과·10건 건너뜀(DB 통합 테스트). DB 통합 테스트는 CI `verify`로 확인합니다.
-- 프론트엔드 `npm test -w frontend`: 따로 8회 실행해 7회는 86건 통과·2건 건너뜀, 첫 1회만 1건 실패. 이 변경은 프론트엔드를 건드리지 않았고 이후 7회 연속 재현되지 않아 일시적 실패로 보고, 어떤 테스트였는지는 확인하지 못했습니다.
+- `npm run check`: passed (exit code 0). This PC has no PostgreSQL, so the backend had 36 of 46 passed and 10 skipped (DB integration tests). The DB integration tests are confirmed by CI `verify`.
+- Frontend `npm test -w frontend`: ran separately 8 times; 7 times gave 86 passed and 2 skipped, and only the first run had 1 failure. This change does not touch the frontend and it did not reproduce in the next 7 runs, so I treat it as a one-off failure. I could not identify which test it was.
 
-## 한계
+## Limits
 
-Docker를 쓸 수 없는 PC(BIOS 가상화 꺼짐)라 Compose 실행은 확인하지 못했습니다. Docker 이미지 빌드는 CI 결과로 확인합니다. 화면은 #42(목록), #43(등록·수정·삭제)에서 만듭니다.
+This PC cannot use Docker (BIOS virtualization is off), so I could not check running Compose. The Docker image build is confirmed by the CI result. The screens are built in #42 (list) and #43 (create, update, delete).

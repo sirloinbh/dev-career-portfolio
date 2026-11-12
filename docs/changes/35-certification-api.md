@@ -1,72 +1,72 @@
-# #35 자격증 저장 API와 테이블
+# #35 Certification storage API and table
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/35>
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/35>
 
-## 목적
+## Purpose
 
-자격증을 저장하는 테이블과 조회·등록·수정·삭제 API를 만듭니다. #31에서 정한 백엔드 구조를 따릅니다. 입력 항목은 사용자와 확인해 [이슈 코멘트](https://github.com/sirloinbh/dev-career-portfolio/issues/35#issuecomment-6648234876)에 기록했습니다. 결정 사항은 모두 추천안입니다.
+Build the table that stores certifications and the list, create, update, and delete API. It follows the backend structure settled in #31. The input fields were confirmed with the user and recorded in an [issue comment](https://github.com/sirloinbh/dev-career-portfolio/issues/35#issuecomment-6648234876). All decisions are the recommended ones.
 
-## 변경
+## Changes
 
-- `database/migrations/006_certifications.sql`: `certifications` 테이블. 빈 자격증명·발급 기관과 취득일보다 빠른 만료일을 DB 제약으로도 막습니다.
-- `backend/src/routes/certifications.ts`: `GET`·`POST /api/certifications`, `PUT`·`DELETE /api/certifications/:id`.
-- `backend/src/app.ts`: 자격증 경로 등록.
-- `backend/test/certifications.test.ts`: DB 없이 입력 검증과 NULL 전달. `backend/test/certifications.integration.test.ts`: `career_test` DB 통합.
+- `database/migrations/006_certifications.sql`: the `certifications` table. DB constraints also block an empty certification name, an empty issuer, and an expiry date earlier than the acquired date.
+- `backend/src/routes/certifications.ts`: `GET` and `POST /api/certifications`, `PUT` and `DELETE /api/certifications/:id`.
+- `backend/src/app.ts`: registered the certification routes.
+- `backend/test/certifications.test.ts`: input validation and passing NULL without a DB. `backend/test/certifications.integration.test.ts`: `career_test` DB integration.
 
 ## API
 
-| 항목      | 이름           | 규칙                                                       |
-| --------- | -------------- | ---------------------------------------------------------- |
-| 자격증명  | `name`         | 필수, 100자 이하, 앞뒤 공백 제거                           |
-| 발급 기관 | `issuer`       | 필수, 100자 이하, 앞뒤 공백 제거                           |
-| 취득일    | `acquiredDate` | 필수, `YYYY-MM-DD`                                         |
-| 만료일    | `expiryDate`   | 선택, `YYYY-MM-DD`. 없으면 `null`. 취득일보다 빠를 수 없음 |
-| 점수·등급 | `score`        | 선택, 글자 50자 이하(`905점`, `1급`, `IH`). 빈 값은 `null` |
-| 메모      | `memo`         | 선택, 2000자 이하. 빈 값은 `null`                          |
+| Item               | Name           | Rule                                                                                            |
+| ------------------ | -------------- | ----------------------------------------------------------------------------------------------- |
+| Certification name | `name`         | Required, up to 100 characters, leading and trailing spaces removed                             |
+| Issuer             | `issuer`       | Required, up to 100 characters, leading and trailing spaces removed                             |
+| Acquired date      | `acquiredDate` | Required, `YYYY-MM-DD`                                                                          |
+| Expiry date        | `expiryDate`   | Optional, `YYYY-MM-DD`. `null` if absent. It cannot be earlier than the acquired date           |
+| Score or grade     | `score`        | Optional, up to 50 characters of text (`905 points`, `Grade 1`, `IH`). An empty value is `null` |
+| Memo               | `memo`         | Optional, up to 2000 characters. An empty value is `null`                                       |
 
-- 응답은 `{ "certifications": [...] }`, `{ "certification": {...} }`입니다. 생성은 201, 삭제는 204, 없는 대상은 404 "자격증을 찾을 수 없습니다"입니다.
-- 만료일이 취득일보다 빠르면 400 "만료일은 취득일보다 빠를 수 없습니다"입니다. 같은 날은 받습니다.
-- 목록은 취득일 최신순이고, 취득일이 같으면 나중에 등록한 것이 위입니다.
+- Responses are `{ "certifications": [...] }` and `{ "certification": {...} }`. Create returns 201, delete returns 204, and a missing target is 404 "자격증을 찾을 수 없습니다" (Certification not found).
+- If the expiry date is earlier than the acquired date, it is 400 "만료일은 취득일보다 빠를 수 없습니다" (The expiry date cannot be earlier than the acquired date). The same day is accepted.
+- The list is newest acquired date first, and for the same acquired date the one registered later is on top.
 
-## 판단한 내용
+## Decisions
 
-- **만료일이 없으면 NULL입니다.** `9999-12-31` 같은 임의의 날짜로 바꾸지 않습니다. 수정에서 `null`을 보내면 다시 NULL이 됩니다.
-- **이미 지난 만료일도 저장합니다.** 만료된 자격증도 이력이므로 거절하지 않습니다. 만료 표시는 화면 #46에서 정합니다.
-- **점수·등급은 글자입니다.** 시험마다 형식이 달라(점수, 급수, 등급) 숫자로 받지 않습니다.
-- **중복은 막지 않습니다.** 같은 시험을 여러 번 응시한 기록을 모두 남길 수 있습니다.
-- **`cert-manager` 앱과 연동하지 않습니다.** 다른 앱의 DB·API에 의존하지 않고 이 앱에 직접 입력합니다.
-- **마이그레이션 번호:** `006`을 예약했습니다.
+- **No expiry date means NULL.** It is not replaced with an arbitrary date such as `9999-12-31`. Sending `null` in an update makes it NULL again.
+- **An expiry date already in the past is also stored.** An expired certification is still part of the history, so it is not rejected. How to mark expiry is settled on screen #46.
+- **Score or grade is text.** Each exam has a different format (score, level, grade), so it is not taken as a number.
+- **Duplicates are not blocked.** Records of taking the same exam several times can all be kept.
+- **It is not linked to the `cert-manager` app.** It does not depend on another app's DB or API, and the data is entered directly in this app.
+- **Migration number:** reserved `006`.
 
-## 검증
+## Verification
 
-- `npm test -w backend`: 68건 중 54건 통과·14건 건너뜀. 이 PC에는 PostgreSQL이 없어 DB 통합 테스트(새 2건 포함)는 건너뛰었고, `career_test` DB를 쓰는 CI `verify`에서 확인합니다. 새 단위 테스트 9건은 모두 통과했습니다.
-  - 취득일보다 빠른 만료일(등록·수정), 잘못된 날짜(자기 오류만 표시), 취득일 누락, 자격증명·발급 기관 빈칸·누락·101자, 숫자 점수·51자 점수, 메모 2001자, 객체가 아닌 본문, 잘못된 id를 쿼리 전에 400으로 거절.
-  - 만료일 누락·빈 점수·빈 메모는 쿼리에 `null`로 전달되고, 같은 날 만료일과 `null`로 비우기는 받습니다.
-- 통합 테스트가 확인하는 것: 만료일 없는 행이 DB에 NULL로 저장됨, 같은 이름 중복 등록 허용(모든 값이 같은 행 포함), 같은 날 만료일 허용, 정렬(취득일 최신순, 같은 날은 나중 등록이 위), 모든 열 수정과 만료일 비우기, 만료일 순서 400, DB가 거절한 수정(NUL 문자) 뒤 원래 행 유지, 삭제, 404, DB 제약(빈 이름·빈 발급 기관·기간).
-- `npm run check`: 통과(종료 코드 0). 백엔드는 위와 같고, 프론트엔드 87건 통과·2건 건너뜀(기존 테마 조건부 테스트), 스킬 검사 4건 통과, 빌드 통과. `npm run knip`은 이 PC에서 `oxc-resolver` 네이티브 모듈을 불러오지 못해(#58 기록) CI `verify`에서 확인합니다.
-- 마이그레이션 2회 적용: 이 PC에서는 실행하지 못했습니다. CI `verify`가 모든 마이그레이션을 `ON_ERROR_STOP`으로 두 번 적용하므로 그 결과로 확인합니다.
+- `npm test -w backend`: 54 of 68 passed and 14 skipped. This PC has no PostgreSQL, so the DB integration tests (including the 2 new ones) were skipped, and are confirmed by CI `verify`, which uses the `career_test` DB. All 9 new unit tests passed.
+  - Reject before the query with 400: an expiry date earlier than the acquired date (create and update), a bad date (only its own error is shown), a missing acquired date, a blank, missing, or 101-character certification name or issuer, a numeric score or a 51-character score, a 2001-character memo, a body that is not an object, and a bad id.
+  - A missing expiry date, an empty score, and an empty memo are passed to the query as `null`, and an expiry date on the same day and clearing with `null` are accepted.
+- What the integration tests check: a row with no expiry date is stored as NULL in the DB, registering the same name twice is allowed (including rows whose values are all the same), an expiry date on the same day is allowed, the sort (newest acquired date first, the later registration on top for the same day), updating all columns and clearing the expiry date, a 400 for the expiry date order, the original row staying after an update the DB rejected (a NUL character), delete, 404, and DB constraints (empty name, empty issuer, period).
+- `npm run check`: passed (exit code 0). The backend is as above, the frontend had 87 passed and 2 skipped (the existing theme-conditional tests), the skill check had 4 passed, and the build passed. `npm run knip` could not load the `oxc-resolver` native module on this PC (see the #58 record), so it is confirmed in CI `verify`.
+- Applying the migration twice: I could not run it on this PC. CI `verify` applies all migrations twice with `ON_ERROR_STOP`, so it is confirmed by that result.
 
-## 한계
+## Limits
 
-Docker를 쓸 수 없는 PC(BIOS 가상화 꺼짐)라 Compose 실행은 확인하지 못했습니다. 화면은 #46(목록), #47(등록·수정·삭제)에서 만듭니다.
+This PC cannot use Docker (BIOS virtualization is off), so I could not check running Compose. The screens are built in #46 (list) and #47 (create, update, delete).
 
-## 첫 커밋 CI 결과
+## CI result of the first commit
 
-- CI `verify`(54d2648): 모든 마이그레이션을 두 번 적용했고, 두 번째에는 `006_certifications.sql`에서 `relation "certifications" already exists, skipping` 알림만 나왔습니다(오류 없음). 백엔드 68건 통과·건너뜀 0건(`career_test` DB 통합 테스트 2건 포함), knip 통과, `docker-build`·CodeQL 통과.
+- CI `verify` (54d2648): it applied all migrations twice, and the second time `006_certifications.sql` printed only the notice `relation "certifications" already exists, skipping` (no error). Backend: 68 passed and 0 skipped (including 2 `career_test` DB integration tests), knip passed, and `docker-build` and CodeQL passed.
 
-## 1차 리뷰 반영
+## First review applied
 
-높음·중간 지적은 없었고, 낮음 3건을 모두 반영했습니다.
+There were no high or medium findings, and all 3 low findings were applied.
 
-| 지적                                                                                                   | 반영                                                                                 |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| 중복 허용 테스트의 두 TOEIC 행이 날짜·점수가 달라, 나중에 이름+날짜 고유 제약이 생겨도 테스트가 통과함 | 모든 값이 같은 행을 두 번 등록해 둘 다 201인지 확인                                  |
-| 변경 기록이 자격증명·발급 기관 모두 빈칸·누락·101자를 검사한다고 적었지만 일부만 있었음                | 자격증명 누락, 발급 기관 빈칸 사례를 추가                                            |
-| "거절된 수정 뒤 원래 행 유지" 확인이 쿼리 전 검증 거절이라 실패할 수 없음                              | DB가 거절하는 수정(메모에 NUL 문자 → 400)으로 바꾸고 그 뒤 원래 행이 그대로인지 확인 |
+| Finding                                                                                                                                                 | Applied                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| The two TOEIC rows in the duplicate-allowed test differ in date and score, so the test would pass even if a unique constraint on name + date came later | Register a row whose values are all the same twice and check that both are 201                                                   |
+| The change record said it checks blank, missing, and 101-character values for both the certification name and the issuer, but only some existed         | Added the missing certification name and blank issuer cases                                                                      |
+| The check "the original row stays after a rejected update" is a rejection by pre-query validation, so it cannot fail                                    | Changed it to an update the DB rejects (a NUL character in the memo → 400) and check that the original row is unchanged after it |
 
-- `npm run check`: 통과(종료 코드 0). 백엔드 68건 중 54건 통과·14건 건너뜀(DB 통합 테스트), 프론트엔드 87건 통과·2건 건너뜀. 바뀐 통합 테스트는 CI `verify`의 `career_test`에서 확인합니다.
-- CI `verify`(4d9e0f1): 마이그레이션 2회 적용 오류 없음, 백엔드 68건 통과·건너뜀 0건(바뀐 `career_test` DB 통합 테스트 포함). `docker-build`·CodeQL 통과.
+- `npm run check`: passed (exit code 0). Backend: 54 of 68 passed and 14 skipped (DB integration tests). Frontend: 87 passed and 2 skipped. The changed integration test is confirmed in `career_test` in CI `verify`.
+- CI `verify` (4d9e0f1): applying the migration twice had no error, backend 68 passed and 0 skipped (including the changed `career_test` DB integration tests). `docker-build` and CodeQL passed.
 
-## 2차 리뷰 결과
+## Second review result
 
-1차 지적 3건이 모두 반영됐는지 확인했고(같은 행 중복 등록과 정렬·개수, 추가된 입력 검증 사례, NUL 문자가 실제로 PostgreSQL까지 가서 거절되는지), 최종 전체 diff와 이 문서의 설명도 확인했습니다. 새 보완점은 없습니다. 분리한 이슈도 없습니다.
+It confirmed that all 3 first-round findings were applied (registering the same row twice with the sort and count, the added input validation cases, and that a NUL character really reaches PostgreSQL and is rejected), and it also checked the final whole diff and the explanations in this document. There are no new findings. No issue was split off.

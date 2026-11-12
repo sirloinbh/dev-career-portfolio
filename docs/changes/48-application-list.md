@@ -1,96 +1,98 @@
-# #48 지원 기업 목록 화면과 자기소개서 메뉴
+# #48 Job application company list screen and cover letter menu
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/48> (상위 이슈 #68 지원 기업과 자기소개서)
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/48> (parent issue #68, application companies and cover letters)
 
-## 목적
+Note: UI text and fixture data are quoted in Korean as they appear on screen, with an English gloss in parentheses where needed.
 
-#36 API의 지원 기업 데이터를 "자기소개서" 메뉴에서 봅니다. 구조는 #46 자격증 목록과 같습니다. 등록·수정·삭제는 #49, 기업별 자기소개서 문항은 #50·#51에서 만듭니다.
+## Purpose
 
-## 변경
+Show the application company data of the #36 API under the "자기소개서" (Cover letter) menu. The structure is the same as the #46 certification list. Create, update, and delete are built in #49, and the per-company cover letter questions are built in #50 and #51.
 
-- `frontend/src/app.tsx`: `pages.applications = '/applications'`, 메뉴 "자기소개서"(아이콘 `FileText`, 자격증 다음), 경로 연결.
-- `frontend/src/application-data.ts`: `Application` 타입, 상태 이름(작성 중·제출 완료·종료), 마감일 문장 `deadlineText`, `applicationApi.list`.
-- `frontend/src/applications.tsx`: `ApplicationList` 화면.
-  - 로딩 `SkeletonList`, 빈 목록 `EmptyState`, 오류 `Notice`(`role="alert"`)를 씁니다.
-  - 페이지 `section`에 `aria-busy`를 달고, `sr-only` 상태 문구("지원 기업을 불러오는 중" → "지원 기업 N건")를 항상 붙여 둡니다. 다른 항목과 같습니다.
-- 공용으로 옮긴 것(동작은 같음):
-  - `frontend/src/service-date.ts`: 서비스 날짜 `serviceToday`(자격증 데이터 파일에서 옮김)와 남은 날수 `daysUntil`.
-  - `frontend/src/web-link.ts`: http(s) 주소만 남기는 `webLink`(프로젝트 데이터 파일에서 옮김).
-  - `frontend/src/out-link.tsx`: 새 탭으로 여는 링크 `OutLink`(프로젝트 화면에서 옮김).
-  - 프로젝트·자격증 화면과 테스트가 새 위치를 씁니다.
-- `frontend/src/applications.test.tsx`: 메뉴 이동, 목록 순서와 표시, 채용 공고 링크, http(s)가 아닌 링크, 빈 목록, 오류(서버 오류·연결 실패), 로딩, 표시 규칙 함수(9건).
+## Changes
 
-## 판단한 내용
+- `frontend/src/app.tsx`: `pages.applications = '/applications'`, the menu "자기소개서" (Cover letter, icon `FileText`, after Certifications), and the route wiring.
+- `frontend/src/application-data.ts`: the `Application` type, the status names (drafting, submitted, closed), the deadline sentence `deadlineText`, and `applicationApi.list`.
+- `frontend/src/applications.tsx`: the `ApplicationList` screen.
+  - It uses loading `SkeletonList`, an empty list `EmptyState`, and an error `Notice` (`role="alert"`).
+  - It puts `aria-busy` on the page `section` and always keeps an `sr-only` status text ("지원 기업을 불러오는 중", Loading application companies → "지원 기업 N건", N application companies). It is the same as the other items.
+- Moved to shared code (the behavior is the same):
+  - `frontend/src/service-date.ts`: the service date `serviceToday` (moved from the certification data file) and the days left `daysUntil`.
+  - `frontend/src/web-link.ts`: `webLink`, which keeps only http(s) addresses (moved from the project data file).
+  - `frontend/src/out-link.tsx`: `OutLink`, a link that opens in a new tab (moved from the project screen).
+  - The project and certification screens and their tests use the new locations.
+- `frontend/src/applications.test.tsx`: tests for menu navigation, the list order and display, the job posting link, a link that is not http(s), an empty list, errors (server error and connection failure), loading, and the display rule functions (9 tests).
 
-- **메뉴와 화면 이름은 "자기소개서"입니다.** 이슈가 메뉴를 "자기소개서"로 정했습니다. 다른 항목처럼 메뉴 이름과 페이지 제목을 같게 해 현재 위치가 분명하게 했습니다. 목록 자체는 "지원 기업 목록"이라고 부릅니다. 기업마다 자기소개서 문항이 붙기 때문입니다(#37).
-- **한 항목에 보이는 것:**
-  - 기업명(`h2`)과 상태 배지
-  - 지원 직무(입력한 경우)
-  - 마감일 문장
-  - 메모(입력한 경우)
-  - "채용 공고" 링크(새 탭에서 열림)
-- **상태 배지:** 글자(작성 중·제출 완료·종료)로 구분합니다. 채움은 한눈에 나누는 데만 돕습니다(작성 중은 채움, 제출 완료는 연한 채움, 종료는 테두리).
-- **마감일 문장:**
-  - 작성 중이면 남은 날을 붙입니다: "마감 2026-11-08 · D-3", "· 오늘 마감", "· 마감 지남".
-  - 제출 완료·종료는 날짜만 보입니다. 이미 낸 지원에는 남은 날이 의미가 없기 때문입니다.
-  - 마감일이 없으면 "마감일 없음"입니다.
-  - 날짜는 자격증 목록과 같은 서비스 시간대(Asia/Seoul)로 셉니다. 테스트는 UTC로는 아직 전날인 한국 시간 00:30으로 확인합니다.
-- **순서:** API 순서를 그대로 씁니다. 상태(작성 중 → 제출 완료 → 종료), 마감일이 이른 순(지난 마감이 앞, 마감일 없음은 뒤), 나중에 등록한 것 순입니다(#36). 상태별 제목으로 나누지는 않았습니다. 순서와 배지만으로 구분이 되고, 항목 수가 적습니다.
-- **채용 공고 링크:** 서버가 http(s)만 저장하지만, 화면도 `webLink`로 한 번 더 걸러 `javascript:` 같은 주소가 `href`에 들어가지 않게 합니다. 링크 이름은 "○○ 채용 공고 (새 탭에서 열림)"입니다.
+## Decisions
 
-## 검증
+- **The menu and the screen name are "자기소개서" (Cover letter).** The issue named the menu "자기소개서". Like the other items, I made the menu name and the page title the same so the current location is clear. The list itself is called "지원 기업 목록" (application company list), because cover letter questions are attached to each company (#37).
+- **What one item shows:**
+  - The company name (`h2`) and a status badge
+  - The position applied for (if entered)
+  - The deadline sentence
+  - The memo (if entered)
+  - A "채용 공고" (Job posting) link (opens in a new tab)
+- **Status badge:** distinguished by text (drafting, submitted, closed). The fill only helps tell them apart at a glance (drafting is filled, submitted is a light fill, and closed is an outline).
+- **Deadline sentence:**
+  - While drafting, it adds the days left: "마감 2026-11-08 · D-3" (Deadline 2026-11-08 · D-3), "· 오늘 마감" (due today), "· 마감 지남" (deadline passed).
+  - For submitted and closed, only the date shows, because days left have no meaning for an application already sent.
+  - If there is no deadline, it is "마감일 없음" (No deadline).
+  - The days are counted in the same service time zone (Asia/Seoul) as the certification list. The test checks it at 00:30 Korean time, which is still the previous day in UTC.
+- **Order:** the API order is used as it is: status (drafting → submitted → closed), then earliest deadline first (a passed deadline comes first, no deadline goes last), then the later registration first (#36). I did not split it by status headings. The order and the badge are enough to tell them apart, and the number of items is small.
+- **Job posting link:** the server stores only http(s), but the screen also filters once more with `webLink` so an address such as `javascript:` does not go into `href`. The link name is "○○ 채용 공고 (새 탭에서 열림)" (○○ Job posting (opens in a new tab)).
 
-- `npm run check`: 통과(종료 코드 0). `TEST_DATABASE_URL`은 이 PC의 Docker PostgreSQL 17 `career_test`입니다.
-  - 백엔드 87건 통과·건너뜀 0건.
-  - 프론트엔드 201건 통과·2건 건너뜀(기존 테마 조건부 테스트). 새 지원 기업 테스트 9건이 들어 있습니다.
-  - 스킬 검사 4건과 빌드도 통과했습니다.
-- `npm run knip`: 통과.
-- **실제 브라우저:**
-  - 설치된 Chrome(헤드리스 156)을 DevTools 프로토콜로 조작했습니다.
-  - 개발 서버(API 3108, Vite 5208)를 Docker PostgreSQL 17 `career_test`에 붙이고, 지어낸 지원 기업을 API로 넣었습니다.
-  - 오류 상태는 브라우저에서 `/api/applications` 요청을 막아 만들었습니다.
-  - 측정한 것은 페이지의 가로 넘침 여부와 보이는 글자의 최소 크기입니다.
-  - 화면을 찍은 날은 2026-11-05입니다.
+## Verification
 
-| 상태                                               | 390×844                                                                                                                                                                                                    | 1440×900                                                                                                                           |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 지원 기업 6건(작성 중 4·제출 완료 1·종료 1)        | 가로 넘침 없음, 최소 글자 14px. 상태 → 마감일 이른 순(지난 마감이 맨 앞). "마감 지남", "오늘 마감", "D-3", "마감일 없음"과 제출 완료·종료의 날짜만 표시 ([라이트](48-application-list/list-390-light.png)) | 같음. 메뉴 "자기소개서"가 현재 위치로 표시됨, 다크 모드에서도 배지 세 종류 구분됨 ([다크](48-application-list/list-1440-dark.png)) |
-| 띄어쓰기 없는 100자 기업명·직무, 긴 공고 주소·메모 | 가로 넘침 없음. 이름·직무·메모가 줄바꿈되고 배지는 이름 아래로 내려감 ([라이트](48-application-list/long-text-390-light.png))                                                                              | 가로 넘침 없음(측정값만)                                                                                                           |
-| 빈 목록                                            | "아직 등록한 지원 기업이 없습니다" 표시, 상태 문구 "지원 기업 0건" ([라이트](48-application-list/empty-390-light.png))                                                                                     | 같음(측정값만)                                                                                                                     |
-| 요청 실패                                          | "지원 기업을 불러오지 못했습니다. 서버에 연결할 수 없습니다" 경고 ([라이트](48-application-list/error-390-light.png))                                                                                      | 같음(측정값만)                                                                                                                     |
+- `npm run check`: passed (exit code 0). `TEST_DATABASE_URL` is `career_test` on the Docker PostgreSQL 17 on this PC.
+  - Backend: 87 passed and 0 skipped.
+  - Frontend: 201 passed and 2 skipped (the existing theme-conditional tests). It includes the 9 new application company tests.
+  - The skill check (4) and the build also passed.
+- `npm run knip`: passed.
+- **Real browser:**
+  - I drove the installed Chrome (headless 156) through the DevTools protocol.
+  - I pointed the dev servers (API 3108, Vite 5208) at `career_test` on the Docker PostgreSQL 17 and put in made-up application companies through the API.
+  - I made the error state by blocking the `/api/applications` request in the browser.
+  - The measurements are whether the page overflows horizontally and the smallest visible text size.
+  - The day I took the screenshots was 2026-11-05.
 
-## 한계
+| State                                                                                     | 390×844                                                                                                                                                                                                                                                                                                     | 1440×900                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 6 application companies (4 drafting, 1 submitted, 1 closed)                               | No horizontal overflow, smallest text 14px. Status → earliest deadline first (the passed deadline first). It shows "마감 지남" (deadline passed), "오늘 마감" (due today), "D-3", "마감일 없음" (no deadline), and only the date for submitted and closed ([light](48-application-list/list-390-light.png)) | Same. The menu "자기소개서" is marked as the current location, and the three kinds of badges are distinguishable in dark mode ([dark](48-application-list/list-1440-dark.png)) |
+| A 100-character company name and position with no spaces, a long posting address and memo | No horizontal overflow. The name, position, and memo wrap and the badge moves below the name ([light](48-application-list/long-text-390-light.png))                                                                                                                                                         | No horizontal overflow (measurements only)                                                                                                                                     |
+| Empty list                                                                                | "아직 등록한 지원 기업이 없습니다" (No application company registered yet) is shown, and the status text is "지원 기업 0건" (0 application companies) ([light](48-application-list/empty-390-light.png))                                                                                                    | Same (measurements only)                                                                                                                                                       |
+| Request failed                                                                            | The alert "지원 기업을 불러오지 못했습니다. 서버에 연결할 수 없습니다" (Could not load application companies. Cannot connect to the server) ([light](48-application-list/error-390-light.png))                                                                                                              | Same (measurements only)                                                                                                                                                       |
 
-등록·수정·삭제와 목록의 추가 버튼·항목 메뉴는 #49, 기업별 자기소개서 문항 화면은 #50·#51에서 만듭니다.
+## Limits
 
-## 1차 리뷰 반영
+Create, update, delete, and the add button and item menu on the list are built in #49, and the per-company cover letter question screens are built in #50 and #51.
 
-결함은 없었습니다. 리뷰에서 확인한 것은 아래와 같습니다.
+## First review applied
 
-- 상태 이름이 백엔드 값과 같습니다.
-- 남은 날 계산이 월말·연말·윤일에 맞고, 한국 날짜 기준으로 셉니다.
-- 공용으로 옮긴 코드가 프로젝트·자격증 화면 동작을 바꾸지 않습니다.
-- 다크 모드에서도 배지 세 종류가 구분됩니다.
+There was no defect. What the review confirmed is below.
 
-낮음 3건을 반영했습니다.
+- The status names match the backend values.
+- The days-left calculation is right at month end, year end, and leap days, and it counts by the Korean date.
+- The code moved to shared modules does not change the behavior of the project and certification screens.
+- The three kinds of badges are distinguishable in dark mode too.
 
-| 지적                                                                                                     | 반영                                                                                          |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| 테스트 주석은 "직무가 없으면 빈 줄 없음"인데, 실제로는 메모 블록만 확인함                                | 직무·링크·메모가 없는 항목에 "마감일 없음" 한 줄만 있는지 확인하게 했습니다                   |
-| 빈 목록 안내가 "등록하면"이라 아직 없는 등록 기능을 쓰라는 말처럼 읽힘(등록은 #49)                       | "등록한 지원 기업이 상태와 마감일 순으로 여기에 보입니다"로 고쳤습니다                        |
-| 설명은 "마감이 가까운 곳부터"인데, 실제로는 마감이 지난 작성 중 항목이 맨 앞에 옴(#36에서 정한 오름차순) | 설명을 "같은 상태에서는 마감일이 이른 곳부터 봅니다"로 고쳤습니다. 순서는 #36 결정대로 둡니다 |
+3 low findings were applied.
 
-- 바뀐 문구로 사진 5장을 다시 찍었습니다. 측정값은 처음과 같습니다(가로 넘침 없음, 최소 글자 14px).
+| Finding                                                                                                                                                | Applied                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The test comment says "no empty line if there is no position", but it actually checked only the memo block                                             | Made it check that an item with no position, link, or memo has only the one line "마감일 없음" (No deadline)                                                            |
+| The empty list guidance said "when you register", which reads as telling you to use a register feature that does not exist yet (register is #49)       | Changed it to "등록한 지원 기업이 상태와 마감일 순으로 여기에 보입니다" (Registered application companies show here in the order of status and deadline)                |
+| The description said "from the closest deadline", but actually a drafting item with a passed deadline comes first (the ascending order decided in #36) | Changed the description to "같은 상태에서는 마감일이 이른 곳부터 봅니다" (Within the same status, look from the earliest deadline). The order stays as the #36 decision |
 
-- 반영 후 `npm run check`(`career_test`): 통과. 백엔드 87건 통과·건너뜀 0건, 프론트엔드 201건 통과·2건 건너뜀, 스킬 검사 4건, 빌드 통과.
-- 첫 커밋 `8a7d95a`의 CI `verify`, `docker-build`, CodeQL은 모두 통과했습니다.
+- I took the 5 pictures again with the changed wording. The measurements are the same as the first time (no horizontal overflow, smallest text 14px).
 
-## 2차 리뷰 결과
+- After applying it, `npm run check` (`career_test`): passed. Backend: 87 passed and 0 skipped. Frontend: 201 passed and 2 skipped. Skill check: 4. Build: passed.
+- CI `verify`, `docker-build`, and CodeQL of the first commit `8a7d95a` all passed.
 
-결함은 없었습니다. 리뷰에서 확인한 것은 다음과 같습니다.
+## Second review result
 
-- 직무가 없는 항목에 빈 줄을 남기도록 코드를 바꾸면 새 확인이 실패합니다.
-- 공용으로 옮긴 코드는 동작이 그대로입니다.
-- 다시 찍은 사진 5장이 문서 설명과 맞습니다.
+There was no defect. What the review confirmed is below.
 
-낮음 1건을 반영했습니다. 이 문서의 "판단한 내용"과 검증 표에 남아 있던 "마감일이 가까운 순"을 "마감일이 이른 순(지난 마감이 앞)"으로 고쳤습니다. 리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
+- If the code is changed to leave an empty line on an item with no position, the new check fails.
+- The code moved to shared modules keeps the same behavior.
+- The 5 pictures taken again match the explanations in the document.
+
+1 low finding was applied. I changed "the nearest deadline order" that remained in the "Decisions" section and the verification table of this document to "the earliest deadline order (a passed deadline first)". Reviews end at 2. No issue was split off.

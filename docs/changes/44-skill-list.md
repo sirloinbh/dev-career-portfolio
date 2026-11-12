@@ -1,51 +1,53 @@
-# #44 스킬 분류별 목록 화면과 메뉴
+# #44 Skill list screen by category and menu
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/44> (상위 이슈 #67 이력서 항목 화면)
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/44> (parent issue #67, resume item screens)
 
-## 목적
+Note: UI text and fixture data are quoted in Korean as they appear on screen, with an English gloss in parentheses where needed.
 
-#34 API의 스킬 데이터를 분류별로 묶어 화면에서 봅니다. #40 이력·#42 프로젝트 목록과 같은 구조입니다. 등록·수정·삭제와 숙련도 단계별 기준 문구는 #45에서 만듭니다.
+## Purpose
 
-## 변경
+Show the skill data of the #34 API on screen, grouped by category. It has the same structure as the #40 career and #42 project lists. Create, update, delete, and the wording of the criteria for each proficiency level are built in #45.
 
-- `frontend/src/app.tsx`: `pages.skills = '/skills'`, 메뉴 "스킬"(아이콘 `Wrench`, 프로젝트 다음), 경로 연결.
-- `frontend/src/skill-data.ts`: `Skill` 타입, 분류 6종의 순서와 한국어 이름, 분류별로 묶는 `groupSkills`, 숙련도 문장 `proficiencyText`, `skillApi.list`.
-- `frontend/src/skills.tsx`: `SkillList` 화면. 로딩 `SkeletonList`, 빈 목록 `EmptyState`, 오류 `Notice`(`role="alert"`), 페이지 `section`의 `aria-busy`와 항상 붙어 있는 `sr-only` 상태 문구("스킬을 불러오는 중" → "스킬 N건")는 다른 항목과 같습니다.
-- `frontend/src/skills.test.tsx`: 메뉴 이동, 분류 묶음과 순서, 숙련도 표시, 메모, 로딩·빈 목록·오류 상태, 묶기 함수 테스트(10건).
+## Changes
 
-## 판단한 내용
+- `frontend/src/app.tsx`: `pages.skills = '/skills'`, the menu "스킬" (Skills, icon `Wrench`, after Projects), and the route wiring.
+- `frontend/src/skill-data.ts`: the `Skill` type, the order and Korean names of the 6 categories, `groupSkills` that groups by category, the proficiency sentence `proficiencyText`, and `skillApi.list`.
+- `frontend/src/skills.tsx`: the `SkillList` screen. Loading `SkeletonList`, an empty list `EmptyState`, an error `Notice` (`role="alert"`), `aria-busy` on the page `section`, and an always-present `sr-only` status text ("스킬을 불러오는 중", Loading skills → "스킬 N건", N skills) are the same as the other items.
+- `frontend/src/skills.test.tsx`: tests for menu navigation, category grouping and order, the proficiency display, the memo, the loading, empty, and error states, and the grouping function (10 tests).
 
-- **분류 묶음:** #34의 분류 순서(언어 → 프레임워크·라이브러리 → 데이터베이스 → 인프라·클라우드 → 도구 → 기타)로 묶고, 스킬이 없는 분류는 보이지 않습니다. 분류마다 제목(`h2`, "언어 2건") 아래에 목록을 둡니다. 화면 낭독기의 제목 이동으로 분류 사이를 건너뛸 수 있습니다. 분류는 랜드마크(영역)로 만들지 않고, 목록에도 따로 이름을 붙이지 않았습니다(1차 리뷰 반영).
-- **분류 안 순서:** API 순서(숙련도 높은 순 → 스킬명순)를 그대로 씁니다.
-- **숙련도:** 1~5점을 점 다섯 개(채운 수 = 점수)와 "4/5"로 보입니다. 점과 "4/5"는 화면 낭독기에서 숨기고 "숙련도 5점 중 4점"을 읽게 했습니다. 색이 아니라 채움과 숫자로 구분하므로 다크 모드나 흑백에서도 읽힙니다. 단계별 뜻("4점 = …")은 #45에서 정합니다.
-- **메모:** 입력한 경우만 "메모" 제목과 함께 설명 목록(`dl`)으로 보입니다(#40 리뷰 결정).
+## Decisions
 
-## 검증
+- **Category groups:** grouped in the #34 category order (language → framework and library → database → infrastructure and cloud → tool → other), and a category with no skills is not shown. Each category has a title (`h2`, "언어 2건", Language: 2 items) with the list below it. A screen reader's heading navigation can jump between categories. A category is not made a landmark (region), and the list is not given a separate name (applied in the first review).
+- **Order within a category:** the API order (higher proficiency first → skill name) is used as it is.
+- **Proficiency:** the score 1 to 5 shows as five dots (filled count = score) and "4/5". The dots and "4/5" are hidden from screen readers, and it reads "숙련도 5점 중 4점" (proficiency 4 out of 5). It is distinguished by fill and number, not color, so it can be read in dark mode or in black and white. The meaning of each level ("4 points = …") is settled in #45.
+- **Memo:** only when entered, it shows as a description list (`dl`) with the title "메모" (Memo) (a #40 review decision).
 
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과(종료 코드 0). 백엔드 78건 통과·건너뜀 0건, 프론트엔드 153건 통과·2건 건너뜀(기존 테마 조건부 테스트, 새 스킬 테스트 10건 포함), 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과(분류 목록 `skillCategories`는 아직 이 파일에서만 쓰므로 내보내지 않음. #45 폼에서 내보냅니다).
-- 실제 브라우저: 설치된 Chrome(헤드리스 156)을 DevTools 프로토콜로 조작했습니다. 개발 서버(API 3108, Vite 5208)를 이 PC의 Docker PostgreSQL 17 `career_test`에 붙이고, 지어낸 스킬을 분류 6종에 걸쳐 API로 넣었습니다. 오류 상태는 브라우저에서 `/api/skills` 요청을 막아 만들었습니다. 측정값은 페이지의 가로 넘침 여부와 보이는 글자의 최소 크기입니다.
+## Verification
 
-| 상태                                       | 390×844                                                                                                                   | 1440×900                                                                      |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 스킬 8건(분류 6종)                         | 가로 넘침 없음, 최소 글자 14px, 분류 순서대로 묶임, 분류 안은 숙련도 높은 순 ([라이트](44-skill-list/list-390-light.png)) | 같음, 다크 모드도 점과 글자 구분됨 ([다크](44-skill-list/list-1440-dark.png)) |
-| 띄어쓰기 없는 50자 스킬명·긴 URL이 든 메모 | 가로 넘침 없음, 이름이 줄바꿈되고 숙련도가 아래로 내려감 ([라이트](44-skill-list/long-text-390-light.png))                | 가로 넘침 없음(측정값만)                                                      |
-| 빈 목록                                    | "아직 등록한 스킬이 없습니다" 표시, 상태 문구 "스킬 0건" ([라이트](44-skill-list/empty-390-light.png))                    | 같음(측정값만)                                                                |
-| 요청 실패                                  | "스킬을 불러오지 못했습니다. 서버에 연결할 수 없습니다" 경고 ([라이트](44-skill-list/error-390-light.png))                | 같음(측정값만)                                                                |
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed (exit code 0). Backend: 78 passed and 0 skipped. Frontend: 153 passed and 2 skipped (the existing theme-conditional tests, including 10 new skill tests). Skill check: 4 passed. Build: passed. `npm run knip`: passed (the category list `skillCategories` is still used only in this file, so it is not exported. #45 exports it for the form).
+- Real browser: I drove the installed Chrome (headless 156) through the DevTools protocol. I pointed the dev servers (API 3108, Vite 5208) at `career_test` on the Docker PostgreSQL 17 on this PC and put in made-up skills across the 6 categories through the API. I made the error state by blocking the `/api/skills` request in the browser. The measurements are whether the page overflows horizontally and the smallest visible text size.
 
-## 1차 리뷰 반영
+| State                                                               | 390×844                                                                                                                                                              | 1440×900                                                                                         |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 8 skills (6 categories)                                             | No horizontal overflow, smallest text 14px, grouped in category order, higher proficiency first within a category ([light](44-skill-list/list-390-light.png))        | Same, and dark mode dots and text are distinguishable ([dark](44-skill-list/list-1440-dark.png)) |
+| A 50-character skill name with no spaces and a memo with a long URL | No horizontal overflow, the name wraps and the proficiency moves down ([light](44-skill-list/long-text-390-light.png))                                               | No horizontal overflow (measurements only)                                                       |
+| Empty list                                                          | "아직 등록한 스킬이 없습니다" (No skill registered yet) is shown, and the status text is "스킬 0건" (0 skills) ([light](44-skill-list/empty-390-light.png))          | Same (measurements only)                                                                         |
+| Request failed                                                      | The alert "스킬을 불러오지 못했습니다. 서버에 연결할 수 없습니다" (Could not load skills. Cannot connect to the server) ([light](44-skill-list/error-390-light.png)) | Same (measurements only)                                                                         |
 
-읽기 전용 리뷰 에이전트가 PR 전체 diff와 화면 사진을 확인했습니다. 정확성 지적은 없었습니다(분류 순서가 API와 같고, DB 제약이 모르는 분류를 막아 `groupSkills`가 행을 빠뜨리지 않음). 낮음 4건을 고쳤습니다.
+## First review applied
 
-| 지적                                                                                                                                              | 반영                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| 분류마다 이름 붙은 `section`이라 랜드마크 목록에 영역이 7개 생기고, 들어갈 때 "언어 2건"(영역) → "언어 2건"(제목) → "언어 스킬"(목록)이 겹쳐 읽힘 | 분류 묶음을 일반 `div`로, 목록 이름을 없앰. 분류 영역이 없는지 테스트                    |
-| 빈 점 테두리 `border-foreground/40`이 라이트 모드 흰 카드에서 약 2.7:1로 흐림                                                                     | `border-foreground/60`으로 올림(3:1 이상). 사진을 다시 찍음                              |
-| "5/5" 테스트가 `aria-hidden`이 빠져도 통과함                                                                                                      | "5/5"가 `aria-hidden="true"`인지 확인                                                    |
-| 문서는 "50자 스킬명"이라 했지만 사진 속 이름은 41자                                                                                               | 정확히 50자 이름으로 다시 넣어 찍음. 390에서 줄바꿈되고 가로 넘침 없음, 1440도 넘침 없음 |
+A read-only review agent looked at the whole PR diff and the screen pictures. There was no correctness finding (the category order is the same as the API, and the DB constraint blocks unknown categories so `groupSkills` does not drop rows). It fixed 4 low findings.
 
-- 빈 목록 테스트도 목록 이름 대신 분류 제목("…건")이 없는지로 확인하게 바꿨습니다.
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과. 백엔드 78건 통과·건너뜀 0건, 프론트엔드 153건 통과·2건 건너뜀, 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
+| Finding                                                                                                                                                                         | Applied                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Each category was a named `section`, so the landmark list had 7 regions, and on entering, "언어 2건" (region) → "언어 2건" (heading) → "언어 스킬" (list) were read overlapping | Made the category groups plain `div`s and removed the list name. Added a test that there is no category region                                         |
+| The empty dot border `border-foreground/40` was faint, about 2.7:1, on a white card in light mode                                                                               | Raised it to `border-foreground/60` (3:1 or more). I took the pictures again                                                                           |
+| The "5/5" test passed even without `aria-hidden`                                                                                                                                | Check that "5/5" is `aria-hidden="true"`                                                                                                               |
+| The document said "a 50-character skill name", but the name in the picture was 41 characters                                                                                    | Entered and took the pictures again with a name of exactly 50 characters. It wraps at 390 with no horizontal overflow, and 1440 has no overflow either |
 
-## 2차 리뷰 결과
+- I also changed the empty list test to check that there is no category title ("…건", ... items) instead of the list name.
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed. Backend: 78 passed and 0 skipped. Frontend: 153 passed and 2 skipped. Skill check: 4 passed. Build: passed. `npm run knip`: passed.
 
-1차 지적 4건이 맞게 반영됐는지 확인했습니다. 분류 영역 테스트는 예전 `section`이었다면 실패하고, 빈 점 테두리는 흰 카드에서 약 5.2:1(다크 모드 약 6.8:1)이며, 빈 목록 테스트는 `groupSkills`의 빈 분류 거르기를 빼면 실패합니다. 최종 전체 diff에서 정확성·회귀·접근성 지적은 없었습니다. 리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
+## Second review result
+
+It confirmed that all 4 first-round findings were applied correctly. The category region test would fail with the old `section`, the empty dot border is about 5.2:1 on a white card (about 6.8:1 in dark mode), and the empty list test fails if the filtering of empty categories in `groupSkills` is removed. In the final whole diff there were no findings on correctness, regressions, or accessibility. Reviews end at 2. No issue was split off.
