@@ -42,7 +42,7 @@ Copy these as they are into the new project's `AGENTS.md`.
 
 ## 2. Language and docs rules
 
-- Write user conversation, screen text, and docs (README, docs, issues, PRs) in **Korean**. Code identifiers, commit title prefixes (`feat:` and so on), and code comments default to English.
+- User conversation, screen text, and documents (README, docs, issues, PRs) are written in **English** (the user set this on 2026-11-12; the earlier version of this document said Korean). Code identifiers, commit title prefixes (`feat:` and so on), and code comments are English. Screen text and validation messages that the user sees are covered by `sirloinbh/project-standards#457`.
 - Also write server validation error messages in Korean when the user can see them. Give a message such as `.min(1, '…')` so that Zod's default English messages ("Array must contain…") do not show on screen.
 - Dates are `YYYY-MM-DD`, and the service time zone is `<timezone>`. Compute the server's "today" in the service time zone, not the server's time zone.
 - Where docs go:
@@ -461,7 +461,7 @@ server {
 
 - `createApp(pool)` builds and returns the Express app, and `server.ts` only calls `listen`. That lets tests start the app with a real DB pool or a fake pool. To fix "today" in tests, add an injection point such as `createApp(pool, { today })`.
 - `app.disable('x-powered-by')`, `express.json({ limit: '256kb' })`. Raise the limit separately only on the route for large uploads (for example restoring a backup).
-- Validate every input with Zod before touching the DB. A shared error middleware turns `ZodError` into 400 and a unique constraint violation (23505) into 409, and returns Korean messages.
+- Validate every input with Zod before touching the DB. A shared error middleware turns `ZodError` into 400 and a unique constraint violation (23505) into 409, and returns the user-facing messages.
 - Check health with `GET /api/health`.
 - Receive pg's `date` type (OID 1082) as a string: `types.setTypeParser(1082, (v) => v)`. This stops it from turning into a JS `Date` and shifting by time zone.
 - Wrap a change that writes several rows (a log plus its sets, and so on) in `BEGIN … COMMIT` on one client, `ROLLBACK` on error, and `release()` in `finally`.
@@ -754,7 +754,7 @@ provider "aws" { region = var.region }
 | Several PRs keep conflicting in the same large file (`main.tsx`, `app.ts`) | Screens and routes are gathered in one file                        | Split into per-feature modules, merge `main` in the later PR, and confirm both features with tests  |
 | Double-clicking a toggle button reverses the state                         | The two clicks are handled in different renders                    | Ignore the opposite action within a short time + a regression test                                  |
 | Data saved on another screen does not show when you come back              | The screen does not reload on entry                                | Re-fetch on screen change                                                                           |
-| A server validation error shows in the original English                    | Zod's default message                                              | Give Korean messages to the validation the user can see                                             |
+| A server validation error shows in the original English                    | Zod's default message                                              | Give explicit messages for validation the user can see                                              |
 | After a backup "full replace", a retry answers a deleted id as "saved"     | The idempotency retry key is still there                           | When restoring by replacement, also reset the retry keys in the same transaction                    |
 | A DB test looked "passed" but was not actually run                         | It is skipped when `TEST_DATABASE_URL` is not set                  | Check the skip count and report what was not run separately                                         |
 
