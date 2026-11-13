@@ -1,93 +1,95 @@
-# #39 학력 등록·수정·삭제 화면
+# #39 Education create, update, and delete screens
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/39>
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/39>
 
-## 목적
+Note: UI text and fixture data are quoted in Korean as they appear on screen, with an English gloss in parentheses where needed.
 
-학력을 화면에서 등록·수정·삭제합니다. 나머지 항목의 입력 폼이 따를 구조를 정합니다.
+## Purpose
 
-## 변경
+Create, update, and delete education from the screen. Settle the structure the input forms of the other items will follow.
 
-- `frontend/src/app.tsx`: `/educations/new`(추가), `/educations/:id/edit`(수정) 경로와 `educationPaths`.
-- `frontend/src/educations.tsx`: 목록에 "학력 추가" 버튼과 항목별 수정·삭제, `NewEducation`, `EditEducation`, 공용 입력 폼 `EducationFields`.
-- `frontend/src/education-data.ts`: 폼 상태 타입과 변환(`toEducationForm`, `toEducationInput`), 서버 오류 문구를 입력 칸별로 나누는 `fieldErrors`, `educationApi.create/update/remove`.
-- `frontend/src/form-fields.ts`: 네이티브 `select`·`textarea`용 클래스와 숫자 칸 변환. cert-manager와 같고, 잘못된 값 테두리(`aria-invalid`)를 더했습니다.
-- `frontend/src/use-load.ts`: 삭제 뒤 목록을 다시 불러오는 `useReloading`을 cert-manager에서 가져왔습니다.
-- `frontend/src/education-form.test.tsx`: 메모리 안의 가짜 API로 등록·수정·삭제·오류 표시를 검사합니다.
+## Changes
 
-## 다음 항목이 따를 입력 폼 구조
+- `frontend/src/app.tsx`: the routes `/educations/new` (add) and `/educations/:id/edit` (edit), and `educationPaths`.
+- `frontend/src/educations.tsx`: an "학력 추가" (Add education) button on the list, edit and delete for each item, `NewEducation`, `EditEducation`, and the shared input form `EducationFields`.
+- `frontend/src/education-data.ts`: the form state type and conversions (`toEducationForm`, `toEducationInput`), `fieldErrors` that splits a server error message per input field, and `educationApi.create/update/remove`.
+- `frontend/src/form-fields.ts`: classes for the native `select` and `textarea`, and number field conversion. It is the same as cert-manager, with an invalid-value border (`aria-invalid`) added.
+- `frontend/src/use-load.ts`: brought `useReloading`, which reloads the list after a delete, from cert-manager.
+- `frontend/src/education-form.test.tsx`: checks create, update, delete, and error display with an in-memory fake API.
 
-1. 추가와 수정은 각자 주소를 가진 페이지입니다: `/<복수형>/new`, `/<복수형>/:id/edit`. 저장하면 알림(toast)을 띄우고 목록으로 돌아갑니다. 목록은 다시 열리면서 새로 불러옵니다.
-2. 폼은 모든 칸을 입력값 문자열로 들고 있고(`<단수형>Form`), 보낼 때 `to<단수형>Input`으로 바꿉니다. 빈 선택 칸은 `null`입니다. 숫자 칸은 `type="number"`가 아닌 `inputMode="decimal"` 글자 칸입니다. 숫자 칸은 읽지 못한 글자("3..5")를 빈 값으로 바꿔 버려, 서버가 한국어로 설명할 기회가 없어지기 때문입니다.
-3. **검증은 서버가 합니다.** 폼은 `noValidate`로 브라우저 검사를 끄고, 서버의 한국어 메시지를 그대로 보여 줍니다. 서버는 여러 메시지를 ", "로 이어 하나로 보내므로 `fieldErrors`가 앞부분의 항목 이름(학교명, 입학일 …)으로 나눠 각 칸 아래에 붙입니다. 메시지 안의 쉼표("고등학교, 전문학사, …")는 항목 이름으로 시작하지 않으므로 앞 메시지에 그대로 남습니다.
-4. 오류가 붙은 칸은 `aria-invalid`와 `aria-describedby`로 메시지와 묶고, 화면에서 가장 위의 오류 칸으로 포커스를 옮깁니다. 어느 칸에도 속하지 않는 메시지는 폼 아래 `Notice`(`role="alert"`)로 보이고, 포커스는 저장 버튼으로 돌아갑니다.
-5. 삭제는 목록 항목의 버튼에서 `ConfirmDialog`로 묻습니다. 이미 없는 대상(404)은 지운 것으로 보고, 다른 실패는 창을 연 채 toast로 이유를 보입니다. 지운 뒤에는 행이 사라지므로 포커스를 페이지 제목(`h1`, `tabIndex={-1}`)으로 옮깁니다.
-6. 버튼 이름은 항목별로 구별합니다: `aria-label="<학교명> 수정"`, `"<학교명> 삭제"`.
-7. 단건 조회 API가 없으므로(#31) 수정 페이지는 목록을 불러와 해당 행을 찾습니다. 없으면 "찾을 수 없습니다"를 보입니다.
+## Input form structure the next items follow
 
-## 판단한 내용
+1. Add and edit are pages with their own addresses: `/<plural>/new` and `/<plural>/:id/edit`. After saving, show a notification (toast) and return to the list. The list loads again when it reopens.
+2. The form holds every field as an input value string (`<singular>Form`) and converts it with `to<Singular>Input` when sending. An empty optional field is `null`. A number field is a text field with `inputMode="decimal"`, not `type="number"`. A number field turns unreadable text ("3..5") into an empty value, so the server never gets a chance to explain it in Korean.
+3. **The server does the validation.** The form turns off browser validation with `noValidate` and shows the server's Korean message as it is. The server joins several messages with ", " into one, so `fieldErrors` splits them by the leading field name (학교명 (school name), 입학일 (admission date), …) and attaches each under its field. A comma inside a message ("고등학교, 전문학사, …", a list of degrees) does not start with a field name, so it stays in the previous message.
+4. A field with an error is tied to its message with `aria-invalid` and `aria-describedby`, and focus moves to the topmost field with an error on screen. A message that belongs to no field is shown in a `Notice` (`role="alert"`) below the form, and focus returns to the save button.
+5. Delete asks with a `ConfirmDialog` from the button on the list item. A target that is already gone (404) is treated as deleted, and any other failure keeps the dialog open and shows the reason in a toast. After the delete the row disappears, so focus moves to the page title (`h1`, `tabIndex={-1}`).
+6. Button names are made distinct per item: `aria-label="<school name> 수정"` (edit) and `"<school name> 삭제"` (delete).
+7. There is no single-item lookup API (#31), so the edit page loads the list and finds the row. If it is not there, it shows "찾을 수 없습니다" (Not found).
 
-- **오류 문구 나누기:** 처음에는 문구 전체를 첫 항목 칸에 붙였는데, 실제 브라우저 확인 중 날짜 칸 자동 입력이 실패한 실행에서 입학일과 졸업일의 형식 오류가 입학일 칸 아래에 함께 붙었습니다. 중앙 `standard/http.ts`가 메시지를 ", "로 잇는 것을 확인하고 칸별로 나누게 고쳤습니다.
-- **재학 중:** 상태를 "재학 중"으로 바꾸면 졸업일을 비우고 잠급니다. 서버가 거절할 값을 보내지 않기 위해서입니다.
-- **네이티브 `select`:** 공통 `Select`(Radix) 대신 cert-manager처럼 네이티브 `select`를 썼습니다. 휴대폰 기본 선택 화면이 열리고 키보드 화살표로 바로 바뀝니다.
+## Decisions
 
-## 1차 자동 리뷰
+- **Splitting the error message:** at first the whole message was attached to the first item's field, but during the real browser check, in a run where auto-filling the date fields failed, the format errors of the admission date and the graduation date were attached together under the admission date field. I confirmed that the central `standard/http.ts` joins messages with ", " and fixed it to split per field.
+- **Enrolled:** when the status is changed to "재학 중" (enrolled), the graduation date is cleared and locked. This is so the form does not send a value the server would reject.
+- **Native `select`:** I used the native `select` like cert-manager instead of the shared `Select` (Radix). The phone's default picker opens, and the keyboard arrows change the value right away.
 
-보완점을 추가 커밋으로 반영했습니다.
+## First automatic review
 
-| 지적                                                                                                            | 조치                                                                   |
-| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| 같은 칸의 메시지 사이에 다른 칸 메시지가 끼면(학점 소수 오류 → 만점 소수 오류 → 학점 > 만점) 앞 메시지가 사라짐 | 칸별로 모아 모두 보이게 고치고 단위 테스트 추가                        |
-| 숫자 칸(`type="number"`)이 "3..5"를 빈 값으로 바꿔 서버가 설명하지 못함. 둘 다 잘못 치면 학점 없이 저장됨       | `inputMode="decimal"` 글자 칸으로 바꾸고 브라우저에서 서버 메시지 확인 |
-| 기록의 "날짜를 모두 비우면 두 날짜 오류" 줄은 이 코드로 나올 수 없음(빈 졸업일은 `null`)                        | 실제로 확인한 사례(학교명·입학일 비움)로 바꾸고 다시 확인              |
-| (제안) 삭제 실패·404 경로 테스트 없음                                                                           | 테스트 추가                                                            |
-| (제안) 수정 페이지 주소의 id가 바뀌어도 이전 폼 상태가 남을 수 있음                                             | 폼에 `key={id}`                                                        |
-| (제안) 졸업일 오류가 있는 채 재학 중을 고르면 잠긴 칸 아래에 오류가 남음                                        | 재학 중을 고르면 졸업일 오류도 지움                                    |
+The findings were applied in an additional commit.
 
-반영하지 않은 제안: 삭제 실패 이유를 확인 창이 열린 채 toast로 보이는데, 모달 밖이라 화면 낭독기가 읽지 않을 수 있습니다. cert-manager와 같은 방식이고 화면 낭독기로 확인하지 못해 그대로 두었습니다. 필수 칸 표시(`aria-required`)는 표준에 없어 넣지 않았습니다.
+| Finding                                                                                                                                                                  | Action                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| When a message of another field comes between messages of the same field (a grade decimal error → a scale decimal error → grade > scale), the earlier message disappears | Collect per field so all show, and add a unit test                                            |
+| A number field (`type="number"`) turns "3..5" into an empty value so the server cannot explain it. If both are typed wrongly, it is saved with no grade                  | Changed to an `inputMode="decimal"` text field and checked the server message in the browser  |
+| The record's line "if all dates are cleared, two date errors" cannot come out of this code (an empty graduation date is `null`)                                          | Changed to a case I really checked (school name and admission date cleared) and checked again |
+| (Suggestion) No test for the delete failure and 404 paths                                                                                                                | Added tests                                                                                   |
+| (Suggestion) If the id in the edit page address changes, the old form state can remain                                                                                   | `key={id}` on the form                                                                        |
+| (Suggestion) If you choose enrolled while a graduation date error exists, the error remains under the locked field                                                       | Choosing enrolled also clears the graduation date error                                       |
 
-## 2차 자동 리뷰 (최종)
+Suggestion not applied: a delete failure reason is shown in a toast while the dialog is open, but it is outside the modal, so a screen reader may not read it. It works the same way as cert-manager and I could not check it with a screen reader, so I left it. I did not add a required-field marker (`aria-required`) because it is not in the standard.
 
-막는 결함은 없었고, 낮은 등급 두 건과 제안 하나를 추가 커밋으로 반영했습니다.
+## Second automatic review (final)
 
-| 지적                                                                                                     | 조치                                                                                                 |
-| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| 학점·만점에 둘 다 "Infinity"를 치면 JSON이 `null`로 보내 학점 없이 저장됨. "0x4", "1e1"도 4, 10으로 바뀜 | `toNumber`가 일반 소수(`3`, `3.5`, `.5`)만 숫자로 바꾸고 나머지는 글자 그대로 보냄. 단위 테스트 추가 |
-| 포커스가 서버가 보낸 순서의 첫 칸으로 감(학점 오류 + 졸업일 오류면 위에 있는 졸업일을 건너뜀)            | `fieldErrors`가 화면 순서로 정렬해 가장 위의 칸에 포커스. 테스트 추가                                |
-| (제안) 칸이 없는 오류 뒤 비활성화됐던 버튼에서 포커스가 사라질 수 있음                                   | 그 경우 포커스를 저장 버튼으로 돌려줌. 테스트 추가                                                   |
+There was no blocking defect, and two low-level findings and one suggestion were applied in an additional commit.
 
-반영하지 않은 제안과 이유:
+| Finding                                                                                                                                       | Action                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| If "Infinity" is typed in both grade and scale, JSON sends `null` and it is saved with no grade. "0x4" and "1e1" also become 4 and 10         | `toNumber` converts only plain decimals (`3`, `3.5`, `.5`) to numbers and sends everything else as text. Added unit tests |
+| Focus goes to the first field in the order the server sent (with a grade error + a graduation date error, it skips the graduation date above) | `fieldErrors` sorts in screen order and focus goes to the topmost field. Added a test                                     |
+| (Suggestion) Focus can disappear from a button that was disabled after an error with no field                                                 | In that case focus returns to the save button. Added a test                                                               |
 
-- 항목 이름을 백엔드 문구에 기대는 결합, 학위·상태 목록 중복: 공용 계약 파일(`shared/contract.ts`)이 없는 리포 구조의 문제라 이 PR 범위 밖입니다.
-- 빈 날짜의 "YYYY-MM-DD 형식" 문구: #31 백엔드 문구라 범위 밖입니다.
-- 수정 페이지의 400·네트워크 오류, 중복 제출 테스트: 추가 페이지와 같은 `EducationFields`를 쓰므로 추가 페이지 테스트로 덮인다고 보았습니다.
+Suggestions not applied, and why:
 
-## 검증
+- Coupling the field names to the backend wording, and duplicated degree and status lists: this is a problem of the repository structure having no shared contract file (`shared/contract.ts`), so it is outside this PR.
+- The "YYYY-MM-DD format" wording for an empty date: it is the #31 backend wording, so it is out of scope.
+- Tests for 400 and network errors on the edit page and for double submission: the edit page uses the same `EducationFields` as the add page, so I judged them covered by the add page tests.
 
-- `npm run check`: 결과는 PR 본문에 기록합니다.
-- 실제 브라우저: #38과 같이 설치된 Chrome(헤드리스)을 DevTools 프로토콜로 조작했습니다. API 3108, Vite 5208, 임시 PostgreSQL 17의 `career_test`, 지어낸 데이터입니다.
+## Verification
 
-키보드 흐름(390×844, 1440×900 모두 통과):
+- `npm run check`: the result is recorded in the PR body.
+- Real browser: as in #38, I drove the installed Chrome (headless) through the DevTools protocol. API 3108, Vite 5208, `career_test` on a temporary PostgreSQL 17, and made-up data.
 
-| 단계                                                      | 결과                                                                                                       |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 목록에서 `Tab`으로 "학력 추가" → `Enter`                  | `/educations/new`로 이동                                                                                   |
-| 학교명·입학일 2019-03-02·졸업일 2015-02-20 입력 후 "추가" | 졸업일 칸 아래 "졸업일은 입학일보다 빠를 수 없습니다", `aria-invalid`, 포커스가 졸업일로 이동, 입력값 유지 |
-| 학교명·입학일을 비우고 "추가"(1차 리뷰 후 다시 확인)      | 학교명·입학일 오류가 각자의 칸 아래에 따로 표시, 포커스는 학교명                                           |
-| 학점에 "3..5", 만점 4.5 입력 후 "추가"(1차 리뷰 후)       | 학점 칸 아래 서버 메시지 "학점은(는) 숫자여야 합니다", 포커스는 학점                                       |
-| 졸업일 고침, 학위 화살표로 석사, 학점 4.2 / 4.5, 저장     | 목록으로 돌아가 "학력 1건", 새로고침 뒤에도 유지                                                           |
-| "한빛대학교 수정" → 전공 입력 → 저장 → 새로고침           | 전공이 바뀐 채 유지                                                                                        |
-| "한빛대학교 삭제" → 확인 창 → `Escape`                    | 행이 그대로 남고 포커스가 삭제 버튼으로 돌아옴, 새로고침 뒤에도 유지                                       |
-| "한빛대학교 삭제" → 확인 창의 "삭제"                      | 빈 목록, 포커스가 제목 "학력"으로 이동, 새로고침 뒤에도 비어 있음                                          |
+Keyboard flow (passed at both 390×844 and 1440×900):
 
-- 확인 창은 열리면 "취소"에 포커스가 갑니다(공통 `ConfirmDialog`).
-- 390×844 터치 에뮬레이션: 폼의 모든 입력·버튼이 44px 이상, 입력 글자 16px 이상, 가로 넘침 없음. 1440×900에서는 입력 글자가 14px인데, 공통 `Input`의 데스크톱 크기(`md:text-body-sm`)입니다.
-- 콘솔 오류는 없었습니다.
+| Step                                                                                              | Result                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| On the list, `Tab` to "학력 추가" (Add education) → `Enter`                                       | Moved to `/educations/new`                                                                                                                                                                                                 |
+| Enter a school name, admission date 2019-03-02, and graduation date 2015-02-20, then "추가" (Add) | Under the graduation date field "졸업일은 입학일보다 빠를 수 없습니다" (The graduation date cannot be earlier than the admission date), `aria-invalid`, focus moved to the graduation date, and the input values were kept |
+| Clear the school name and admission date, then "추가" (checked again after the first review)      | The school name and admission date errors are shown separately under their own fields, and focus goes to the school name                                                                                                   |
+| Enter "3..5" in grade and 4.5 in scale, then "추가" (after the first review)                      | The server message "학점은(는) 숫자여야 합니다" (The grade must be a number) under the grade field, and focus goes to the grade                                                                                            |
+| Fix the graduation date, choose master with the degree arrows, grade 4.2 / 4.5, save              | Returned to the list with "학력 1건" (1 education entry), and it stays after a reload                                                                                                                                      |
+| "한빛대학교 수정" (Edit Hanbit University) → enter a major → save → reload                        | The major stays changed                                                                                                                                                                                                    |
+| "한빛대학교 삭제" (Delete Hanbit University) → dialog → `Escape`                                  | The row stays, focus returns to the delete button, and it stays after a reload                                                                                                                                             |
+| "한빛대학교 삭제" → "삭제" (Delete) in the dialog                                                 | An empty list, focus moves to the title "학력" (Education), and it stays empty after a reload                                                                                                                              |
 
-스크린샷(지어낸 데이터): [폼 1440](39-education-form/form-1440.png), [오류 표시 390](39-education-form/form-error-390.png), [삭제 확인 390](39-education-form/delete-dialog-390.png), [저장 뒤 목록 390](39-education-form/list-390.png), [두 칸 오류 390](39-education-form/form-two-errors-390.png)
+- When the dialog opens, focus goes to "취소" (Cancel) (the shared `ConfirmDialog`).
+- 390×844 touch emulation: every input and button in the form is 44px or more, the input text is 16px or more, and there is no horizontal overflow. At 1440×900 the input text is 14px, which is the desktop size of the shared `Input` (`md:text-body-sm`).
+- There were no console errors.
 
-## 한계
+Screenshots (made-up data): [form 1440](39-education-form/form-1440.png), [error display 390](39-education-form/form-error-390.png), [delete confirmation 390](39-education-form/delete-dialog-390.png), [list after saving 390](39-education-form/list-390.png), [two field errors 390](39-education-form/form-two-errors-390.png)
 
-- **날짜 칸은 스크립트로 값을 넣었습니다.** 헤드리스 Chrome의 날짜 칸이 키 입력(`Input.dispatchKeyEvent`의 숫자 키, `insertText`)을 받지 않았습니다. 날짜 칸까지 `Tab`으로 이동한 뒤 입력 이벤트로 값을 넣었고, 그 밖의 이동·입력·선택·저장·삭제는 키보드 이벤트로 했습니다. 일반 Chrome에서 날짜 칸에 숫자를 직접 치는 것은 확인하지 못했습니다.
-- 휴대폰 에뮬레이션에서는 날짜 칸이 선택기로 바뀌어 키보드 흐름은 데스크톱 Chrome의 390px 창으로 했습니다. 터치 대상 크기는 터치 에뮬레이션으로 따로 쟀습니다.
-- 실제 휴대폰, axe 검사, Docker Compose 실행은 하지 못했습니다.
+## Limits
+
+- **I put the values into the date fields with a script.** The date field of headless Chrome did not accept key input (the digit keys of `Input.dispatchKeyEvent`, and `insertText`). I moved to the date fields with `Tab` and then put in values with input events, and I did all other moving, typing, choosing, saving, and deleting with keyboard events. I could not check typing digits directly into a date field in regular Chrome.
+- In phone emulation the date field turns into a picker, so I did the keyboard flow in a 390px window of desktop Chrome. I measured the touch target sizes separately with touch emulation.
+- I did not do a real phone, an axe check, or running Docker Compose.

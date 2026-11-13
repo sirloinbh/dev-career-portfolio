@@ -1,63 +1,65 @@
-# #43 프로젝트 등록·수정·삭제 화면
+# #43 Project create, update, and delete screens
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/43> (상위 이슈 #67 이력서 항목 화면)
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/43> (parent issue #67, resume item screens)
 
-## 목적
+Note: UI text and fixture data are quoted in Korean as they appear on screen, with an English gloss in parentheses where needed.
 
-프로젝트를 화면에서 등록·수정·삭제합니다. #41에서 꺼낸 공통 폼 모듈(`form-state.tsx`, `field-errors.ts`, `delete-item.ts`)을 그대로 씁니다.
+## Purpose
 
-## 변경
+Create, update, and delete projects from the screen. It uses the shared form modules pulled out in #41 (`form-state.tsx`, `field-errors.ts`, `delete-item.ts`) as they are.
 
-- `frontend/src/projects.tsx`: 목록에 "프로젝트 추가" 버튼과 항목별 수정·삭제, `NewProject`, `EditProject`, 입력 폼 `ProjectFields`. 목록은 삭제 뒤 행을 유지하는 `useReloading`으로 바꿨습니다.
-- `frontend/src/project-data.ts`: 폼 상태 타입과 변환(`toProjectForm`, `toProjectInput`, `splitTechnologies`), 서버 오류 문구를 칸별로 나누는 `projectFieldErrors`, `projectApi.create/update/remove`.
-- `frontend/src/app.tsx`: `/projects/new`, `/projects/:id/edit` 경로와 `projectPaths`.
-- `frontend/src/field-errors.ts`: 같은 칸에 같은 메시지가 여러 번 오면 한 번만 보입니다. 서버는 목록의 항목마다 오류를 하나씩 내므로, 50자를 넘는 기술 이름이 둘이면 "사용 기술 항목은 50자 이하여야 합니다"가 두 번 옵니다.
-- `frontend/src/project-form.test.tsx`: 메모리 안의 가짜 API로 등록·수정·삭제·오류 표시를 검사합니다(처음 14건, 1차 리뷰 반영 뒤 17건).
-- `frontend/src/projects.test.tsx`: 목록에 수정 링크가 생겨, 외부 링크 검사는 "새 탭" 링크로 좁혔습니다.
+## Changes
 
-## 판단한 내용
+- `frontend/src/projects.tsx`: a "프로젝트 추가" (Add project) button on the list, edit and delete for each item, `NewProject`, `EditProject`, and the input form `ProjectFields`. The list now uses `useReloading`, which keeps the rows after a delete.
+- `frontend/src/project-data.ts`: the form state type and conversions (`toProjectForm`, `toProjectInput`, `splitTechnologies`), `projectFieldErrors` that splits a server error message per field, and `projectApi.create/update/remove`.
+- `frontend/src/app.tsx`: the routes `/projects/new` and `/projects/:id/edit`, and `projectPaths`.
+- `frontend/src/field-errors.ts`: when the same message comes several times for the same field, it shows only once. The server gives one error per item in a list, so with two technology names over 50 characters, "사용 기술 항목은 50자 이하여야 합니다" (A technology item must be 50 characters or fewer) comes twice.
+- `frontend/src/project-form.test.tsx`: checks create, update, delete, and error display with an in-memory fake API (14 tests at first, 17 after the first review).
+- `frontend/src/projects.test.tsx`: the list now has an edit link, so the external link check was narrowed to the "new tab" links.
 
-- **진행 중:** #33 결정대로 종료일이 비어 있으면 진행 중입니다. 종료일 칸 아래 "진행 중인 프로젝트면 비워 둡니다. 목록에 "진행 중"으로 보입니다."를 `aria-describedby`로 묶었고, 일부만 친 종료일은 #41과 같이 서버가 형식 오류로 거절합니다.
-- **사용 기술:** 쉼표로 나눠 적는 한 줄 입력입니다. 태그를 하나씩 더하는 입력은 키보드·화면 낭독기 동작을 따로 만들어야 하지만, 한 줄 입력은 일반 칸과 같이 쓰고 고칠 수 있습니다. 앞뒤 공백은 지우고, 쉼표가 겹치거나 끝에 남아 생긴 빈 조각은 버립니다. 50자·30개·중복 검사는 서버가 하고 메시지를 칸 아래에 보입니다. 이름 안에 쉼표가 있는 기술은 넣을 수 없습니다. 서버는 쉼표가 든 이름도 받으므로, API로 직접 넣은 "Node, Inc" 같은 이름은 화면에서 다른 칸을 고쳐 저장하면 "Node"와 "Inc"로 나뉩니다. 화면으로만 입력하는 지금은 생기지 않아 알려진 제한으로 둡니다.
-- **링크:** `type="url"`이라 휴대폰에서 주소 자판이 뜨고, 자동 대문자·맞춤법 고치기를 껐습니다. 형식 검사는 서버가 합니다(`noValidate`). 저장소 링크 아래에 "http:// 또는 https://로 시작하는 주소를 넣습니다."를 둡니다.
-- **입력 칸 한도:** 프로젝트명·소속·역할 100자, 요약 500자, 기여와 성과 2000자, 링크 500자로 `maxLength`를 서버 한도와 맞췄습니다. 사용 기술 칸은 50자 30개와 구분자가 들어가도록 1600자입니다.
+## Decisions
 
-## 검증
+- **In progress:** as decided in #33, an empty end date means in progress. Under the end date field I tied "진행 중인 프로젝트면 비워 둡니다. 목록에 "진행 중"으로 보입니다." (Leave it empty for a project in progress. It shows as "in progress" in the list.) with `aria-describedby`, and a partly typed end date is rejected by the server as a format error, as in #41.
+- **Technologies:** a one-line input where you write them separated by commas. An input that adds one tag at a time needs its own keyboard and screen reader behavior, but a one-line input can be used and edited like a normal field. Leading and trailing spaces are removed, and empty pieces made by doubled commas or a trailing comma are dropped. The server checks the 50-character limit, the 30-item limit, and duplicates, and the message shows under the field. A technology with a comma in its name cannot be entered. The server accepts a name with a comma, so a name such as "Node, Inc" entered directly through the API would be split into "Node" and "Inc" if you edit another field on screen and save. Entering only through the screen as now does not produce this, so I leave it as a known limit.
+- **Links:** `type="url"` so the phone shows the address keyboard, and I turned off auto-capitalization and spell correction. The server does the format check (`noValidate`). Under the repository link I put "http:// 또는 https://로 시작하는 주소를 넣습니다." (Enter an address that starts with http:// or https://).
+- **Input field limits:** `maxLength` matches the server limits: 100 characters for project name, organization, and role, 500 for the summary, 2000 for contributions and results, and 500 for links. The technologies field is 1600 characters so that 30 items of 50 characters and the separators fit.
 
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과(종료 코드 0). 백엔드 78건 통과·건너뜀 0건, 프론트엔드 140건 통과·2건 건너뜀(기존 테마 조건부 테스트, 새 프로젝트 폼 테스트 14건 포함), 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과. 같은 메시지 합치기를 빼면 해당 테스트가 실패하는 것도 확인했습니다.
-- 실제 브라우저: 설치된 Chrome(헤드리스 156)을 DevTools 프로토콜로 조작했습니다. 개발 서버(API 3108, Vite 5208)를 이 PC의 Docker PostgreSQL 17 `career_test`에 붙이고, 지어낸 프로젝트 3건으로 시작했습니다. 모든 단계는 마우스 없이 키 입력(`Tab`, `Enter`, `Escape`, `Ctrl+A`, 글자·숫자·화살표 키)만으로 했습니다.
+## Verification
 
-키보드 흐름(390×844, 1440×900 모두 같은 결과):
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed (exit code 0). Backend: 78 passed and 0 skipped. Frontend: 140 passed and 2 skipped (the existing theme-conditional tests, including 14 new project form tests). Skill check: 4 passed. Build: passed. `npm run knip`: passed. I also confirmed that the matching test fails if the same-message merging is removed.
+- Real browser: I drove the installed Chrome (headless 156) through the DevTools protocol. I pointed the dev servers (API 3108, Vite 5208) at `career_test` on the Docker PostgreSQL 17 on this PC and started with 3 made-up projects. Every step used only key input (`Tab`, `Enter`, `Escape`, `Ctrl+A`, letter, digit, and arrow keys), no mouse.
 
-| 단계                                                                                                          | 결과                                                                                                                                      |
-| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 목록에서 `Tab`으로 "프로젝트 추가" → `Enter`                                                                  | `/projects/new`로 이동                                                                                                                    |
-| 프로젝트명, 시작일 2024-05-01, 사용 기술 "TypeScript, PostgreSQL,", 저장소 링크 `github.com/…` 입력 후 "추가" | 저장소 링크 칸 아래 "저장소 링크은(는) http:// 또는 https://로 시작하는 주소여야 합니다", `aria-invalid`, 포커스가 그 칸으로, 입력값 유지 |
-| `Ctrl+A`로 주소를 고쳐 `https://…`로 "추가"                                                                   | 목록으로 돌아가 "프로젝트 4건", 새로고침 뒤에도 유지. 사용 기술은 끝 쉼표 없이 TypeScript·PostgreSQL 두 개                                |
-| "키보드프로젝트 수정" → 사용 기술 칸이 "TypeScript, PostgreSQL" → 기여와 성과 입력 → "저장" → 새로고침        | 기여와 성과가 저장된 채 유지                                                                                                              |
-| "키보드프로젝트 삭제" → 확인 창 → `Escape`                                                                    | 창이 닫히고 포커스가 삭제 버튼으로 돌아옴, "프로젝트 4건", 새로고침 뒤에도 4건                                                            |
-| 다시 "키보드프로젝트 삭제" → 창의 "삭제" → `Enter`                                                            | "프로젝트 3건", 포커스가 페이지 제목(`h1`)으로, 새로고침 뒤에도 3건                                                                       |
+Keyboard flow (same result at both 390×844 and 1440×900):
 
-두 크기 모두 목록과 오류가 난 폼에서 가로 넘침이 없고, 보이는 글자는 최소 14px입니다.
+| Step                                                                                                                                                          | Result                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| On the list, `Tab` to "프로젝트 추가" (Add project) → `Enter`                                                                                                 | Moved to `/projects/new`                                                                                                                                                                                                                                      |
+| Enter a project name, start date 2024-05-01, technologies "TypeScript, PostgreSQL,", and repository link `github.com/…`, then "추가" (Add)                    | Under the repository link field "저장소 링크은(는) http:// 또는 https://로 시작하는 주소여야 합니다" (The repository link must be an address that starts with http:// or https://), `aria-invalid`, focus moved to that field, and the input values were kept |
+| Fix the address with `Ctrl+A` to `https://…` and "추가"                                                                                                       | Returned to the list with "프로젝트 4건" (4 projects), and it stays after a reload. The technologies are the two TypeScript and PostgreSQL, with no trailing comma                                                                                            |
+| "키보드프로젝트 수정" (Edit keyboard project) → the technologies field is "TypeScript, PostgreSQL" → enter contributions and results → "저장" (Save) → reload | The contributions and results stay saved                                                                                                                                                                                                                      |
+| "키보드프로젝트 삭제" (Delete keyboard project) → dialog → `Escape`                                                                                           | The dialog closes, focus returns to the delete button, "프로젝트 4건", and still 4 after a reload                                                                                                                                                             |
+| "키보드프로젝트 삭제" again → "삭제" (Delete) in the dialog → `Enter`                                                                                         | "프로젝트 3건", focus on the page title (`h1`), and still 3 after a reload                                                                                                                                                                                    |
 
-| 목록 390                                  | 오류가 난 폼 390                                | 수정 폼 1440                                | 삭제 확인 390                                           |
-| ----------------------------------------- | ----------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
-| ![목록 390](43-project-form/list-390.png) | ![오류 390](43-project-form/form-error-390.png) | ![수정 1440](43-project-form/form-1440.png) | ![삭제 확인 390](43-project-form/delete-dialog-390.png) |
+At both sizes there is no horizontal overflow in the list and in the form with an error, and the smallest visible text is 14px.
 
-## 1차 리뷰 반영
+| List 390                                  | Form with an error 390                           | Edit form 1440                              | Delete confirmation 390                                           |
+| ----------------------------------------- | ------------------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------- |
+| ![List 390](43-project-form/list-390.png) | ![Error 390](43-project-form/form-error-390.png) | ![Edit 1440](43-project-form/form-1440.png) | ![Delete confirmation 390](43-project-form/delete-dialog-390.png) |
 
-읽기 전용 리뷰 에이전트가 PR 전체 diff와 화면 사진을 확인했습니다. 수정 흐름, 404 처리, 사용 기술 나누기·합치기, 서버 메시지 이름 10개는 맞다고 확인했습니다. 같은 메시지 합치기가 서로 다른 메시지를 지우지 않는다는 것도 확인했습니다(학력·이력 폼은 같은 메시지가 그대로 두 번 올 때만 달라짐). 낮음 4건이 나왔습니다.
+## First review applied
 
-| 지적                                                                                                                    | 반영                                                                                                                                                               |
-| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 같은 메시지가 11개 이상이면 서버가 10개만 보내고 끝에 "외 1개"를 붙여, 마지막 조각이 달라 보여 메시지가 다시 두 번 나옴 | "외 N개"를 떼고 비교한 뒤 그 수만 이어 붙임. 메시지 10개 + "외 1개"가 "… 50자 이하여야 합니다, 외 1개" 하나가 되는 테스트 추가(일부러 되돌리면 실패)               |
-| 서버는 쉼표가 든 기술 이름을 받는데, 그런 행을 화면에서 고쳐 저장하면 이름이 나뉨                                       | 서버 규칙을 바꾸는 일이라 이 PR에서는 알려진 제한으로 "판단한 내용"에 적음                                                                                         |
-| 문서의 새 테스트 수가 15건으로 적힘(실제 14건)                                                                          | 고침                                                                                                                                                               |
-| 수정(PUT)의 400·404 테스트 없음                                                                                         | 수정에서 서버가 거절하면 칸 아래 메시지와 포커스, 폼을 연 뒤 지워진 행을 저장하면 "프로젝트를 찾을 수 없습니다" 안내와 저장 버튼 포커스를 확인하는 테스트 2건 추가 |
+A read-only review agent looked at the whole PR diff and the screen pictures. It confirmed the edit flow, the 404 handling, splitting and joining the technologies, and the 10 server message names. It also confirmed that the same-message merging does not remove different messages (the education and career forms differ only when the same message comes twice unchanged). 4 low findings came up.
 
-- 1440 화면은 목록과 삭제 창도 흐름 안에서 같은 결과를 확인했지만, 사진은 수정 폼 하나만 남겼습니다.
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과. 백엔드 78건 통과·건너뜀 0건, 프론트엔드 143건 통과·2건 건너뜀, 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
+| Finding                                                                                                                                                                              | Applied                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| If there are 11 or more of the same message, the server sends only 10 and adds "외 1개" (and 1 more) at the end, so the last piece looks different and the message comes twice again | Compare after removing "외 N개" and then add only that count back. Added a test where 10 messages + "외 1개" become one "… 50자 이하여야 합니다, 외 1개" (it fails if I deliberately revert)                                                 |
+| The server accepts a technology name with a comma, but if you edit and save such a row on screen the name is split                                                                   | It changes a server rule, so in this PR I wrote it as a known limit in "Decisions"                                                                                                                                                           |
+| The document said 15 new tests (actually 14)                                                                                                                                         | Fixed                                                                                                                                                                                                                                        |
+| No 400 and 404 tests for the update (PUT)                                                                                                                                            | Added 2 tests: when the server rejects an update, the message under the field and focus; and when a row deleted after opening the form is saved, the guidance "프로젝트를 찾을 수 없습니다" (Project not found) and focus on the save button |
 
-## 2차 리뷰 결과
+- At 1440 I also checked the list and the delete dialog in the flow with the same result, but I kept only one picture, the edit form.
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed. Backend: 78 passed and 0 skipped. Frontend: 143 passed and 2 skipped. Skill check: 4 passed. Build: passed. `npm run knip`: passed.
 
-1차 지적 4건이 맞게 반영됐는지 확인했습니다. "외 N개" 처리는 처음 나온 칸, 앞과 다른 메시지, 칸 이름이 없는 메시지 뒤 어느 경우에도 메시지나 수를 잃지 않고, 서버는 이 수를 맨 끝에만 붙이므로 실제 메시지를 잘라 내지 않습니다. 최종 전체 diff에서 정확성·회귀·접근성 지적은 없었습니다. 리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
+## Second review result
+
+It confirmed that all 4 first-round findings were applied correctly. The "외 N개" handling does not lose a message or the count in any case: the field it first appears in, a message different from the previous one, or after a message with no field name, and the server adds this count only at the very end, so it does not cut off a real message. In the final whole diff there were no findings on correctness, regressions, or accessibility. Reviews end at 2. No issue was split off.

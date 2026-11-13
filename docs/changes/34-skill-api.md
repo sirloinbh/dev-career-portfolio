@@ -1,77 +1,77 @@
-# #34 스킬 저장 API와 테이블
+# #34 Skill storage API and table
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/34>
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/34>
 
-## 목적
+## Purpose
 
-스킬을 저장하는 테이블과 조회·등록·수정·삭제 API를 만듭니다. #31에서 정한 백엔드 구조를 따릅니다. 입력 항목은 사용자와 확인해 [이슈 코멘트](https://github.com/sirloinbh/dev-career-portfolio/issues/34#issuecomment-6646592220)에 기록했습니다. 숙련도는 이슈의 추천안(상·중·하 3단계) 대신 사용자가 고른 1~5점 5단계입니다.
+Build the table that stores skills and the list, create, update, and delete API. It follows the backend structure settled in #31. The input fields were confirmed with the user and recorded in an [issue comment](https://github.com/sirloinbh/dev-career-portfolio/issues/34#issuecomment-6646592220). For proficiency, instead of the issue's recommendation (3 levels: high, medium, low), the user chose 5 levels scored 1 to 5.
 
-## 변경
+## Changes
 
-- `database/migrations/005_skills.sql`: `skills` 테이블. 분류, 숙련도 범위, 스킬명 중복(대소문자 무시)을 DB 제약으로도 막습니다.
-- `backend/src/routes/skills.ts`: `GET`·`POST /api/skills`, `PUT`·`DELETE /api/skills/:id`.
-- `backend/src/app.ts`: 스킬 경로 등록.
-- `backend/test/skills.test.ts`: DB 없이 입력 검증과 409 변환. `backend/test/skills.integration.test.ts`: `career_test` DB 통합.
+- `database/migrations/005_skills.sql`: the `skills` table. DB constraints also block the category, the proficiency range, and duplicate skill names (case-insensitive).
+- `backend/src/routes/skills.ts`: `GET` and `POST /api/skills`, `PUT` and `DELETE /api/skills/:id`.
+- `backend/src/app.ts`: registered the skill routes.
+- `backend/test/skills.test.ts`: input validation and the 409 conversion without a DB. `backend/test/skills.integration.test.ts`: `career_test` DB integration.
 
 ## API
 
-| 항목   | 이름          | 규칙                                                                                                                                                 |
-| ------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 스킬명 | `name`        | 필수, 50자 이하, 앞뒤 공백 제거. 대소문자를 무시하고 분류와 관계없이 전체에서 하나만                                                                 |
-| 분류   | `category`    | 필수. `language`(언어), `framework`(프레임워크·라이브러리), `database`(데이터베이스), `infrastructure`(인프라·클라우드), `tool`(도구), `other`(기타) |
-| 숙련도 | `proficiency` | 필수, 1~5의 정수(JSON 숫자). 단계별 판단 기준 문구는 화면 #45에서 정함                                                                               |
-| 메모   | `memo`        | 선택, 2000자 이하                                                                                                                                    |
+| Item        | Name          | Rule                                                                                                                                                                     |
+| ----------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Skill name  | `name`        | Required, up to 50 characters, leading and trailing spaces removed. Case-insensitive, and only one in total regardless of category                                       |
+| Category    | `category`    | Required. `language` (language), `framework` (framework and library), `database` (database), `infrastructure` (infrastructure and cloud), `tool` (tool), `other` (other) |
+| Proficiency | `proficiency` | Required, an integer from 1 to 5 (a JSON number). The wording of the criteria for each level is settled on screen #45                                                    |
+| Memo        | `memo`        | Optional, up to 2000 characters                                                                                                                                          |
 
-- 응답은 `{ "skills": [...] }`, `{ "skill": {...} }`입니다. 생성은 201, 삭제는 204, 없는 대상은 404 "스킬을 찾을 수 없습니다"입니다.
-- 이미 있는 이름으로 등록하거나 다른 스킬을 그 이름으로 고치면 409 "이미 등록된 스킬입니다"입니다. 자기 이름의 대소문자만 바꾸는 수정(`TypeScript` → `typescript`)은 받습니다.
-- 목록은 분류(위 표의 순서) → 숙련도 높은 순 → 스킬명순(대소문자 무시)입니다.
-- 빈 메모는 `null`로 저장합니다.
+- Responses are `{ "skills": [...] }` and `{ "skill": {...} }`. Create returns 201, delete returns 204, and a missing target is 404 "스킬을 찾을 수 없습니다" (Skill not found).
+- Registering an existing name, or changing another skill to that name, is 409 "이미 등록된 스킬입니다" (The skill is already registered). An update that only changes the case of its own name (`TypeScript` → `typescript`) is accepted.
+- The list is ordered by category (the order in the table above) → higher proficiency first → skill name (case-insensitive).
+- An empty memo is stored as `null`.
 
-## 판단한 내용
+## Decisions
 
-- **중복은 DB가 판정합니다.** 서버가 먼저 조회해 확인하면 동시에 들어온 두 요청이 모두 통과할 수 있습니다. `lower(name)` 고유 인덱스 `skills_name_unique`에 맡기고, 그 위반(23505)만 "이미 등록된 스킬입니다"로 바꿉니다. 다른 고유 제약 위반은 공통 처리의 "이미 등록된 항목입니다"를 그대로 씁니다.
-- **숙련도는 JSON 숫자만 받습니다.** `"3"` 같은 문자열을 숫자로 바꿔 주지 않아, 다른 항목처럼 보낸 값을 그대로 검사합니다. 정수·범위는 한 번에 검사해 오류 문구가 한 번만 나옵니다. DB는 `smallint`와 `CHECK (proficiency BETWEEN 1 AND 5)`입니다.
-- **이름 정렬은 `lower(name) COLLATE "C"`입니다.** DB 로캘마다 정렬이 달라지지 않게 고정합니다. 바이트 순서라 숫자·기호(`.NET`, `C#`, `1Password`)가 먼저, 다음이 로마자, 그 뒤가 한글입니다. 한글 완성형 글자는 유니코드 순서가 가나다순이라 가나다순으로 옵니다(악센트가 붙은 로마자는 `z` 뒤). 이름이 대소문자 무시로 하나뿐이라 순서가 같아지는 경우는 없습니다.
-- **분류는 정해진 6종입니다.** 분류별 목록 화면(#44)에서 같은 분류가 글자 차이로 갈라지지 않게 자유 입력을 받지 않습니다.
-- **마이그레이션 번호:** `005`를 예약했습니다.
+- **The DB decides duplicates.** If the server looks up first to check, two requests that arrive at the same time can both pass. It leaves this to the unique index `skills_name_unique` on `lower(name)`, and turns only that violation (23505) into "이미 등록된 스킬입니다" (The skill is already registered). Other unique constraint violations keep the shared handler's "이미 등록된 항목입니다" (The item is already registered).
+- **Proficiency accepts only JSON numbers.** It does not turn a string such as `"3"` into a number, so the value is checked as sent, like the other items. The integer and range are checked at once, so the error message appears only once. The DB uses `smallint` and `CHECK (proficiency BETWEEN 1 AND 5)`.
+- **The name sort is `lower(name) COLLATE "C"`.** It is fixed so the sort does not vary with the DB locale. It is byte order, so digits and symbols (`.NET`, `C#`, `1Password`) come first, then Latin letters, then Korean. Korean syllable characters are in Unicode order, which is alphabetical order, so they come in alphabetical order (accented Latin letters come after `z`). Names are unique case-insensitively, so there is no case where the order ties.
+- **The category is one of 6 fixed values.** Free input is not accepted, so the same category does not split by a spelling difference on the list-by-category screen (#44).
+- **Migration number:** reserved `005`.
 
-## 검증
+## Verification
 
-- `npm test -w backend`: 57건 중 45건 통과·12건 건너뜀. 이 PC에는 PostgreSQL이 없어 DB 통합 테스트(새 2건 포함)는 건너뛰었고, `career_test` DB를 쓰는 CI `verify`에서 확인합니다. 새 단위 테스트 9건은 모두 통과했습니다.
-  - 스킬명 빈칸·누락·51자, 분류 6종 밖의 값(`Language`처럼 대소문자가 다른 값 포함), 숙련도 0·6·2.5·-1·`1e16`·`-1e16`·`"3"`·`null`·누락, 메모 2001자, 객체가 아닌 본문, 잘못된 id를 쿼리 전에 400으로 거절.
-  - `skills_name_unique` 위반은 등록·수정 모두 409 "이미 등록된 스킬입니다", 다른 고유 제약 위반은 "이미 등록된 항목입니다".
-- 통합 테스트가 확인하는 것: 정렬(분류 → 숙련도 → 대소문자 무시 이름), 대소문자·분류가 달라도 중복 409, 다른 스킬 이름으로 바꾸기 409, 자기 이름 대소문자 바꾸기 허용, 모든 열 수정, 삭제 후 같은 이름 재등록, 404, DB 제약(빈 이름·분류·숙련도·중복 이름).
-- `npm run check`: 통과(종료 코드 0). 백엔드는 위와 같고, 프론트엔드 87건 통과·2건 건너뜀(기존 테마 조건부 테스트), 스킬 검사 4건 통과, 빌드 통과. `npm run knip`은 이 PC에서 `oxc-resolver` 네이티브 모듈을 불러오지 못해(#58 기록) CI `verify`에서 확인합니다.
-- 마이그레이션 2회 적용: 이 PC에서는 실행하지 못했습니다. CI `verify`가 모든 마이그레이션을 `ON_ERROR_STOP`으로 두 번 적용하므로 그 결과로 확인합니다.
+- `npm test -w backend`: 45 of 57 passed and 12 skipped. This PC has no PostgreSQL, so the DB integration tests (including the 2 new ones) were skipped, and are confirmed by CI `verify`, which uses the `career_test` DB. All 9 new unit tests passed.
+  - Reject before the query with 400: a blank, missing, or 51-character skill name; a category outside the 6 values (including a case difference such as `Language`); proficiency 0, 6, 2.5, -1, `1e16`, `-1e16`, `"3"`, `null`, or missing; a 2001-character memo; a body that is not an object; and a bad id.
+  - A `skills_name_unique` violation is 409 "이미 등록된 스킬입니다" (The skill is already registered) for both create and update, and another unique constraint violation is "이미 등록된 항목입니다" (The item is already registered).
+- What the integration tests check: the sort (category → proficiency → case-insensitive name), duplicate 409 even with a different case or category, 409 when changing to another skill's name, allowing a case-only change of its own name, updating all columns, registering the same name again after a delete, 404, and DB constraints (empty name, category, proficiency, duplicate name).
+- `npm run check`: passed (exit code 0). The backend is as above, the frontend had 87 passed and 2 skipped (the existing theme-conditional tests), the skill check had 4 passed, and the build passed. `npm run knip` could not load the `oxc-resolver` native module on this PC (see the #58 record), so it is confirmed in CI `verify`.
+- Applying the migration twice: I could not run it on this PC. CI `verify` applies all migrations twice with `ON_ERROR_STOP`, so it is confirmed by that result.
 
-## 한계
+## Limits
 
-Docker를 쓸 수 없는 PC(BIOS 가상화 꺼짐)라 Compose 실행은 확인하지 못했습니다. 화면은 #44(분류별 목록), #45(등록·수정·삭제)에서 만듭니다.
+This PC cannot use Docker (BIOS virtualization is off), so I could not check running Compose. The screens are built in #44 (list by category) and #45 (create, update, delete).
 
-## 첫 커밋 CI 결과
+## CI result of the first commit
 
-- CI `verify`(1f4cfd2): 모든 마이그레이션을 두 번 적용했고, 두 번째에는 `005_skills.sql`에서 `relation "skills" already exists, skipping`과 `relation "skills_name_unique" already exists, skipping` 알림만 나왔습니다(오류 없음). 백엔드 57건 통과·건너뜀 0건(`career_test` DB 통합 테스트 2건 포함), knip 통과, `docker-build` 통과.
+- CI `verify` (1f4cfd2): it applied all migrations twice, and the second time `005_skills.sql` printed only the notices `relation "skills" already exists, skipping` and `relation "skills_name_unique" already exists, skipping` (no error). Backend: 57 passed and 0 skipped (including 2 `career_test` DB integration tests), knip passed, and `docker-build` passed.
 
-## 1차 리뷰 반영
+## First review applied
 
-| 지적                                                                                                                                               | 반영                                                                                      |
-| -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| (낮음) 안전한 정수 범위를 넘는 숙련도(`1e16`)는 `.int()`와 `.max()`가 함께 실패해 "숙련도는 1~5 사이의 정수여야 합니다, 숙련도는 …"처럼 두 번 나옴 | 정수·범위를 한 번에 검사하도록 바꿈. `1e16`·`-1e16`을 거절 목록에 추가(수정 전 실패 확인) |
-| (낮음) 변경 기록과 PR 본문이 DB 통합 테스트·마이그레이션 2회 적용을 아직 CI 대기로 적음                                                            | 위 "첫 커밋 CI 결과"에 기록                                                               |
-| (낮음) 통합 테스트 주석은 "그 행은 그대로"라고 하지만 확인하지 않고, 요청 값도 원래 값과 같아 바뀌어도 알 수 없음                                  | 다른 분류·숙련도·메모로 요청하고, 409 뒤 다시 읽어 원래 행과 같은지 확인                  |
-| (참고) "로마자가 먼저" 설명이 부정확함(숫자·기호가 더 앞, 악센트 로마자는 `z` 뒤)                                                                  | 판단한 내용을 고침                                                                        |
+| Finding                                                                                                                                                                                                                                           | Applied                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| (Low) For a proficiency beyond the safe integer range (`1e16`), `.int()` and `.max()` both fail, so the message appears twice, like "숙련도는 1~5 사이의 정수여야 합니다, 숙련도는 …" (proficiency must be an integer from 1 to 5, proficiency …) | Changed to check the integer and the range at once. Added `1e16` and `-1e16` to the rejection list (confirmed failing before the fix) |
+| (Low) The change record and the PR body still listed the DB integration tests and applying the migration twice as waiting for CI                                                                                                                  | Recorded in "CI result of the first commit" above                                                                                     |
+| (Low) The integration test comment says "that row stays as it is", but it does not check it, and the requested values equal the original, so a change would go unnoticed                                                                          | Request a different category, proficiency, and memo, and after the 409 read again and check that the row equals the original          |
+| (Note) The explanation "Latin letters first" is inaccurate (digits and symbols come earlier, and accented Latin letters come after `z`)                                                                                                           | Fixed the Decisions section                                                                                                           |
 
-1차 보완 검증(`npm run check` 통과, 종료 코드 0):
+Verification of the first fix round (`npm run check` passed, exit code 0):
 
-- 수정 전 `npm test -w backend`: 숙련도 테스트 1건 실패(`1e16`에서 같은 문구가 두 번). 수정 후 57건 중 45건 통과·12건 건너뜀(이 PC에 PostgreSQL이 없어 DB 통합 테스트 건너뜀, CI `verify`에서 확인).
-- `npm run typecheck`·`npm run lint`·Prettier 검사 통과.
+- `npm test -w backend` before the fix: 1 proficiency test failed (the same message twice at `1e16`). After the fix: 45 of 57 passed and 12 skipped (this PC has no PostgreSQL, so the DB integration tests were skipped, and are confirmed by CI `verify`).
+- `npm run typecheck`, `npm run lint`, and the Prettier check passed.
 
-## 2차 리뷰 결과
+## Second review result
 
-보완점이 없다는 결과였습니다. 1차 지적 4건이 모두 바르게 반영됐습니다.
+The result was that there were no findings. All 4 first-round findings were applied correctly.
 
-- 숙련도: zod 4.6.7에서 0, 6, 2.5, ±`1e16`, `-0`, ±`1e400`(Infinity), `"NaN"`, `"3"`, `null`, `true`, `[]`, `{}`, 누락이 모두 한국어 문구 하나로 거절되고, 1, 5, `3.0`, `1e0`은 숫자로 통과합니다.
-- 409 뒤 다시 읽어 비교하는 통합 테스트는 같은 `GET /api/skills` 응답끼리 비교해 필드 순서·형식 때문에 잘못 실패하지 않습니다.
-- CI `verify`(8cd3b1a): 마이그레이션 2회 적용 오류 없음, 백엔드 57건 통과·건너뜀 0건(DB 통합 테스트 포함), `docker-build` 통과.
+- Proficiency: with zod 4.6.7, 0, 6, 2.5, ±`1e16`, `-0`, ±`1e400` (Infinity), `"NaN"`, `"3"`, `null`, `true`, `[]`, `{}`, and missing are all rejected with one Korean message, and 1, 5, `3.0`, and `1e0` pass as numbers.
+- The integration test that reads again after the 409 and compares uses the same `GET /api/skills` response on both sides, so it cannot fail by mistake because of field order or format.
+- CI `verify` (8cd3b1a): applying the migration twice had no error, backend 57 passed and 0 skipped (including the DB integration tests), and `docker-build` passed.
 
-리뷰는 2회까지이므로 추가 리뷰는 하지 않습니다. 분리한 이슈는 없습니다. 이 커밋은 기록만 더했습니다(Prettier 검사 통과).
+Reviews are at most 2, so no further review is done. No issue was split off. This commit only added records (the Prettier check passed).

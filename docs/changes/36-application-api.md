@@ -1,70 +1,70 @@
-# #36 지원 기업 저장 API와 테이블
+# #36 Job application (company) storage API and table
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/36>
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/36>
 
-## 목적
+## Purpose
 
-자기소개서를 기업별로 관리하기 전에, 자기소개서가 속할 지원 기업을 저장하는 테이블과 조회·등록·수정·삭제 API를 만듭니다. #31에서 정한 백엔드 구조를 따릅니다. 입력 항목은 사용자와 확인해 [이슈 코멘트](https://github.com/sirloinbh/dev-career-portfolio/issues/36#issuecomment-6650724502)에 기록했습니다. 결정 사항은 모두 추천안입니다.
+Before managing cover letters per company, build the table that stores the companies a cover letter belongs to, and the list, create, update, and delete API. It follows the backend structure settled in #31. The input fields were confirmed with the user and recorded in an [issue comment](https://github.com/sirloinbh/dev-career-portfolio/issues/36#issuecomment-6650724502). All decisions are the recommended ones.
 
-## 변경
+## Changes
 
-- `database/migrations/007_applications.sql`: `applications` 테이블. 빈 기업명, 3종 밖의 상태, http(s)가 아닌 공고 링크를 DB 제약으로도 막습니다.
-- `backend/src/routes/applications.ts`: `GET`·`POST /api/applications`, `PUT`·`DELETE /api/applications/:id`.
-- `backend/src/app.ts`: 지원 기업 경로 등록.
-- `backend/test/applications.test.ts`: DB 없이 입력 검증과 NULL 전달. `backend/test/applications.integration.test.ts`: `career_test` DB 통합.
+- `database/migrations/007_applications.sql`: the `applications` table. DB constraints also block an empty company name, a status outside the 3 values, and a posting link that is not http(s).
+- `backend/src/routes/applications.ts`: `GET` and `POST /api/applications`, `PUT` and `DELETE /api/applications/:id`.
+- `backend/src/app.ts`: registered the application routes.
+- `backend/test/applications.test.ts`: input validation and passing NULL without a DB. `backend/test/applications.integration.test.ts`: `career_test` DB integration.
 
 ## API
 
-| 항목           | 이름          | 규칙                                                                                |
-| -------------- | ------------- | ----------------------------------------------------------------------------------- |
-| 기업명         | `companyName` | 필수, 100자 이하, 앞뒤 공백 제거. 비어 있으면 400 "기업명을(를) 입력해 주세요"      |
-| 지원 직무      | `position`    | 선택, 100자 이하. 빈 값은 `null`                                                    |
-| 채용 공고 링크 | `postingUrl`  | 선택, `http://`·`https://` 주소만, 500자 이하, 공백 불가(프로젝트 링크와 같은 규칙) |
-| 마감일         | `deadline`    | 선택, `YYYY-MM-DD`. 없으면 `null`. 지난 날짜도 받음                                 |
-| 지원 상태      | `status`      | 필수. `drafting`(작성 중), `submitted`(제출 완료), `closed`(종료)                   |
-| 메모           | `memo`        | 선택, 2000자 이하. 빈 값은 `null`                                                   |
+| Item                 | Name          | Rule                                                                                                                                     |
+| -------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Company name         | `companyName` | Required, up to 100 characters, leading and trailing spaces removed. If empty, 400 "기업명을(를) 입력해 주세요" (Enter the company name) |
+| Position applied for | `position`    | Optional, up to 100 characters. An empty value is `null`                                                                                 |
+| Job posting link     | `postingUrl`  | Optional, only `http://` and `https://` addresses, up to 500 characters, no whitespace (the same rule as the project link)               |
+| Deadline             | `deadline`    | Optional, `YYYY-MM-DD`. `null` if absent. A past date is also accepted                                                                   |
+| Application status   | `status`      | Required. `drafting` (drafting), `submitted` (submitted), `closed` (closed)                                                              |
+| Memo                 | `memo`        | Optional, up to 2000 characters. An empty value is `null`                                                                                |
 
-- 응답은 `{ "applications": [...] }`, `{ "application": {...} }`입니다. 생성은 201, 삭제는 204, 없는 대상은 404 "지원 기업을 찾을 수 없습니다"입니다.
-- 목록은 상태(작성 중 → 제출 완료 → 종료) → 마감일이 가까운 순(없으면 뒤) → 나중에 등록한 것이 위입니다.
+- Responses are `{ "applications": [...] }` and `{ "application": {...} }`. Create returns 201, delete returns 204, and a missing target is 404 "지원 기업을 찾을 수 없습니다" (Application company not found).
+- The list is ordered by status (drafting → submitted → closed) → nearest deadline first (none last) → the one registered later on top.
 
-## 판단한 내용
+## Decisions
 
-- **이름은 `applications`입니다.** 한 행은 "한 기업의 한 직무 지원"이고, 같은 기업의 다른 직무·다른 시기 지원은 별도 행입니다. 기업 자체를 뜻하는 `companies`로 부르면 같은 기업이 여러 행에 나오는 것이 어색해서 지원 단위 이름을 골랐습니다. 화면에서는 "지원 기업"으로 부릅니다. #37의 자기소개서 문항은 이 행에 속합니다.
-- **중복은 막지 않습니다.** 기업명·직무가 모두 같은 지원도 각각 저장합니다.
-- **지난 마감일도 저장합니다.** 지난 지원 기록이므로 거절하지 않습니다.
-- **공고 링크는 프로젝트 링크와 같은 `optionalLink`를 씁니다.** `javascript:` 같은 주소가 화면에서 열리지 않게 http(s)만 받습니다.
-- **마이그레이션 번호:** `007`을 예약했습니다.
+- **The name is `applications`.** One row is "one application to one position at one company", and an application to a different position or at a different time at the same company is a separate row. If it were called `companies`, which means the company itself, the same company appearing in several rows would feel odd, so I chose the application-level name. On screen it is called "지원 기업" (application company). The cover letter questions in #37 belong to this row.
+- **Duplicates are not blocked.** Applications with the same company name and position are each stored.
+- **A past deadline is also stored.** It is a record of a past application, so it is not rejected.
+- **The posting link uses the same `optionalLink` as the project link.** Only http(s) is accepted so an address such as `javascript:` is not opened from the screen.
+- **Migration number:** reserved `007`.
 
-## 검증
+## Verification
 
-이 PC에 Docker로 띄운 PostgreSQL 17에서 확인했습니다.
+Checked on the PostgreSQL 17 started with Docker on this PC.
 
-- `007_applications.sql`을 `career`와 `career_test`에 각각 두 번 적용: 모두 종료 코드 0. 두 번째에는 `relation "applications" already exists, skipping` 알림만 나왔습니다.
-- `TEST_DATABASE_URL`을 `career_test`로 두고 `npm test -w backend`: 78건 모두 통과, 건너뜀 0건. 새 테스트는 단위 8건, DB 통합 2건입니다.
-  - 단위: 빈칸·공백·누락·`null`·101자 기업명, 3종 밖의 상태(`Drafting`처럼 대소문자가 다른 값 포함), http(s)가 아니거나 공백이 든 공고 링크, 잘못된·빈 마감일, 101자 직무, 2001자 메모, 객체가 아닌 본문, 잘못된 id를 쿼리 전에 400으로 거절. 수정도 같은 검증. 빈 선택 항목과 마감일 누락은 쿼리에 `null`로 전달.
-  - 통합: 마감일 없는 행이 DB에 NULL로 저장됨, 같은 기업·직무 중복 등록 허용, 지난 마감일 저장, 정렬(상태 → 마감일 가까운 순·없음은 뒤 → 최근 등록), 날짜가 `YYYY-MM-DD` 그대로 돌아옴(지난 마감일 포함), 모든 열 수정과 링크·마감일 비우기, 수정으로 마감일 바꾸기, DB가 거절한 수정(NUL 문자) 뒤 원래 행 유지, 삭제, 404, DB 제약(빈 기업명·상태·공고 링크).
-- `npm run check`(같은 `career_test`): 통과(종료 코드 0). 백엔드 78건 통과·건너뜀 0건, 프론트엔드 87건 통과·2건 건너뜀(기존 테마 조건부 테스트), 스킬 검사 4건 통과, 빌드 통과.
-- `npm run knip`: 통과.
+- Applying `007_applications.sql` twice each to `career` and `career_test`: all exit code 0. The second time had only the notice `relation "applications" already exists, skipping`.
+- `npm test -w backend` with `TEST_DATABASE_URL` set to `career_test`: all 78 passed and 0 skipped. The new tests are 8 unit tests and 2 DB integration tests.
+  - Unit: reject before the query with 400 a blank, whitespace-only, missing, `null`, or 101-character company name; a status outside the 3 values (including a case difference such as `Drafting`); a posting link that is not http(s) or contains whitespace; a bad or empty deadline; a 101-character position; a 2001-character memo; a body that is not an object; and a bad id. Update uses the same validation. Empty optional fields and a missing deadline are passed to the query as `null`.
+  - Integration: a row with no deadline is stored as NULL in the DB, registering the same company and position twice is allowed, a past deadline is stored, the sort (status → nearest deadline first, none last → most recently registered), dates come back exactly as `YYYY-MM-DD` (including a past deadline), updating all columns and clearing the link and deadline, changing the deadline by update, the original row staying after an update the DB rejected (a NUL character), delete, 404, and DB constraints (empty company name, status, posting link).
+- `npm run check` (with the same `career_test`): passed (exit code 0). Backend: 78 passed and 0 skipped. Frontend: 87 passed and 2 skipped (the existing theme-conditional tests). Skill check: 4 passed. Build: passed.
+- `npm run knip`: passed.
 
-## 한계
+## Limits
 
-화면은 #48(목록), #49(등록·수정·삭제)에서 만듭니다. 기업 삭제 시 자기소개서 문항 처리는 #37에서 정합니다.
+The screens are built in #48 (list) and #49 (create, update, delete). How cover letter questions are handled when a company is deleted is settled in #37.
 
-## 첫 커밋 CI 결과
+## CI result of the first commit
 
-- CI `verify`(3062824): 마이그레이션 2회 적용 오류 없음, 백엔드 78건 통과·건너뜀 0건, knip 통과. `docker-build`·CodeQL 통과.
+- CI `verify` (3062824): applying the migration twice had no error, backend 78 passed and 0 skipped, and knip passed. `docker-build` and CodeQL passed.
 
-## 1차 리뷰 반영
+## First review applied
 
-정확성·회귀·보안 지적은 없었고, 낮음 1건을 반영했습니다.
+There were no findings on correctness, regressions, or security, and 1 low finding was applied.
 
-| 지적                                                                                                                                  | 반영                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 통합 테스트가 `null`이 아닌 마감일 값을 한 번도 확인하지 않아, 날짜가 시간대로 밀리거나 지난 마감일이 NULL로 저장돼도 테스트가 통과함 | 등록 응답의 지난 마감일(`2025-01-10`)과 미래 마감일(`2026-03-01`)을 확인하고, 수정으로 마감일을 `2026-04-15`로 바꿔 확인 |
+| Finding                                                                                                                                                               | Applied                                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The integration test never checked a deadline value that is not `null`, so it would pass even if the date shifted by time zone or a past deadline were stored as NULL | Check the past deadline (`2025-01-10`) and the future deadline (`2026-03-01`) in the create response, and check changing the deadline to `2026-04-15` by update |
 
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과(종료 코드 0). 백엔드 78건 통과·건너뜀 0건, 프론트엔드 87건 통과·2건 건너뜀.
-- CI `verify`(82badf9): 백엔드 78건 통과·건너뜀 0건, 마이그레이션 2회 적용 오류 없음. `docker-build`·CodeQL 통과.
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed (exit code 0). Backend: 78 passed and 0 skipped. Frontend: 87 passed and 2 skipped.
+- CI `verify` (82badf9): backend 78 passed and 0 skipped, and applying the migration twice had no error. `docker-build` and CodeQL passed.
 
-## 2차 리뷰 결과
+## Second review result
 
-1차 지적이 반영됐는지 확인했습니다. 추가한 수정 요청이 뒤의 개수·NUL·404 확인을 깨지 않는 것까지 봤고, 최종 전체 diff와 이 문서의 설명도 확인했습니다. 결함은 없었습니다. 테스트 주석이 "마감일을 추가하거나 옮길 수 있다"고 적었지만 실제로는 옮기기만 확인하는 문구 지적 1건이 있어 주석을 고쳤습니다. 리뷰는 2회까지라 3차 리뷰는 하지 않습니다. 분리한 이슈는 없습니다.
+It confirmed that the first-round finding was applied. It also checked that the added update request does not break the later count, NUL, and 404 checks, and checked the final whole diff and the explanations in this document. There were no defects. There was 1 comment finding: a test comment said "a deadline can be added or moved", but the test only checks moving it, so I fixed the comment. Reviews are at most 2, so there is no third review. No issue was split off.

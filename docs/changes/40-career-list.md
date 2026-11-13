@@ -1,58 +1,60 @@
-# #40 이력(경력) 목록 화면과 메뉴
+# #40 Career (work history) list screen and menu
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/40> (상위 이슈 #67 이력서 항목 화면)
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/40> (parent issue #67, resume item screens)
 
-## 목적
+Note: UI text and fixture data are quoted in Korean as they appear on screen, with an English gloss in parentheses where needed.
 
-#32 API의 이력(경력) 데이터를 화면에서 봅니다. #38 학력 목록과 같은 구조입니다.
+## Purpose
 
-## 변경
+Show the career (work history) data of the #32 API on screen. It has the same structure as the #38 education list.
 
-- `frontend/src/app.tsx`: `pages.careers = '/careers'`, 메뉴 "이력"(아이콘 `Briefcase`, 학력 다음), 경로 연결.
-- `frontend/src/career-data.ts`: `Career` 타입, 고용 형태 한국어 이름, 재직 여부(`isCurrent`), 기간·소속 문구, `careerApi.list`.
-- `frontend/src/careers.tsx`: `CareerList` 화면. 로딩 `SkeletonList`, 빈 목록 `EmptyState`, 오류 `Notice`(`role="alert"`), 페이지 `section`의 `aria-busy`와 항상 붙어 있는 `sr-only` 상태 문구("이력을 불러오는 중" → "이력 N건")는 학력과 같습니다.
-- `frontend/src/page-header.tsx`: 학력 화면 안에 있던 `PageHeader`, `BackLink`를 항목 화면들이 함께 쓰도록 옮겼습니다. `BackLink`는 돌아갈 목록 이름을 받습니다. 학력 화면의 동작은 같습니다.
-- `frontend/src/careers.test.tsx`: 메뉴 이동, API 순서 유지, 재직 중 표시, 빈 칸 생략, 로딩·빈 목록·오류 상태, 문구 함수 테스트.
+## Changes
 
-## 판단한 내용
+- `frontend/src/app.tsx`: `pages.careers = '/careers'`, the menu "이력" (Career, icon `Briefcase`, after Education), and the route wiring.
+- `frontend/src/career-data.ts`: the `Career` type, the Korean names of employment types, whether currently employed (`isCurrent`), the period and affiliation wording, and `careerApi.list`.
+- `frontend/src/careers.tsx`: the `CareerList` screen. Loading `SkeletonList`, an empty list `EmptyState`, an error `Notice` (`role="alert"`), `aria-busy` on the page `section`, and an always-present `sr-only` status text ("이력을 불러오는 중", Loading career → "이력 N건", N career entries) are the same as education.
+- `frontend/src/page-header.tsx`: moved `PageHeader` and `BackLink`, which were inside the education screen, so the item screens share them. `BackLink` takes the name of the list to go back to. The education screen behaves the same.
+- `frontend/src/careers.test.tsx`: tests for menu navigation, keeping the API order, the currently employed display, omitting empty fields, the loading, empty, and error states, and the wording functions.
 
-- **재직 중:** 퇴사일이 없으면 재직 중입니다(#32 결정, 상태 칸 없음). 회사명 옆 배지와 기간 끝("2024-01-02 ~ 재직 중")에 "재직 중"을 보입니다. 퇴사한 이력에는 배지를 달지 않습니다.
-- **소속 줄:** 부서 · 직책 · 고용 형태 중 입력한 것만 " · "로 잇습니다. 고용 형태는 필수라 줄이 비지 않습니다.
-- **담당 업무·주요 성과:** 입력한 것만 제목과 함께 보이고, 줄바꿈을 그대로 살립니다. 비어 있으면 제목도 보이지 않습니다.
-- **정렬:** 화면은 API가 준 순서(입사일 최신 순)를 그대로 씁니다.
-- **목록 불러오기:** 이 화면은 조회만 하므로 `useLoad`를 씁니다. 삭제 뒤 목록을 유지하는 `useReloading`은 등록·수정·삭제를 붙이는 #41에서 바꿉니다.
-- 추가 버튼과 수정·삭제는 #41에서 만듭니다.
+## Decisions
 
-## 검증
+- **Currently employed:** with no end date, the person is currently employed (a #32 decision, no status field). "재직 중" (currently employed) shows in a badge next to the company name and at the end of the period ("2024-01-02 ~ 재직 중"). A career that has ended gets no badge.
+- **Affiliation line:** of department · position · employment type, only the ones entered are joined with " · ". The employment type is required, so the line is never empty.
+- **Duties and achievements:** only the ones entered are shown with their titles, and line breaks are kept as they are. If empty, the title is not shown either.
+- **Sorting:** the screen uses the order the API gave (newest start date first) as it is.
+- **Loading the list:** this screen only reads, so it uses `useLoad`. `useReloading`, which keeps the list after a delete, is swapped in by #41, which adds create, update, and delete.
+- The add button and edit and delete are built in #41.
 
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과(종료 코드 0). 백엔드 78건 통과·건너뜀 0건, 프론트엔드 96건 통과·2건 건너뜀(기존 테마 조건부 테스트, 새 이력 테스트 9건 포함), 스킬 검사 4건 통과, 빌드 통과. `npm run knip`: 통과.
-- 실제 브라우저: 설치된 Chrome(헤드리스 156)을 DevTools 프로토콜로 조작했습니다. 개발 서버(API 3108, Vite 5208)를 이 PC의 Docker PostgreSQL 17 `career_test`에 붙이고, 지어낸 이력 3건을 API로 넣었습니다. 오류 상태는 브라우저에서 `/api/careers` 요청을 막아 만들었습니다. 측정값은 페이지의 가로 넘침 여부와 보이는 글자의 최소 크기입니다.
+## Verification
 
-| 상태                                                     | 390×844                                                                                                             | 1440×900                                                                  |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| 목록 3건                                                 | 가로 넘침 없음, 최소 글자 14px, 입사일 최신 순, 재직 중인 회사만 배지 ([라이트](40-career-list/list-390-light.png)) | 같음, 다크 모드도 글자 구분됨 ([다크](40-career-list/list-1440-dark.png)) |
-| 긴 회사명(띄어쓰기 없음 40자 이상)·긴 URL이 든 담당 업무 | 가로 넘침 없음, 줄바꿈됨 ([라이트](40-career-list/long-text-390-light.png))                                         | 가로 넘침 없음(측정값만)                                                  |
-| 빈 목록                                                  | "아직 등록한 이력이 없습니다" 표시, 상태 문구 "이력 0건" ([라이트](40-career-list/empty-390-light.png))             | 같음(측정값만)                                                            |
-| 요청 실패                                                | "이력을 불러오지 못했습니다. 서버에 연결할 수 없습니다" 경고 ([라이트](40-career-list/error-390-light.png))         | 같음(측정값만)                                                            |
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed (exit code 0). Backend: 78 passed and 0 skipped. Frontend: 96 passed and 2 skipped (the existing theme-conditional tests, including 9 new career tests). Skill check: 4 passed. Build: passed. `npm run knip`: passed.
+- Real browser: I drove the installed Chrome (headless 156) through the DevTools protocol. I pointed the dev servers (API 3108, Vite 5208) at `career_test` on the Docker PostgreSQL 17 on this PC and put in 3 made-up career entries through the API. I made the error state by blocking the `/api/careers` request in the browser. The measurements are whether the page overflows horizontally and the smallest visible text size.
 
-## 첫 커밋 CI 결과
+| State                                                                          | 390×844                                                                                                                                                               | 1440×900                                                                                |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| List of 3                                                                      | No horizontal overflow, smallest text 14px, newest start date first, only the currently employed company has the badge ([light](40-career-list/list-390-light.png))   | Same, and dark mode text is distinguishable ([dark](40-career-list/list-1440-dark.png)) |
+| A long company name (40+ characters with no spaces) and duties with a long URL | No horizontal overflow, text wraps ([light](40-career-list/long-text-390-light.png))                                                                                  | No horizontal overflow (measurements only)                                              |
+| Empty list                                                                     | "아직 등록한 이력이 없습니다" (No career registered yet) is shown, and the status text is "이력 0건" (0 career entries) ([light](40-career-list/empty-390-light.png)) | Same (measurements only)                                                                |
+| Request failed                                                                 | The alert "이력을 불러오지 못했습니다. 서버에 연결할 수 없습니다" (Could not load career. Cannot connect to the server) ([light](40-career-list/error-390-light.png)) | Same (measurements only)                                                                |
 
-- CI `verify`(f0393ef): 백엔드 78건 통과·건너뜀 0건, 프론트엔드 테스트·빌드·knip 통과. `docker-build`·CodeQL 통과.
+## CI result of the first commit
 
-## 1차 리뷰 반영
+- CI `verify` (f0393ef): backend 78 passed and 0 skipped, and the frontend tests, build, and knip passed. `docker-build` and CodeQL passed.
 
-높음·중간 지적은 없었고, 낮음 2건을 반영했습니다.
+## First review applied
 
-| 지적                                                                                                       | 반영                                                                                                                                 |
-| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 로딩 테스트가 상태 문구만 확인해, 페이지의 `aria-busy`가 빠지거나 불러온 뒤에도 `true`로 남아도 통과함     | 로딩 중 `aria-busy="true"`, 불러온 뒤 `"false"`를 확인                                                                               |
-| "담당 업무"·"주요 성과" 제목과 내용이 따로 떨어진 문단이라 화면 낭독기가 어디서 블록이 바뀌는지 알 수 없음 | 설명 목록(`dl`·`dt`·`dd`)으로 바꿔 제목과 내용을 묶음. 테스트는 `term`·`definition` 역할로 확인. 다음 항목 화면도 이 방식을 따릅니다 |
+There were no high or medium findings, and 2 low findings were applied.
 
-- 학력 로딩 테스트에도 같은 빈틈이 있지만, 이 PR은 이력 화면만 바꾸므로 학력 테스트는 그대로 두었습니다.
-- 바뀐 화면을 다시 찍었습니다(목록 390 라이트, 목록 1440 다크, 긴 글자 390). 모양은 같고, 가로 넘침 없음·최소 글자 14px도 같습니다.
-- `TEST_DATABASE_URL`=`career_test`로 `npm run check`: 통과(종료 코드 0). 백엔드 78건 통과·건너뜀 0건, 프론트엔드 96건 통과·2건 건너뜀. `npm run knip`: 통과.
-- CI `verify`(a03fbf0): 통과. `docker-build`·CodeQL 통과.
+| Finding                                                                                                                                                     | Applied                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The loading test checks only the status text, so it passes even if the page's `aria-busy` is missing or stays `true` after loading                          | Check `aria-busy="true"` while loading and `"false"` after loading                                                                                                                       |
+| The "담당 업무" (Duties) and "주요 성과" (Achievements) titles and contents are separate paragraphs, so a screen reader cannot tell where the block changes | Changed to a description list (`dl`, `dt`, `dd`) to tie the title and content together. The test checks with the `term` and `definition` roles. The next item screens follow this method |
 
-## 2차 리뷰 결과
+- The education loading test has the same gap, but this PR changes only the career screen, so I left the education test as it is.
+- I took the changed screens again (list 390 light, list 1440 dark, long text 390). The look is the same, and no horizontal overflow and the 14px smallest text are the same too.
+- `npm run check` with `TEST_DATABASE_URL`=`career_test`: passed (exit code 0). Backend: 78 passed and 0 skipped. Frontend: 96 passed and 2 skipped. `npm run knip`: passed.
+- CI `verify` (a03fbf0): passed. `docker-build` and CodeQL passed.
 
-1차 지적 2건이 모두 반영됐는지 확인했습니다(`region` 역할로 찾은 페이지의 `aria-busy`, 유효한 `dl > div > dt + dd` 구조와 같은 모양). 최종 전체 diff와 이 문서의 설명도 확인했고 새 보완점은 없습니다. 리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
+## Second review result
+
+It confirmed that both first-round findings were applied (the page's `aria-busy` found by the `region` role, and the same shape as a valid `dl > div > dt + dd` structure). It also checked the final whole diff and the explanations in this document, and there are no new findings. Reviews end at 2. No issue was split off.

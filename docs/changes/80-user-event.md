@@ -1,69 +1,69 @@
-# #80 화면 테스트에 키 입력 흉내 도구(user-event) 들이기
+# #80 Bring a key input imitation tool (user-event) into the screen tests
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/80> (상위 이슈 #69 테스트와 개발 도구 정리)
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/80> (parent issue #69, cleaning up tests and development tools)
 
-## 목적
+## Purpose
 
-화면 테스트에서 Tab·Enter 같은 실제 키 입력을 흉내 내, "키보드만으로 입력과 저장"을 테스트로 확인합니다. #47(PR #79) 1차 리뷰에서 키보드 테스트가 키를 보내지 않는다는 지적이 있었습니다. 저장소에 도구가 없어 칸 순서와 제출 버튼 위치만 확인했고, 사용자가 2026-11-05에 설치를 승인했습니다.
+Imitate real key input such as Tab and Enter in the screen tests, and check "typing and saving with only the keyboard" with a test. In the first review of #47 (PR #79), it was pointed out that the keyboard test does not send keys. The repository had no tool, so it checked only the field order and the position of the submit button, and the user approved installing one on 2026-11-05.
 
-## 변경
+## Changes
 
-- `frontend/package.json`, `package-lock.json`, `frontend/package-lock.json`: 개발 의존성 `@testing-library/user-event` 14.6.8을 추가했습니다.
-  - 버전은 고정했습니다(`save-exact`).
-  - 설치 스크립트는 돌리지 않았습니다(`ignore-scripts`).
-  - 새로 들어온 패키지는 이것 하나입니다. 라이선스는 MIT입니다.
-- `frontend/src/certification-form.test.tsx`: "Tab과 Enter만으로 입력하고 저장" 테스트를 추가했습니다.
-  - 폼 바로 위의 "자격증 목록" 링크에서 Tab을 누르면 자격증명 칸으로 갑니다.
-  - 그 뒤 칸마다 글자를 입력하고 Tab으로 넘어갑니다. 각 Tab마다 다음 칸에 초점이 있는지 확인합니다.
-  - 만료일 칸은 비운 채 넘어갑니다. 점수·등급 칸에서 Enter를 누르면 저장됩니다.
-  - 저장 요청이 정확히 한 번 갔는지 먼저 확인하고, 보낸 본문을 확인합니다. 만료일은 `null`입니다.
-  - 기존 구조 테스트(칸 순서, 폼 안의 제출 버튼)는 남겼습니다. 키보드 테스트가 실패하면 어느 전제가 깨졌는지 알려 줍니다.
+- `frontend/package.json`, `package-lock.json`, `frontend/package-lock.json`: added the development dependency `@testing-library/user-event` 14.6.8.
+  - The version is pinned (`save-exact`).
+  - Install scripts were not run (`ignore-scripts`).
+  - This is the only new package that came in. The license is MIT.
+- `frontend/src/certification-form.test.tsx`: added a "type and save with only Tab and Enter" test.
+  - Pressing Tab on the "자격증 목록" (Certification list) link right above the form goes to the certification name field.
+  - After that it types text into each field and moves on with Tab. At each Tab it checks that focus is on the next field.
+  - It moves past the expiry date field while leaving it empty. Pressing Enter in the score or grade field saves.
+  - It first checks that the save request went exactly once, and then checks the body that was sent. The expiry date is `null`.
+  - I kept the existing structure tests (the field order, the submit button inside the form). If the keyboard test fails, they tell which precondition broke.
 
-## 판단한 내용
+## Decisions
 
-- **버전:** 14.6.8은 2026-10-13에 게시되어 23일이 지났습니다. 이 저장소가 패키지를 들일 때 지키는 "게시 14일 경과" 기준을 넘습니다. 함께 써야 하는 `@testing-library/dom`(`>=7.21.4`)은 이미 10.4.2가 있습니다.
-- **범위:** 이번에는 자격증 폼에만 씁니다. 학력·이력·프로젝트·스킬 폼에 키보드 테스트를 넓히는 일은 이슈 범위 밖입니다.
-- **날짜 칸:** 테스트 환경(jsdom)의 날짜 입력은 한 칸짜리라 `2023-06-23`을 한 번에 입력합니다. 실제 Chrome에서는 연도·월·일 칸을 숫자와 화살표 키로 옮겨야 합니다. 이 동작은 #47에서 브라우저로 확인했습니다.
+- **Version:** 14.6.8 was published on 2026-10-13, 23 days ago. It is past the "14 days since publication" standard this repository follows when bringing in packages. `@testing-library/dom` (`>=7.21.4`), which must be used with it, already has 10.4.2.
+- **Scope:** this time it is used only in the certification form. Spreading keyboard tests to the education, career, project, and skill forms is outside the issue's scope.
+- **Date field:** the date input in the test environment (jsdom) is a single field, so it types `2023-06-23` in one go. In real Chrome the year, month, and day fields must be moved with digit and arrow keys. I checked this behavior in the browser in #47.
 
-## 검증
+## Verification
 
-- 제출 버튼을 잠깐 폼 밖으로 옮겨 실행했습니다. 새 키보드 테스트는 Enter로 저장되지 않아 실패했습니다. 코드는 원래대로 되돌렸습니다.
-- `npm run check`(`TEST_DATABASE_URL`=Docker PostgreSQL 17 `career_test`): 통과(종료 코드 0). 백엔드 87건 통과·건너뜀 0건, 프론트엔드 192건 통과·2건 건너뜀(기존 테마 조건부 테스트), 스킬 검사 4건, 빌드 통과.
-- `npm run knip`: 통과(새 패키지를 테스트에서 실제로 씀).
-- `npm install`: 취약점 0건(`found 0 vulnerabilities`).
+- I ran it with the submit button briefly moved outside the form. The new keyboard test failed because Enter did not save. I reverted the code to the original.
+- `npm run check` (`TEST_DATABASE_URL`=Docker PostgreSQL 17 `career_test`): passed (exit code 0). Backend: 87 passed and 0 skipped. Frontend: 192 passed and 2 skipped (the existing theme-conditional tests). Skill check: 4. Build: passed.
+- `npm run knip`: passed (the new package is really used in a test).
+- `npm install`: 0 vulnerabilities (`found 0 vulnerabilities`).
 
-## 첫 커밋 CI 결과와 수정
+## CI result of the first commit and the fix
 
-`1770431`에서 CI `verify`가 실패했습니다. CodeQL은 통과했습니다.
+At `1770431`, CI `verify` failed. CodeQL passed.
 
-- **원인:** 프론트엔드 Docker 빌드는 `frontend/` 폴더만 가지고 `npm ci`를 실행합니다. 그런데 그 폴더의 `frontend/package-lock.json`에 새 패키지가 없었습니다(`Missing: @testing-library/user-event@14.6.8 from lock file`).
-- **이유:** 하위 폴더가 따로 빌드되도록 `frontend/`와 `backend/`에 잠금 파일을 각각 둡니다(`docs/project-setup.md`). 루트에서 `npm install`을 하면 루트 잠금 파일만 바뀝니다.
-- **수정:** `npm run lockfiles:sync`로 `frontend/package-lock.json`을 루트 잠금 파일에 맞췄습니다. 확인 모드(`node .standards/lockfiles.mjs`)에서 두 하위 잠금 파일 모두 "루트 lockfile과 같습니다"가 나왔습니다.
-- **로컬에서 놓친 이유:** 로컬 `npm run check`에는 Docker 빌드와 잠금 파일 확인이 들어 있지 않습니다.
+- **Cause:** the frontend Docker build runs `npm ci` with only the `frontend/` folder. But `frontend/package-lock.json` in that folder did not have the new package (`Missing: @testing-library/user-event@14.6.8 from lock file`).
+- **Reason:** so that the sub-folders build on their own, `frontend/` and `backend/` each have their own lockfile (`docs/project-setup.md`). Running `npm install` at the root changes only the root lockfile.
+- **Fix:** I brought `frontend/package-lock.json` in line with the root lockfile with `npm run lockfiles:sync`. In check mode (`node .standards/lockfiles.mjs`), both sub-lockfiles printed "루트 lockfile과 같습니다" (the same as the root lockfile).
+- **Why I missed it locally:** the local `npm run check` does not include the Docker build and the lockfile check.
 
-## 1차 리뷰 반영
+## First review applied
 
-결함은 없었습니다. 리뷰에서 확인한 것은 다음과 같습니다.
+There was no defect. What the review confirmed is below.
 
-- 잠금 파일 변경이 최소이고, 무결성 값이 npm 레지스트리와 같습니다.
-- 테스트를 3회 실행해 모두 통과했습니다.
-- 제출 버튼을 `type="button"`으로 바꾸거나 두 칸의 순서를 바꾸면 새 테스트가 실패합니다.
+- The lockfile change is minimal, and the integrity value is the same as the npm registry.
+- I ran the test 3 times and all passed.
+- If the submit button is changed to `type="button"` or the order of two fields is changed, the new test fails.
 
-낮음 2건을 반영했습니다.
+2 low findings were applied.
 
-| 지적                                                                                 | 반영                                                                    |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| Enter가 저장하지 않으면 8초를 기다린 뒤 "제목을 찾을 수 없음"으로 실패해 원인이 흐림 | 저장 요청(POST)이 정확히 한 번 갔는지 먼저 기다리게 했습니다            |
-| 문서는 "마지막으로 보낸 본문"인데 코드는 첫 POST를 봄                                | 문서를 "보낸 본문"으로 고쳤습니다. 테스트는 POST가 한 번인지 확인합니다 |
+| Finding                                                                                                   | Applied                                                                                     |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| If Enter does not save, it waits 8 seconds and then fails with "title not found", so the cause is unclear | It now first waits until the save request (POST) went exactly once                          |
+| The document said "the body sent last" but the code looks at the first POST                               | Fixed the document to "the body that was sent". The test checks that the POST happened once |
 
-- 반영 후 자격증 폼 테스트 17건 통과, 정적 검사(포맷·lint·타입) 통과. Docker 빌드는 패키지 인증 토큰이 필요해 CI 결과로 확인합니다.
+- After applying it, the 17 certification form tests passed, and the static checks (format, lint, types) passed. The Docker build needs a package authentication token, so it is confirmed by the CI result.
 
-## 2차 리뷰 결과
+## Second review result
 
-결함은 없었습니다. 리뷰에서 확인한 것은 아래와 같습니다.
+There was no defect. What the review confirmed is below.
 
-- `frontend/package-lock.json`에 추가된 항목(버전, 받는 주소, 무결성 값, 개발 의존성 표시)이 루트와 같습니다.
-- 함께 써야 하는 `@testing-library/dom`이 그 잠금 파일에 이미 있습니다.
-- `frontend` 파일만 임시로 복사한 곳에서 `npm ci --dry-run --ignore-scripts`를 실행해 통과했습니다. 다만 실제 내려받기와 패키지 인증은 CI에서만 확인됩니다.
+- The entry added to `frontend/package-lock.json` (the version, the download address, the integrity value, and the development dependency flag) is the same as the root.
+- `@testing-library/dom`, which must be used with it, is already in that lockfile.
+- In a place where only the `frontend` files were copied temporarily, I ran `npm ci --dry-run --ignore-scripts` and it passed. However, the real download and package authentication are confirmed only in CI.
 
-리뷰는 2회로 마칩니다. 분리한 이슈는 없습니다.
+Reviews end at 2. No issue was split off.

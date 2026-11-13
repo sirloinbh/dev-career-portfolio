@@ -1,72 +1,72 @@
-# #57 바쁜 PC에서 가끔 실패하는 프론트엔드 화면 테스트
+# #57 Frontend screen tests that sometimes fail on a busy PC
 
-이슈: <https://github.com/sirloinbh/dev-career-portfolio/issues/57>
+Issue: <https://github.com/sirloinbh/dev-career-portfolio/issues/57>
 
-## 목적
+## Purpose
 
-#33 작업 중 `npm test -w frontend`가 한 번 실패했습니다. 원인을 찾아 PC가 바쁠 때도 화면 테스트가 같은 결과를 내게 합니다.
+During the #33 work, `npm test -w frontend` failed once. Find the cause and make the screen tests give the same result even when the PC is busy.
 
-## 원인
+## Cause
 
-- 실패한 곳은 `frontend/src/education-form.test.tsx`에서 학력을 추가·수정한 뒤 목록 제목을 찾는 확인(113행 `a new education is sent to the API and appears in the list`, 186행 `an education is edited with its saved values filled in`)이었습니다. 같은 PC에서 프론트엔드 테스트 3개를 동시에 6회씩 돌리면 18회 중 17회 실패했습니다(1건 실패 15회, 2건 실패 2회).
-- 단계별로 시간을 재 보니 앱은 빠릅니다. 이 파일만 돌리면 저장 요청 8ms, 주소 이동 28ms, 제목 표시 44ms였습니다.
-- 느린 것은 테스트 조회입니다. `findByRole`은 화면 전체를 돌며 접근성 이름과 표시 여부를 계산해, 이 파일만 돌려도 한 번에 50~60ms, 전체 테스트를 병렬로 돌리면 130~250ms가 걸렸습니다. 저장을 누른 뒤 목록 제목을 찾기까지 전체 실행 기준으로 한가할 때 0.7~1.1초, 바쁠 때 1.5~8.1초였습니다.
-- Testing Library의 `findBy*`·`waitFor` 기본 한도(`asyncUtilTimeout`)는 1초라 이를 넘기면 실패합니다. `frontend/vitest.config.ts`는 "바쁜 PC는 실패가 아니다"라는 이유로 테스트 한도를 15초로 늘려 두었지만, 이 기다림 한도는 늘리지 않았습니다.
+- The place that failed was the check in `frontend/src/education-form.test.tsx` that finds the list title after adding or editing education (line 113 `a new education is sent to the API and appears in the list`, and line 186 `an education is edited with its saved values filled in`). When I ran 3 frontend tests at the same time on the same PC, 6 times each, 17 of 18 runs failed (1 failure 15 times, 2 failures 2 times).
+- Measuring step by step, the app is fast. Running only this file, the save request took 8ms, the address change 28ms, and showing the title 44ms.
+- What is slow is the test query. `findByRole` walks the whole screen and computes accessible names and visibility, so even running only this file it took 50 to 60ms each time, and 130 to 250ms when the whole test suite ran in parallel. From pressing save to finding the list title, on a full run it took 0.7 to 1.1 seconds when idle and 1.5 to 8.1 seconds when busy.
+- The default limit of Testing Library's `findBy*` and `waitFor` (`asyncUtilTimeout`) is 1 second, so exceeding it fails. `frontend/vitest.config.ts` raised the test limit to 15 seconds on the reasoning "a busy PC is not a failure", but it did not raise this waiting limit.
 
-## 변경
+## Changes
 
-- `frontend/src/test/setup.ts`: `configure({ asyncUtilTimeout: 8_000 })`. 모든 화면 테스트의 기다림 한도를 8초로 늘립니다. 처음 커밋은 10초였고 1차 리뷰 뒤 8초로 줄였습니다(아래 "1차 리뷰 반영").
-- `frontend/src/test/setup.test.tsx`: 1.5초 뒤에 나타나는 제목을 `findByRole`로 찾는 회귀 테스트. 수정 전에는 1초에 실패(`Unable to find role="heading"`)하고, 수정 후에는 통과합니다.
+- `frontend/src/test/setup.ts`: `configure({ asyncUtilTimeout: 8_000 })`. It raises the waiting limit of every screen test to 8 seconds. The first commit was 10 seconds, and I reduced it to 8 seconds after the first review (see "First review applied" below).
+- `frontend/src/test/setup.test.tsx`: a regression test that finds, with `findByRole`, a title that appears after 1.5 seconds. Before the fix it fails at 1 second (`Unable to find role="heading"`), and after the fix it passes.
 
-## 판단한 내용
+## Decisions
 
-- **테스트를 고치지 않고 공통 설정을 바꿨습니다.** 느린 조회는 이 파일만의 문제가 아니라 전체 앱을 그리는 모든 화면 테스트에 있습니다. 한 줄씩 `timeout`을 주면 다음 테스트에서 같은 일이 생깁니다.
-- **조회를 가볍게 바꾸는 방법은 쓰지 않았습니다.** `getByText`나 `hidden: true`로 바꾸면 빨라지지만, "보이는 제목인지"를 확인하는 테스트의 뜻이 약해집니다.
-- `frontend/vitest.config.ts`는 중앙 관리 파일이라 이 프로젝트가 고치는 `setup.ts`에 두었습니다.
-- **8초인 이유:** 가장 오래 걸린 기다림(3개 동시 실행에서 8.1초)을 거의 덮으면서, 테스트 한도 15초 가운데 약 7초를 나머지 테스트 진행에 남깁니다. 진짜 실패가 vitest의 `Test timed out`이 아니라 Testing Library의 메시지와 그때 화면으로 끝나게 하려는 것입니다. 다만 기다림 전에 이미 7초 넘게 걸린 테스트는 여전히 테스트 한도에 먼저 걸릴 수 있습니다(#60).
+- **I changed the shared setting instead of fixing the tests.** The slow query is not a problem of this one file only; it is in every screen test that draws the whole app. If I gave `timeout` line by line, the same thing would happen in the next test.
+- **I did not use the way of making the query lighter.** Changing to `getByText` or `hidden: true` makes it faster, but it weakens the meaning of a test that checks "is it a visible title".
+- `frontend/vitest.config.ts` is a centrally managed file, so I put the change in `setup.ts`, which this project edits.
+- **Why 8 seconds:** it nearly covers the longest wait (8.1 seconds in the 3-at-a-time run), and leaves about 7 seconds of the 15-second test limit for the rest of the test. This is so a real failure ends with Testing Library's message and the screen at that time, not with vitest's `Test timed out`. Still, a test that already took more than 7 seconds before the wait can still hit the test limit first (#60).
 
-## 검증
+## Verification
 
-- 수정 전 `npm test -w frontend -- src/test/setup.test.tsx`: 1건 실패(1045ms에 시간 초과). 수정 후 통과.
-- `npm run check`: 통과(종료 코드 0). 백엔드 46건 중 36건 통과·10건 건너뜀(이 PC에 PostgreSQL이 없어 DB 통합 테스트 건너뜀), 프론트엔드 87건 통과·2건 건너뜀(기존 테마 조건부 테스트), 스킬 검사 4건 통과.
-- 부하 반복 실행(`npm test -w frontend`, 첫 커밋 기준):
+- `npm test -w frontend -- src/test/setup.test.tsx` before the fix: 1 failure (timed out at 1045ms). After the fix: passed.
+- `npm run check`: passed (exit code 0). Backend: 36 of 46 passed and 10 skipped (the DB integration tests were skipped because this PC has no PostgreSQL). Frontend: 87 passed and 2 skipped (the existing theme-conditional tests). Skill check: 4 passed.
+- Repeated runs under load (`npm test -w frontend`, based on the first commit):
 
-  | 조건            | 수정 전                       | 수정 후(첫 커밋, 10초)                        |
-  | --------------- | ----------------------------- | --------------------------------------------- |
-  | 3개 동시 × 6회  | 18회 중 17회 실패(기다림 1초) | 18회 중 17회 통과, 1회 실패(테스트 한도 15초) |
-  | 2개 동시 × 4회  | 측정하지 않음                 | 8회 모두 통과                                 |
-  | 1개씩(이전 #33) | 8회 중 1회 실패               | `npm run check` 포함 3회 모두 통과            |
+  | Condition                   | Before the fix                       | After the fix (first commit, 10 seconds)                  |
+  | --------------------------- | ------------------------------------ | --------------------------------------------------------- |
+  | 3 at once × 6 runs          | 17 of 18 runs failed (1 second wait) | 17 of 18 runs passed, 1 failed (test limit of 15 seconds) |
+  | 2 at once × 4 runs          | Not measured                         | All 8 runs passed                                         |
+  | One at a time (earlier #33) | 1 of 8 runs failed                   | All 3 runs passed, including `npm run check`              |
 
-## 한계
+## Limits
 
-- 3개 동시 × 6회에서 남은 실패(첫 커밋 10초 기준 18회 중 1회, 최종 8초 기준 18회 중 4회)는 모두 기다림 한도가 아니라 vitest 테스트 한도(15초)입니다. 실행할 때마다 횟수가 크게 흔들려 한 묶음의 결과를 고정된 실패율로 보지 않습니다. 첫 커밋 실행에서 `a new education is sent to the API and appears in the list`가 17.4초 걸렸습니다(전체 프론트엔드 테스트를 한 번에 하나만 실행하면 4.2초). 평소 실행·`npm run check`·CI에서는 한도까지 3배 이상 여유가 있어 이 PR에서는 더 손대지 않았습니다. 테스트 한도는 중앙 관리 파일 `frontend/vitest.config.ts`가 정하므로, 남은 일은 [#60](https://github.com/sirloinbh/dev-career-portfolio/issues/60)으로 분리했습니다.
-- 처음 실패(#33)를 낸 테스트가 무엇이었는지는 그때 기록이 없어 확인하지 못했습니다. 같은 증상이 부하에서 이 두 테스트(학력 추가 17회, 학력 수정 2회)에서만 재현돼 같은 원인으로 봅니다.
+- The failures that remain in 3 at once × 6 runs (1 of 18 runs at 10 seconds in the first commit, 4 of 18 runs at 8 seconds in the final) are all the vitest test limit (15 seconds), not the waiting limit. The number swings a lot from run to run, so I do not treat the result of one batch as a fixed failure rate. In the first commit run, `a new education is sent to the API and appears in the list` took 17.4 seconds (4.2 seconds when the whole frontend test suite is run one at a time). In normal runs, `npm run check`, and CI there is more than 3 times of margin to the limit, so I did not touch it further in this PR. The test limit is set by the centrally managed file `frontend/vitest.config.ts`, so I split the remaining work into [#60](https://github.com/sirloinbh/dev-career-portfolio/issues/60).
+- I could not identify which test produced the first failure (#33), because there was no record at the time. The same symptom reproduced under load only in these two tests (education add 17 times, education edit 2 times), so I take it to be the same cause.
 
-## 1차 리뷰 반영
+## First review applied
 
-| 지적                                                                                                                                                         | 반영                                                                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| (중간) 완료 기준 "3개 동시 × 6회 실패 0건"을 채우지 못했는데 PR이 이슈를 닫고 "확인할 것 없음"이라고 적음. 남은 문제도 어디에도 추적되지 않음                | 남은 일(테스트 한도 15초)을 [#60](https://github.com/sirloinbh/dev-career-portfolio/issues/60)으로 분리하고, #57 이슈 코멘트와 PR "병합 전에 확인해 주세요"에 적음 |
-| (낮음~중간) "진짜 실패에서는 Testing Library가 화면을 보여 준다"는 설명이 늘 맞지는 않음. 이미 4초 넘게 걸린 테스트는 10초 기다림 중에 15초 한도에 먼저 걸림 | 기다림을 8초로 줄여 나머지 진행에 약 7초를 남기고, 주석과 기록을 "대개 그렇고, 오래 걸린 테스트는 한도에 먼저 걸릴 수 있다"로 고침                                 |
-| (낮음) 기록에 적은 테스트 이름이 실제 이름과 다름. "평소 1개씩 실행하면 4.2초"가 모호함                                                                      | 실제 테스트 이름을 적고 "전체 프론트엔드 테스트를 한 번에 하나만 실행하면"으로 고침                                                                                |
-| (참고) 기다림 한도가 테스트 한도보다 짧은지 확인하는 테스트, vitest 가짜 타이머와 함께 쓰면 최대 8초를 실제로 기다리는 점                                    | 지금 가짜 타이머를 쓰는 테스트가 없고 한도 값은 주석에 근거를 남겨 조치하지 않음                                                                                   |
+| Finding                                                                                                                                                                                                 | Applied                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (Medium) The completion criterion "0 failures in 3 at once × 6 runs" was not met, yet the PR closes the issue and says "nothing to check". The remaining problem is not tracked anywhere                | Split the remaining work (the 15-second test limit) into [#60](https://github.com/sirloinbh/dev-career-portfolio/issues/60), and wrote it in the #57 issue comment and in "Please check before merging" in the PR |
+| (Low to medium) The explanation "on a real failure Testing Library shows the screen" is not always right. A test that already took more than 4 seconds hits the 15-second limit during a 10-second wait | Reduced the wait to 8 seconds to leave about 7 seconds for the rest, and changed the comment and the record to "usually so, and a test that took long can hit the limit first"                                    |
+| (Low) The test name in the record differs from the real name. "When normally run one at a time it takes 4.2 seconds" is vague                                                                           | Wrote the real test name and changed it to "when the whole frontend test suite is run one at a time"                                                                                                              |
+| (Note) A test that checks the waiting limit is shorter than the test limit, and the point that with vitest fake timers it really waits up to 8 seconds                                                  | No test uses fake timers now and the limit value has its reasoning in a comment, so no action                                                                                                                     |
 
-분리한 이슈: #60.
+Split issue: #60.
 
-1차 보완 검증(기다림 8초):
+Verification of the first fix round (8-second wait):
 
-- `npm test -w frontend -- src/test/setup.test.tsx`: 통과.
-- `npm run check`: 통과(종료 코드 0). 백엔드 36건 통과·10건 건너뜀(DB 통합 테스트, CI `verify`에서 확인), 프론트엔드 87건 통과·2건 건너뜀, 스킬 검사 4건 통과.
-- 2개 동시 × 4회: 8회 모두 통과.
-- 3개 동시 × 6회: 18회 중 14회 통과, 4회 실패. 4회 모두 `a new education is sent to the API and appears in the list`의 `Test timed out in 15000ms`(테스트 한도)였고, 기다림 한도에 걸린 실패(`Unable to find`)는 0건입니다. 10초일 때(1회 실패)와 차이는 PC 부하에 따른 테스트 전체 시간의 흔들림이며, 이 경우는 #60에서 다룹니다.
+- `npm test -w frontend -- src/test/setup.test.tsx`: passed.
+- `npm run check`: passed (exit code 0). Backend: 36 passed and 10 skipped (DB integration tests, confirmed in CI `verify`). Frontend: 87 passed and 2 skipped. Skill check: 4 passed.
+- 2 at once × 4 runs: all 8 runs passed.
+- 3 at once × 6 runs: 14 of 18 runs passed and 4 failed. All 4 were `Test timed out in 15000ms` (the test limit) of `a new education is sent to the API and appears in the list`, and there were 0 failures that hit the waiting limit (`Unable to find`). The difference from the 10-second run (1 failure) is the swing in total test time with PC load, and this case is handled in #60.
 
-## 2차 리뷰 반영
+## Second review applied
 
-1차 지적은 모두 반영됐고, 코드의 정확성·회귀 문제는 더 없다는 결과였습니다. 기다림 한도를 줄여도 통과하는 테스트의 전체 시간은 늘지 않으므로, 8초 재실행의 4회 실패가 이 변경 때문이 아니라는 해석도 맞다고 확인했습니다. 남은 지적은 글의 정확성뿐이라 모두 반영했습니다.
+All first-round findings were applied, and the result was that there are no more correctness or regression problems in the code. Reducing the waiting limit does not increase the total time of passing tests, so I also confirmed that the interpretation that the 4 failures in the 8-second re-run are not caused by this change is right. The remaining findings were only about the accuracy of the text, and all were applied.
 
-- `setup.ts` 주석: 8초는 8.1초를 "덮지" 못하므로 "nearly covers"로 고침.
-- 한계 절: 첫 커밋(10초) 숫자만 적혀 있던 것을 10초·8초 결과로 함께 적고, 실행마다 흔들린다는 점을 덧붙임.
-- #60 본문: 8초 기준 4/18(10초 기준 1/18)과 흔들림을 적고, 완료 확인에 여러 묶음을 쓰도록 고침.
-- PR 본문: 첫 부하 결과가 10초 기준임을 밝힘. #57 코멘트의 "이 이슈(#59)"를 "이 PR(#59)"로 고침.
+- The `setup.ts` comment: 8 seconds does not "cover" 8.1 seconds, so I changed it to "nearly covers".
+- The Limits section: it had only the first commit (10 seconds) numbers, so I wrote both the 10-second and 8-second results and added that it swings from run to run.
+- The #60 body: wrote 4/18 at 8 seconds (1/18 at 10 seconds) and the swing, and changed the completion check to use several batches.
+- The PR body: stated that the first load result is at 10 seconds. Changed "this issue (#59)" in the #57 comment to "this PR (#59)".
 
-리뷰는 2회까지이므로 추가 리뷰는 하지 않습니다. 2차 보완은 주석·문서만 바꿨습니다. 검증: `npm run format:check` 통과, `npm run lint` 통과, `npm test -w frontend` 87건 통과·2건 건너뜀.
+Reviews are at most 2, so no further review is done. The second round of fixes changed only comments and docs. Verification: `npm run format:check` passed, `npm run lint` passed, and `npm test -w frontend` had 87 passed and 2 skipped.
