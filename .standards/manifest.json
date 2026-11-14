@@ -1,5 +1,5 @@
 {
-  "centralSha": "cd9d82e588b02e8ab6cb1293412ef3c81b14f1b1",
+  "centralSha": "65b816e25fbef5923a9f83c6af80f50d629625af",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -165,13 +165,18 @@
     },
     ".standards/check.mjs": {
       "mode": "full",
-      "sha256": "fbd266416cbd51fe62b81d05701113ea08d23d4ed3ab9ea0fee371874ec14966",
+      "sha256": "91ac23ba0d4e95ad4fb673d9c5b533947f048d96da2092d16f69572b49d4aa08",
       "source": "scripts/standards-check.mjs"
     },
     ".standards/ioc-scan.mjs": {
       "mode": "full",
       "sha256": "a89be5071d7761fe9a77a9f9b3a14288aa2a261a04a55e46a21d1fe09e5d75b6",
       "source": "scripts/ioc-scan.mjs"
+    },
+    ".standards/lib/env-tags.mjs": {
+      "mode": "full",
+      "sha256": "fea1e12ba393d21203a1bc9a0c778f677f653e3ea4330cf2ca4f99672f00cf83",
+      "source": "scripts/lib/env-tags.mjs"
     },
     ".standards/lib/hash.mjs": {
       "mode": "full",
@@ -318,7 +323,7 @@
     },
     "deploy/remote-deploy.sh": {
       "mode": "full",
-      "sha256": "983b3410736fa6c7cbe2fcba9a7210befc53c50a704cd504b2c0593c74555c4d",
+      "sha256": "089138b2007ba5e5c1bc875dd669b57f18073b830e0149a16b6dfb9730f184fc",
       "source": "templates/app/deploy/remote-deploy.sh.tmpl"
     },
     "deploy/report.service": {
@@ -348,7 +353,7 @@
     },
     "deploy/ssm-get.sh": {
       "mode": "full",
-      "sha256": "e54f4d301ebacf0e829d14a91e41b18771ee46635688f928eb590cf5d6316e65",
+      "sha256": "7a6d129ca218511135c1b2da1935f5e381ff5ad0944f948d61c1936983fffe1b",
       "source": "templates/app/deploy/ssm-get.sh.tmpl"
     },
     "eslint.config.mjs": {
