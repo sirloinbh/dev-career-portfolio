@@ -5,7 +5,7 @@ description: Establish or improve the repeatable development foundation of the d
 
 # Dev Career Portfolio development foundation
 
-Make how this app is developed, verified, and operated repeatable. First read `AGENTS.md` at the project root and `skills/dev-career-portfolio-implementation/SKILL.md`, then follow this procedure: issue → number-based branch → implementation and docs record → tests and PR → automatic code review (at most 2 rounds) → agent merge after CI passes. This skill does not skip the issue and PR procedure or grant deploy permission, and merging follows the conditions in the implementation skill.
+Make how this app is developed, verified, and operated repeatable. First read `AGENTS.md` at the project root and `skills/dev-career-portfolio-implementation/SKILL.md`, then follow this procedure: issue → number-based branch → implementation and docs record → tests and PR → automatic code review (1 or 2 rounds, more only while blocking findings remain) → agent merge after CI passes. This skill does not skip the issue and PR procedure or grant deploy permission, and merging follows the conditions in the implementation skill.
 
 ## Baseline
 
