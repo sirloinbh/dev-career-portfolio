@@ -5,7 +5,7 @@ description: Follow the user's issue, numbered branch, implementation with docs,
 
 # Dev Career Portfolio implementation procedure
 
-This skill applies to change work in `sirloinbh/dev-career-portfolio`. Do not apply this account, repository, or policy to other projects. First read `AGENTS.md` at the project root and the related docs. Follow the order below, and deliver as the result a PR that passed automatic code review (at most 2 rounds) and the required CI checks and was merged.
+This skill applies to change work in `sirloinbh/dev-career-portfolio`. Do not apply this account, repository, or policy to other projects. First read `AGENTS.md` at the project root and the related docs. Follow the order below, and deliver as the result a PR that passed automatic code review (1 or 2 rounds, more only while blocking findings remain) and the required CI checks and was merged.
 
 ## 1. Register the issue card
 
@@ -42,15 +42,15 @@ This skill applies to change work in `sirloinbh/dev-career-portfolio`. Do not ap
 - Pass the PR body as a UTF-8 file. Include the problem and the behavior after the change, the main changes, the actual check commands and results, evidence for screen changes where possible, and `Closes #<number>`. If there are no images, write why and the limits of the verification.
 - Check the GitHub Actions results and fix related failures. Say that a check still running is running. If you changed code after creating the PR, re-run the affected checks and update the docs and PR results.
 
-## 5. Automatic code review after the PR (at most 2 rounds)
+## 5. Automatic code review after the PR (1 or 2 rounds, more only while blocking findings remain)
 
-After you open the PR, it goes through automatic code review at most 2 times. Apply review findings in additional commits, and get a second review after the first round of fixes. Do not review further after the second round of fix commits. If there are no findings, go straight to the next step. Split any fix too large for this PR into a new issue card.
+After you open the PR, review it yourself 1 or 2 times (more only while blocking findings remain, std-code-review section 8). If there is nothing to fix, go straight to the CI check and the merge.
 
 1. **First review:** after opening the PR, run a read-only review separate from the authoring context (a separate agent, a review tool, and so on). Look at correctness, regressions, security, missing tests, and the docs record, against the issue's completion criteria and the whole PR diff.
 2. **If there are no findings,** end the review and move on to the CI check and the merge.
 3. **If there are findings,** apply only the findings that can be fixed within this PR's scope. Make an additional commit that includes the related tests and the docs record, and push it.
 4. **Second review:** check that the first round's findings were applied and look at the added diff. Also look at the whole final PR diff. If there are no findings, move on to CI.
-5. **Second round of fixes:** apply the second round's findings in an additional commit. Reviews are at most 2, so do not run a third review; move on to CI.
+5. **Second round of fixes:** Apply the second findings in an additional commit. Stop after round 2 unless a blocking finding remains. If one does, fix it on the same branch and review again, repeating only while blocking findings remain (std-code-review section 8), then go on to CI.
 6. **Split large fixes:** do not fix the following kinds of findings in this PR. Instead, create a new issue card (with the problem, scope, and completion criteria) in `sirloinbh/dev-career-portfolio`. Leave the issue link in a PR comment and in the docs record, and keep this PR going.
    - A feature outside the requested scope
    - A design or data structure change
