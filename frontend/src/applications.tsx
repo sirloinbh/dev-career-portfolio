@@ -1,4 +1,4 @@
-import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FileText, ListOrdered, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -10,6 +10,7 @@ import {
   type ApplicationPaths,
   applicationStatuses,
   applicationStatusLabels,
+  applicationStatusVariant,
   deadlineText,
   emptyApplicationForm,
   toApplicationForm,
@@ -39,13 +40,6 @@ import { webLink } from './web-link';
 
 const loadApplications = () => applicationApi.list();
 
-// The word carries the status; the fill only helps tell the three apart at a glance.
-const statusVariant = {
-  drafting: 'default',
-  submitted: 'secondary',
-  closed: 'outline',
-} as const;
-
 function ApplicationItem({
   application,
   today,
@@ -66,7 +60,7 @@ function ApplicationItem({
         <h2 id={titleId} className="text-body font-semibold wrap-anywhere break-keep">
           {application.companyName}
         </h2>
-        <Badge variant={statusVariant[application.status]}>
+        <Badge variant={applicationStatusVariant[application.status]}>
           {applicationStatusLabels[application.status]}
         </Badge>
       </div>
@@ -81,6 +75,15 @@ function ApplicationItem({
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2 pt-1">
+        <Button asChild variant="outline" size="sm">
+          <Link
+            to={paths.questions(application.id)}
+            aria-label={`Cover letter questions for ${application.companyName}`}
+          >
+            <ListOrdered aria-hidden />
+            Questions
+          </Link>
+        </Button>
         <Button asChild variant="outline" size="sm">
           <Link to={paths.edit(application.id)} aria-label={`Edit ${application.companyName}`}>
             <Pencil aria-hidden />

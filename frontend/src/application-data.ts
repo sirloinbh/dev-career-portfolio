@@ -26,6 +26,13 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   closed: 'Closed',
 };
 
+// The badge style per status. The word carries the status; the fill only helps tell the three apart.
+export const applicationStatusVariant = {
+  drafting: 'default',
+  submitted: 'secondary',
+  closed: 'outline',
+} as const satisfies Record<ApplicationStatus, string>;
+
 /**
  * "Due November 20, 2026 · D-15", or "No deadline". The countdown ("D-15", "Due today", "Overdue") only
  * matters while the cover letter is still being written; a submitted or closed application shows
@@ -44,6 +51,8 @@ export type ApplicationPaths = {
   list: string;
   create: string;
   edit: (id: number) => string;
+  /** One application's cover letter questions (#50). */
+  questions: (id: number) => string;
 };
 
 type ApplicationInput = Omit<Application, 'id'>;
