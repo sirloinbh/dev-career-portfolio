@@ -39,14 +39,18 @@ const toApplication = (row: ApplicationRow) => ({ ...row, id: Number(row.id) });
 
 const notFoundError = () => new HttpError(404, 'Application not found');
 
-export function registerApplicationRoutes(app: Express, pool: Pool) {
+export function registerApplicationRoutes(app: Express, pool: Pool, today: () => string) {
   app.get('/api/applications', async (_req, res) => {
-    // Status in the fixed order above, then the nearest deadline (none last), then the one added
-    // last. applications.id, not id: a bare name would pick the text output column.
+    // Status in the fixed order above. Inside drafting, a deadline already past (before today in
+    // the service time zone; due today is not past, #83) goes after the rest, no deadline included.
+    // Then the nearest deadline (none last), then the one added last.
+    // applications.id, not id: a bare name would pick the text output column.
     const { rows } = await pool.query<ApplicationRow>(
       `SELECT ${columns} FROM applications
-       ORDER BY array_position($1::text[], status), deadline ASC NULLS LAST, applications.id DESC`,
-      [statuses],
+       ORDER BY array_position($1::text[], status),
+         COALESCE(status = 'drafting' AND deadline < $2::date, false),
+         deadline ASC NULLS LAST, applications.id DESC`,
+      [statuses, today()],
     );
     res.json({ applications: rows.map(toApplication) });
   });

@@ -26,6 +26,7 @@ Before managing cover letters per company, build the table that stores the compa
 
 - Responses are `{ "applications": [...] }` and `{ "application": {...} }`. Create returns 201, delete returns 204, and a missing target is 404 "지원 기업을 찾을 수 없습니다" (Application company not found).
 - The list is ordered by status (drafting → submitted → closed) → nearest deadline first (none last) → the one registered later on top.
+  - Changed in [#83](83-overdue-applications-last.md): inside drafting, items whose deadline is already past now come after the other drafting items.
 
 ## Decisions
 

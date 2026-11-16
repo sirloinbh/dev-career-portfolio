@@ -42,7 +42,7 @@ export function createApp(
   registerProjectRoutes(app, pool);
   registerSkillRoutes(app, pool);
   registerCertificationRoutes(app, pool);
-  registerApplicationRoutes(app, pool);
+  registerApplicationRoutes(app, pool, today);
   registerCoverLetterQuestionRoutes(app, pool);
   app.use('/api', notFound);
   app.use(errorHandler);

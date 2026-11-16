@@ -37,7 +37,7 @@ Show the application company data of the #36 API under the "자기소개서" (Co
   - For submitted and closed, only the date shows, because days left have no meaning for an application already sent.
   - If there is no deadline, it is "마감일 없음" (No deadline).
   - The days are counted in the same service time zone (Asia/Seoul) as the certification list. The test checks it at 00:30 Korean time, which is still the previous day in UTC.
-- **Order:** the API order is used as it is: status (drafting → submitted → closed), then earliest deadline first (a passed deadline comes first, no deadline goes last), then the later registration first (#36). I did not split it by status headings. The order and the badge are enough to tell them apart, and the number of items is small.
+- **Order:** the API order is used as it is: status (drafting → submitted → closed), then earliest deadline first (a passed deadline comes first, no deadline goes last), then the later registration first (#36). (Since #83, a passed drafting deadline goes to the end of the drafting items instead.) I did not split it by status headings. The order and the badge are enough to tell them apart, and the number of items is small.
 - **Job posting link:** the server stores only http(s), but the screen also filters once more with `webLink` so an address such as `javascript:` does not go into `href`. The link name is "○○ 채용 공고 (새 탭에서 열림)" (○○ Job posting (opens in a new tab)).
 
 ## Verification
