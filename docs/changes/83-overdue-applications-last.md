@@ -39,3 +39,4 @@ The application list sorted drafting items by the earliest deadline first (#36),
 - Round 1 (PR #109): no bugs. Two nits.
   - Applied: `docs/changes/48-application-list.md` no longer says "a passed deadline comes first" next to the #83 note. The sentence now says what changed and when.
   - Not changed: passing `today` to `withApi` re-indents the test body. That is formatting only, and the option has to be passed there.
+- Round 2: the round 1 docs fix resolves the nit. No new findings.
