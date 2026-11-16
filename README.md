@@ -26,6 +26,8 @@ npm run dev
 
 Vite http://localhost:5208, API http://localhost:3108/api/health, host DB port 15408.
 
+Every `/api` path except `/api/health` needs a session from the shared sign-in (`/api/me` returns the signed-in user): without one the response is 401 `{ "error": "unauthorized" }`, and 503 `{ "error": "auth_unavailable" }` when the sign-in service cannot be reached. Local development without `AUTH_INTERNAL_URL` runs without the sign-in; production refuses to start without it.
+
 ## Verification
 
 - `npm run check`: format, lint, types, tests, skill sync check, build.

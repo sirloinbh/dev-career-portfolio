@@ -24,6 +24,7 @@ import { EditEducation, EducationList, NewEducation } from './educations';
 import { type Health, healthText } from './health';
 import type { ProjectPaths } from './project-data';
 import { EditProject, NewProject, ProjectList } from './projects';
+import { AccountActions, SignInGate } from './sign-in';
 import type { SkillPaths } from './skill-data';
 import { EditSkill, NewSkill, SkillList } from './skills';
 
@@ -148,57 +149,59 @@ export function App() {
   const health = useHealth();
   return (
     <BrowserRouter>
-      <AppShell appName="Dev Career Portfolio" nav={nav}>
-        <Routes>
-          <Route
-            path={pages.overview}
-            element={
-              <Page
-                title="Dashboard"
-                description="A personal portfolio service for organizing your career, projects, and skill growth"
-                health={health}
-              />
-            }
-          />
-          <Route path={pages.educations} element={<EducationList paths={educationPaths} />} />
-          <Route path={pages.newEducation} element={<NewEducation paths={educationPaths} />} />
-          <Route path={pages.editEducation} element={<EditEducation paths={educationPaths} />} />
-          <Route path={pages.careers} element={<CareerList paths={careerPaths} />} />
-          <Route path={pages.newCareer} element={<NewCareer paths={careerPaths} />} />
-          <Route path={pages.editCareer} element={<EditCareer paths={careerPaths} />} />
-          <Route path={pages.projects} element={<ProjectList paths={projectPaths} />} />
-          <Route path={pages.newProject} element={<NewProject paths={projectPaths} />} />
-          <Route path={pages.editProject} element={<EditProject paths={projectPaths} />} />
-          <Route path={pages.skills} element={<SkillList paths={skillPaths} />} />
-          <Route path={pages.newSkill} element={<NewSkill paths={skillPaths} />} />
-          <Route path={pages.editSkill} element={<EditSkill paths={skillPaths} />} />
-          <Route
-            path={pages.certifications}
-            element={<CertificationList paths={certificationPaths} />}
-          />
-          <Route
-            path={pages.newCertification}
-            element={<NewCertification paths={certificationPaths} />}
-          />
-          <Route
-            path={pages.editCertification}
-            element={<EditCertification paths={certificationPaths} />}
-          />
-          <Route path={pages.applications} element={<ApplicationList />} />
-          <Route
-            path={pages.settings}
-            element={
-              <Page
-                title="Settings"
-                description="App settings and data management"
-                health={health}
-              />
-            }
-          />
-          <Route path="*" element={<Navigate to={pages.overview} replace />} />
-        </Routes>
-      </AppShell>
-      <Toaster />
+      <SignInGate>
+        <AppShell appName="Dev Career Portfolio" nav={nav} actions={<AccountActions />}>
+          <Routes>
+            <Route
+              path={pages.overview}
+              element={
+                <Page
+                  title="Dashboard"
+                  description="A personal portfolio service for organizing your career, projects, and skill growth"
+                  health={health}
+                />
+              }
+            />
+            <Route path={pages.educations} element={<EducationList paths={educationPaths} />} />
+            <Route path={pages.newEducation} element={<NewEducation paths={educationPaths} />} />
+            <Route path={pages.editEducation} element={<EditEducation paths={educationPaths} />} />
+            <Route path={pages.careers} element={<CareerList paths={careerPaths} />} />
+            <Route path={pages.newCareer} element={<NewCareer paths={careerPaths} />} />
+            <Route path={pages.editCareer} element={<EditCareer paths={careerPaths} />} />
+            <Route path={pages.projects} element={<ProjectList paths={projectPaths} />} />
+            <Route path={pages.newProject} element={<NewProject paths={projectPaths} />} />
+            <Route path={pages.editProject} element={<EditProject paths={projectPaths} />} />
+            <Route path={pages.skills} element={<SkillList paths={skillPaths} />} />
+            <Route path={pages.newSkill} element={<NewSkill paths={skillPaths} />} />
+            <Route path={pages.editSkill} element={<EditSkill paths={skillPaths} />} />
+            <Route
+              path={pages.certifications}
+              element={<CertificationList paths={certificationPaths} />}
+            />
+            <Route
+              path={pages.newCertification}
+              element={<NewCertification paths={certificationPaths} />}
+            />
+            <Route
+              path={pages.editCertification}
+              element={<EditCertification paths={certificationPaths} />}
+            />
+            <Route path={pages.applications} element={<ApplicationList />} />
+            <Route
+              path={pages.settings}
+              element={
+                <Page
+                  title="Settings"
+                  description="App settings and data management"
+                  health={health}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to={pages.overview} replace />} />
+          </Routes>
+        </AppShell>
+        <Toaster />
+      </SignInGate>
     </BrowserRouter>
   );
 }
