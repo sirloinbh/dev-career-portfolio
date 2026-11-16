@@ -33,3 +33,9 @@ The application list sorted drafting items by the earliest deadline first (#36),
 - `npm run knip`: passed.
 - Before the check, `npm ci` (approved by the user) installed `@sirloinbh/auth-client@1.0.0`, which the lock files already pinned since #106.
 - No browser screenshots: only the order changed, and the screen shows the API order as it is (#48).
+
+## Review
+
+- Round 1 (PR #109): no bugs. Two nits.
+  - Applied: `docs/changes/48-application-list.md` no longer says "a passed deadline comes first" next to the #83 note. The sentence now says what changed and when.
+  - Not changed: passing `today` to `withApi` re-indents the test body. That is formatting only, and the option has to be passed there.
