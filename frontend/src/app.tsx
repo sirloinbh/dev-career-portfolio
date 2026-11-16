@@ -20,6 +20,7 @@ import { CertificationList, EditCertification, NewCertification } from './certif
 import { AppShell, type NavItem } from './components/layout/app-shell';
 import { EmptyState } from './components/ui/empty-state';
 import { Toaster } from './components/ui/sonner';
+import { EditQuestions } from './cover-letter-form';
 import { ApplicationQuestions } from './cover-letter-questions';
 import type { EducationPaths } from './education-data';
 import { EditEducation, EducationList, NewEducation } from './educations';
@@ -51,6 +52,7 @@ const pages = {
   applications: '/applications',
   newApplication: '/applications/new',
   applicationQuestions: '/applications/:id',
+  editQuestions: '/applications/:id/questions/edit',
   editApplication: '/applications/:id/edit',
   settings: '/settings',
 } as const;
@@ -84,6 +86,7 @@ const applicationPaths: ApplicationPaths = {
   create: pages.newApplication,
   edit: (id) => generatePath(pages.editApplication, { id: String(id) }),
   questions: (id) => generatePath(pages.applicationQuestions, { id: String(id) }),
+  editQuestions: (id) => generatePath(pages.editQuestions, { id: String(id) }),
 };
 
 const careerPaths: CareerPaths = {
@@ -213,6 +216,10 @@ export function App() {
             <Route
               path={pages.applicationQuestions}
               element={<ApplicationQuestions paths={applicationPaths} />}
+            />
+            <Route
+              path={pages.editQuestions}
+              element={<EditQuestions paths={applicationPaths} />}
             />
             <Route
               path={pages.settings}

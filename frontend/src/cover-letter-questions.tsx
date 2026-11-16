@@ -1,5 +1,5 @@
-import { ListOrdered } from 'lucide-react';
-import { useParams } from 'react-router';
+import { ListOrdered, Pencil } from 'lucide-react';
+import { Link, useParams } from 'react-router';
 
 import {
   type Application,
@@ -10,6 +10,7 @@ import {
   deadlineText,
 } from './application-data';
 import { Badge } from './components/ui/badge';
+import { Button } from './components/ui/button';
 import { EmptyState } from './components/ui/empty-state';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
@@ -98,6 +99,14 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
             : ''}
         </p>
       </PageHeader>
+      {missing ? null : (
+        <Button asChild className="w-fit">
+          <Link to={paths.editQuestions(Number(id))}>
+            <Pencil aria-hidden />
+            Edit questions
+          </Link>
+        </Button>
+      )}
       {loading ? <SkeletonList rows={3} /> : null}
       {missing ? (
         <Notice
@@ -118,7 +127,7 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
           className="break-keep"
           icon={<ListOrdered />}
           title="No questions yet"
-          description="Questions saved for this application appear here in their saved order."
+          description="Choose Edit questions to write them. They appear here in their saved order."
         />
       ) : null}
       {list.length > 0 ? (
