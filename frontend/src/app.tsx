@@ -11,7 +11,8 @@ import {
 import { type ReactNode, useEffect, useState } from 'react';
 import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-router';
 
-import { ApplicationList } from './applications';
+import type { ApplicationPaths } from './application-data';
+import { ApplicationList, EditApplication, NewApplication } from './applications';
 import type { CareerPaths } from './career-data';
 import { CareerList, EditCareer, NewCareer } from './careers';
 import type { CertificationPaths } from './certification-data';
@@ -47,6 +48,8 @@ const pages = {
   newCertification: '/certifications/new',
   editCertification: '/certifications/:id/edit',
   applications: '/applications',
+  newApplication: '/applications/new',
+  editApplication: '/applications/:id/edit',
   settings: '/settings',
 } as const;
 
@@ -72,6 +75,12 @@ const certificationPaths: CertificationPaths = {
   list: pages.certifications,
   create: pages.newCertification,
   edit: (id) => generatePath(pages.editCertification, { id: String(id) }),
+};
+
+const applicationPaths: ApplicationPaths = {
+  list: pages.applications,
+  create: pages.newApplication,
+  edit: (id) => generatePath(pages.editApplication, { id: String(id) }),
 };
 
 const careerPaths: CareerPaths = {
@@ -186,7 +195,18 @@ export function App() {
               path={pages.editCertification}
               element={<EditCertification paths={certificationPaths} />}
             />
-            <Route path={pages.applications} element={<ApplicationList />} />
+            <Route
+              path={pages.applications}
+              element={<ApplicationList paths={applicationPaths} />}
+            />
+            <Route
+              path={pages.newApplication}
+              element={<NewApplication paths={applicationPaths} />}
+            />
+            <Route
+              path={pages.editApplication}
+              element={<EditApplication paths={applicationPaths} />}
+            />
             <Route
               path={pages.settings}
               element={
