@@ -225,6 +225,40 @@ test('the answer count follows the typing, and an answer over the limit is still
   expect(api.store()[0]).toMatchObject({ answer: '가 나 다', charLimit: 3 });
 });
 
+test('crossing the limit is announced once, not on every key', async () => {
+  fakeApi(saved);
+  await openForm();
+  const announcement = () =>
+    [...document.querySelectorAll('[aria-live="polite"]')].map((e) => e.textContent).join('');
+  expect(announcement()).not.toContain('Over the character limit');
+  type(fieldIn(2, 'Character limit'), '3');
+  type(fieldIn(2, 'Answer'), '가나다라');
+  expect(announcement()).toContain('Over the character limit: question 2. It can still be saved.');
+  type(fieldIn(2, 'Answer'), '가나다라마');
+  expect(announcement()).toContain('Over the character limit: question 2. It can still be saved.');
+  type(fieldIn(2, 'Answer'), '가나');
+  expect(announcement()).not.toContain('Over the character limit');
+});
+
+test('the fields are locked while the list is being saved', async () => {
+  const api = fakeApi(saved);
+  await openForm();
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  // Anything typed now would not be in the request, so the inputs wait.
+  expect(fieldIn(1, 'Answer')).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Add question' })).toBeDisabled();
+  await waitFor(() => expect(api.puts()).toHaveLength(1));
+  expect(await screen.findByRole('heading', { level: 1, name: '구름데이터' })).toBeInTheDocument();
+});
+
+test('the remove dialog quotes only the start of a long question', async () => {
+  fakeApi([{ id: 1, question: '가'.repeat(80), answer: null, charLimit: null }]);
+  await openForm();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove question 1' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Remove this question?' });
+  expect(dialog).toHaveTextContent(`'${'가'.repeat(60)}…' and its answer leave the list.`);
+});
+
 test('a server message is shown under the field of the question it names', async () => {
   const api = fakeApi(saved);
   await openForm();

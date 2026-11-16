@@ -116,12 +116,17 @@ function DeleteApplication({
   // #51: the questions go with the application (#37 ON DELETE CASCADE), so the dialog counts them when
   // it opens. Until the count arrives, or if it cannot be read, it says so without a number.
   const [questions, setQuestions] = useState<number>();
+  // Only the latest opening's answer counts: a slow one from an earlier opening is ignored.
+  const request = useRef(0);
   const count = (open: boolean) => {
-    if (!open) return;
+    const current = ++request.current;
     setQuestions(undefined);
+    if (!open) return;
     coverLetterApi.list(String(application.id)).then(
-      ({ questions: list }) => setQuestions(list.length),
-      () => setQuestions(undefined),
+      ({ questions: list }) => {
+        if (current === request.current) setQuestions(list.length);
+      },
+      () => undefined,
     );
   };
   return (

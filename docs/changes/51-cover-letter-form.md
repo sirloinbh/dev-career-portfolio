@@ -19,7 +19,7 @@ The #50 page only showed an application's questions. This change adds a form for
 - `frontend/src/cover-letter-questions.tsx`: an "Edit questions" link on the view page. The empty state now points to it.
 - `frontend/src/applications.tsx`: the delete dialog counts the application's questions when it opens (`DeleteApplication`).
 - `frontend/src/application-data.ts`, `frontend/src/app.tsx`: `ApplicationPaths.editQuestions` and the route.
-- `frontend/src/cover-letter-form.test.tsx` (new): 12 tests.
+- `frontend/src/cover-letter-form.test.tsx` (new): 15 tests (12 at the first commit).
   - Open from the view, the loaded values, and save in order.
   - Add (focus moves to the new question), move (focus stays with the question), and remove (Cancel, Remove, focus to Add question, nothing deleted before saving).
   - The live count and saving over the limit.
@@ -38,13 +38,13 @@ The #50 page only showed an application's questions. This change adds a form for
 - **The delete dialog count** (#37 decided the screen counts with the question API): the dialog asks for the list when it opens.
   - It says "and its 3 cover letter questions will be deleted", or "It has no cover letter questions".
   - Until the count arrives, or if it cannot be read, it says "and its cover letter questions will be deleted" without a number.
-- **Save status:** while saving, the button shows a spinner and "Saving" for screen readers. Success shows "Saved the questions" and returns to the view. Failure shows the reason below the form and gives focus back to Save.
+- **Save status:** while saving, the button shows a spinner and "Saving" for screen readers. Success shows "Saved the questions" and returns to the view. Failure shows the reason: a message about a field goes under it and gets focus, and any other goes below the form and focus returns to Save.
 
 ## Verification
 
 - `npm run check`: passed (exit code 0). `TEST_DATABASE_URL` pointed at `career_test` on a throwaway Docker PostgreSQL 17 with `database/migrations` applied.
   - Backend: 89 passed and 0 skipped.
-  - Frontend: 254 passed and 2 skipped (the existing theme-conditional tests). It includes the 14 new tests.
+  - Frontend: 254 passed and 2 skipped (the existing theme-conditional tests). It includes the 14 new tests of the first commit.
   - The skill check (4) and the build also passed.
 - `npm run knip`: passed.
 - **Real browser:**
@@ -69,3 +69,16 @@ The #50 page only showed an application's questions. This change adds a form for
 
 - Leaving the form with unsaved changes (back link, Cancel, another menu) does not ask first. The other item forms do not either.
 - Question order is changed one step at a time. With at most 10 questions, that is a few presses at most.
+- After a 409 (another tab changed the questions), saving again fails the same way. The message says to reload the list, and reloading drops what was typed here. Copy long answers out first.
+- The answer box stops at 5000 UTF-16 units, the same unit the server's cap uses, so an answer full of emoji stops before 5000 characters on the count.
+
+## Review
+
+- Round 1 (PR #112): no bugs. Applied in one commit with tests:
+  - The delete dialog ignores a count from an earlier opening, so a slow answer cannot overwrite the latest.
+  - The question fields are locked (`fieldset disabled`) while saving, so nothing typed after Save is lost when the page moves on.
+  - Going over a limit, or back under it, is announced once in a polite live region ("Over the character limit: question 2. It can still be saved."). The count under the answer still updates on every key without being read out.
+  - The remove dialog quotes the first 60 characters of a long question.
+  - This record: the failure focus wording and the test counts.
+  - Not changed: the 409 retry (now under Limits); the answer box limit (under Limits); "Question N: Invalid question ID" naming no field, which this form cannot cause.
+  - After the fixes, `npm run check` passed again (backend 89 passed / 0 skipped, frontend 257 passed / 2 skipped), and the browser flow ran again with the same results.
