@@ -69,3 +69,4 @@ The #48 list under the "Cover letters" menu only showed applications. This chang
   - Not changed: nothing ties `applicationStatuses` to the backend list. The other item screens have the same pattern; the API refuses an unknown status.
   - Not changed: `/applications/abc/edit` shows "Application not found", which is the intended answer.
   - After the fix, `npm run check` passed again (backend 89 passed / 0 skipped, frontend 230 passed / 2 skipped).
+- Round 2: the round 1 fix resolves the nit (all three statuses pass the setter, nothing else set `status`). No new findings.
