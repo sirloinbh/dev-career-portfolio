@@ -25,6 +25,7 @@ import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
+import { coverLetterApi } from './cover-letter-data';
 import { deleteItem } from './delete-item';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
@@ -90,25 +91,56 @@ function ApplicationItem({
             Edit
           </Link>
         </Button>
-        <ConfirmDialog
-          title="Delete this application?"
-          description={
-            // #37: the cover letter questions belong to the application and are deleted with it.
-            <span className="break-keep">
-              &apos;{application.companyName}&apos; and its cover letter questions will be deleted.
-              This cannot be undone.
-            </span>
-          }
-          onConfirm={() => onDelete(application)}
-          trigger={
-            <Button variant="outline" size="sm" aria-label={`Delete ${application.companyName}`}>
-              <Trash2 aria-hidden />
-              Delete
-            </Button>
-          }
-        />
+        <DeleteApplication application={application} onDelete={onDelete} />
       </div>
     </li>
+  );
+}
+
+/** What the delete dialog says about the questions, once it knows how many there are. */
+function deleteText(name: string, questions: number | undefined) {
+  if (questions === 0) return `'${name}' will be deleted. It has no cover letter questions.`;
+  if (questions === undefined) return `'${name}' and its cover letter questions will be deleted.`;
+  return `'${name}' and its ${String(questions)} cover letter ${
+    questions === 1 ? 'question' : 'questions'
+  } will be deleted.`;
+}
+
+function DeleteApplication({
+  application,
+  onDelete,
+}: {
+  application: Application;
+  onDelete: (application: Application) => Promise<void>;
+}) {
+  // #51: the questions go with the application (#37 ON DELETE CASCADE), so the dialog counts them when
+  // it opens. Until the count arrives, or if it cannot be read, it says so without a number.
+  const [questions, setQuestions] = useState<number>();
+  const count = (open: boolean) => {
+    if (!open) return;
+    setQuestions(undefined);
+    coverLetterApi.list(String(application.id)).then(
+      ({ questions: list }) => setQuestions(list.length),
+      () => setQuestions(undefined),
+    );
+  };
+  return (
+    <ConfirmDialog
+      title="Delete this application?"
+      description={
+        <span className="break-keep">
+          {deleteText(application.companyName, questions)} This cannot be undone.
+        </span>
+      }
+      onOpenChange={count}
+      onConfirm={() => onDelete(application)}
+      trigger={
+        <Button variant="outline" size="sm" aria-label={`Delete ${application.companyName}`}>
+          <Trash2 aria-hidden />
+          Delete
+        </Button>
+      }
+    />
   );
 }
 

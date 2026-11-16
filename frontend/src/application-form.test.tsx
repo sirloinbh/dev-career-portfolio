@@ -42,6 +42,8 @@ function fakeApi(rows: Application[]) {
   let refuse: string | undefined;
   let deleteFails: { status: number; error: string } | undefined;
   let nextId = 100;
+  let questionCount = 0;
+  let questionsFail = false;
   const json = (body: unknown, status = 200) =>
     Promise.resolve(new Response(JSON.stringify(body), { status }));
   vi.stubGlobal(
@@ -59,6 +61,13 @@ function fakeApi(rows: Application[]) {
       }
       const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
+      // The delete dialog counts the application's questions (#51).
+      if (url.endsWith('/questions')) {
+        if (questionsFail) return json({ error: 'Cannot connect to the database' }, 503);
+        return json({
+          questions: Array.from({ length: questionCount }, (_, n) => ({ id: n + 1 })),
+        });
+      }
       if (method === 'GET') return json({ applications: store });
       // The server stores blank text as NULL.
       const saved = (input: Application) =>
@@ -89,6 +98,12 @@ function fakeApi(rows: Application[]) {
     },
     failDeletes: (status: number, error: string) => {
       deleteFails = { status, error };
+    },
+    setQuestionCount: (count: number) => {
+      questionCount = count;
+    },
+    failQuestions: () => {
+      questionsFail = true;
     },
   };
 }
@@ -274,15 +289,50 @@ test('editing an application that no longer exists says so', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('Application not found');
 });
 
+test('the delete dialog counts the cover letter questions that go with the application', async () => {
+  const api = fakeApi([cloud]);
+  api.setQuestionCount(3);
+  open('/applications');
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 구름데이터' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this application?' });
+  // The questions written for it go too (#37), so the dialog counts them when it opens (#51).
+  expect(
+    await within(dialog).findByText(
+      "'구름데이터' and its 3 cover letter questions will be deleted. This cannot be undone.",
+    ),
+  ).toBeInTheDocument();
+  expect(api.calls.some((call) => call.url === '/api/applications/1/questions')).toBe(true);
+});
+
+test('the delete dialog says when there are no questions, and falls back when it cannot count', async () => {
+  const api = fakeApi([cloud, { ...cloud, id: 2, companyName: '바다물류' }]);
+  open('/applications');
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 구름데이터' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this application?' });
+  expect(
+    await within(dialog).findByText(
+      "'구름데이터' will be deleted. It has no cover letter questions. This cannot be undone.",
+    ),
+  ).toBeInTheDocument();
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+  api.failQuestions();
+  fireEvent.click(screen.getByRole('button', { name: 'Delete 바다물류' }));
+  const second = await screen.findByRole('dialog', { name: 'Delete this application?' });
+  await waitFor(() =>
+    expect(api.calls.filter((call) => call.url.endsWith('/questions'))).toHaveLength(2),
+  );
+  expect(second).toHaveTextContent(
+    "'바다물류' and its cover letter questions will be deleted. This cannot be undone.",
+  );
+});
+
 test('cancelling the delete dialog keeps the application', async () => {
   const api = fakeApi([cloud]);
   open('/applications');
   fireEvent.click(await screen.findByRole('button', { name: 'Delete 구름데이터' }));
   const dialog = await screen.findByRole('dialog', { name: 'Delete this application?' });
-  // The questions written for it go too (#37), so the dialog says so.
-  expect(dialog).toHaveTextContent(
-    "'구름데이터' and its cover letter questions will be deleted. This cannot be undone.",
-  );
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(api.calls.some((call) => call.method === 'DELETE')).toBe(false);
