@@ -1,5 +1,5 @@
 {
-  "centralSha": "a0890cfe2de43403c6c740ec20408636a5e3b523",
+  "centralSha": "fed37ba151aa56f71a19eaf3f2f80b007ffdde2d",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -130,7 +130,7 @@
     },
     ".github/workflows/ci.yml": {
       "mode": "full",
-      "sha256": "0d0e9aaca1ebec59d88bd7b0279d4025014cb2fb1bc1a4b236268994c47734fb",
+      "sha256": "044c994b5fc68bf8b3df1f55dc3824d10fb14f232deb3002220b9df1deaffc3c",
       "source": "templates/app/.github/workflows/ci.yml.tmpl"
     },
     ".gitignore": {
@@ -812,7 +812,8 @@
     "@sirloinbh/eslint-config": "1.1.0",
     "@sirloinbh/prettier-config": "1.0.0",
     "@sirloinbh/tsconfig": "1.0.0",
-    "@sirloinbh/design-tokens": "1.0.0"
+    "@sirloinbh/design-tokens": "1.0.0",
+    "@sirloinbh/auth-client": "1.0.0"
   },
   "registry": {
     "ports": {
