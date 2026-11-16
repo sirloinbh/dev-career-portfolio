@@ -71,3 +71,4 @@ Questions differ per company, so each application needs its own page for its cov
   - Recorded under Limits: the title stays general when the application list fails, and the count rule differs from the server's cap for emoji.
   - Not changed: a malformed id (`/applications/abc`) shows "Could not load the questions. Invalid application ID", which is acceptable. The line break inside a question's accessible name is kept, as the question text has it.
   - After the fix, `npm run check` passed again (backend 89 passed / 0 skipped, frontend 240 passed / 2 skipped).
+- Round 2: the new test changes the id in place under `BrowserRouter` as intended. No new findings.
