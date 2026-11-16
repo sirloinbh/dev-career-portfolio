@@ -18,7 +18,7 @@ Questions differ per company, so each application needs its own page for its cov
 - `frontend/src/applications.tsx`: each list row gets a "Questions" link (`aria-label` "Cover letter questions for <company>"). The status badge style moved to `application-data.ts` (`applicationStatusVariant`), so both pages share it.
 - `frontend/src/application-data.ts`: `ApplicationPaths.questions` and `applicationStatusVariant`.
 - `frontend/src/app.tsx`: the route and `applicationPaths.questions`.
-- `frontend/src/cover-letter-questions.test.tsx` (new): 9 tests.
+- `frontend/src/cover-letter-questions.test.tsx` (new): 10 tests.
   - The list link, the order, and the numbers, answers, and lengths.
   - The application summary, and that a second application shows only its own questions.
   - The empty, not found, server error, offline, and loading states.
@@ -40,7 +40,7 @@ Questions differ per company, so each application needs its own page for its cov
 
 - `npm run check`: passed (exit code 0). `TEST_DATABASE_URL` pointed at `career_test` on a throwaway Docker PostgreSQL 17 with `database/migrations` applied.
   - Backend: 89 passed and 0 skipped.
-  - Frontend: 239 passed and 2 skipped (the existing theme-conditional tests). It includes the 9 new tests.
+  - Frontend: 239 passed and 2 skipped (the existing theme-conditional tests). It includes the new tests (9 at the first commit).
   - The skill check (4) and the build also passed.
 - `npm run knip`: passed.
 - **Real browser:**
@@ -61,3 +61,13 @@ Questions differ per company, so each application needs its own page for its cov
 ## Limits
 
 - The over-limit note is plain text in the muted colour. A stronger warning while typing belongs to the #51 form.
+- If the application list itself fails to load, the questions still show and the title stays "Cover letter questions" without the summary. The questions are the page's content, so only their failure is reported.
+- The on-screen count is by code point (an emoji counts once), while the server's 5000-character cap counts UTF-16 units (an emoji counts twice). The two only differ for characters outside the basic plane, such as emoji, and the cap is far above usual limits. A sequence such as a joined emoji or decomposed Hangul jamo counts as several characters.
+
+## Review
+
+- Round 1 (PR #111): no bugs.
+  - Applied: a test that changes the address while the page stays mounted. It holds the second application's answer and checks that the first application's questions are already gone while it loads. The earlier test went through the list page, which unmounts the page.
+  - Recorded under Limits: the title stays general when the application list fails, and the count rule differs from the server's cap for emoji.
+  - Not changed: a malformed id (`/applications/abc`) shows "Could not load the questions. Invalid application ID", which is acceptable. The line break inside a question's accessible name is kept, as the question text has it.
+  - After the fix, `npm run check` passed again (backend 89 passed / 0 skipped, frontend 240 passed / 2 skipped).

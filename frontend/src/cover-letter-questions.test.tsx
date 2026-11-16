@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
@@ -37,8 +37,14 @@ const questionsOf: Record<string, CoverLetterQuestion[]> = {
 
 type Reply = { status: number; body: object } | 'offline';
 
-/** Answers the list, each application's questions (or `override`), and /api/health. */
-function serve(override?: Reply) {
+/** Lets the next answer for a held application's questions out (see `serve`). */
+let release: (() => void) | undefined;
+
+/**
+ * Answers the list, each application's questions (or `override`), and /api/health. The questions of
+ * the `hold` application wait until `release()` is called.
+ */
+function serve(override?: Reply, hold?: string) {
   const urls: string[] = [];
   vi.stubGlobal(
     'fetch',
@@ -54,7 +60,14 @@ function serve(override?: Reply) {
       if (override === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
       if (override) return json(override.body, override.status);
       const questions = questionsOf[id];
-      return questions ? json({ questions }) : json({ error: 'Application not found' }, 404);
+      const reply = () =>
+        questions ? json({ questions }) : json({ error: 'Application not found' }, 404);
+      if (id === hold) {
+        return new Promise<Response>((resolve) => {
+          release = () => void reply().then(resolve);
+        });
+      }
+      return reply();
     }),
   );
   return urls;
@@ -127,6 +140,26 @@ test('another application shows only its own questions', async () => {
     '/api/applications/1/questions',
     '/api/applications/2/questions',
   ]);
+});
+
+test('changing the address on the open page never leaves the previous questions on screen', async () => {
+  serve(undefined, '2');
+  open('/applications/1');
+  await screen.findByRole('heading', { level: 2, name: '협업 경험' });
+  // The same page stays mounted; only the id in the address changes (back and forward do this).
+  act(() => {
+    window.history.pushState(null, '', '/applications/2');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  // While application 2's questions are still on their way, application 1's are already gone.
+  expect(await screen.findByText('Loading questions')).toBeInTheDocument();
+  expect(screen.queryByText('협업 경험')).not.toBeInTheDocument();
+  expect(screen.queryByRole('list', { name: 'Question list' })).not.toBeInTheDocument();
+  act(() => release?.());
+  expect(
+    await screen.findByRole('heading', { level: 2, name: '바다물류 문항' }),
+  ).toBeInTheDocument();
+  expect(titles()).toEqual(['바다물류 문항']);
 });
 
 test('an application without questions says so', async () => {
