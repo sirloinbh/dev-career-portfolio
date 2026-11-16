@@ -66,7 +66,7 @@ export function ApplicationList() {
     <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
       <PageHeader
         title="Cover letters"
-        description="See the companies you applied to by status (drafting, submitted, closed), earliest deadline first within each status."
+        description="See the companies you applied to by status (drafting, submitted, closed), earliest deadline first within each status. Drafts past their deadline come after the other drafts."
       >
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
