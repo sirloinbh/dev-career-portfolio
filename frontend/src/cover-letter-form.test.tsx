@@ -225,7 +225,7 @@ test('the answer count follows the typing, and an answer over the limit is still
   expect(api.store()[0]).toMatchObject({ answer: '가 나 다', charLimit: 3 });
 });
 
-test('crossing the limit is announced once, not on every key', async () => {
+test('the live announcement names the questions over the limit, and changes only when that set does', async () => {
   fakeApi(saved);
   await openForm();
   const announcement = () =>

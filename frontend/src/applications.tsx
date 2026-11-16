@@ -120,8 +120,9 @@ function DeleteApplication({
   const request = useRef(0);
   const count = (open: boolean) => {
     const current = ++request.current;
-    setQuestions(undefined);
+    // Closing keeps the text, so the number does not vanish while the dialog fades out.
     if (!open) return;
+    setQuestions(undefined);
     coverLetterApi.list(String(application.id)).then(
       ({ questions: list }) => {
         if (current === request.current) setQuestions(list.length);

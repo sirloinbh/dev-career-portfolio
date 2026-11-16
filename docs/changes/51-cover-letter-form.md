@@ -82,3 +82,4 @@ The #50 page only showed an application's questions. This change adds a form for
   - This record: the failure focus wording and the test counts.
   - Not changed: the 409 retry (now under Limits); the answer box limit (under Limits); "Question N: Invalid question ID" naming no field, which this form cannot cause.
   - After the fixes, `npm run check` passed again (backend 89 passed / 0 skipped, frontend 257 passed / 2 skipped), and the browser flow ran again with the same results.
+- Round 2: the round 1 fixes are correct (focus after a failed save, the dialog triggers inside the locked fieldset, the stale-count guard). No new findings. Two small follow-ups applied: closing the delete dialog no longer clears the count during its fade-out, and the live-region test name now says what it checks (the text, which only changes with the over-limit set).
