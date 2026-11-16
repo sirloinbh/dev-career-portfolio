@@ -120,9 +120,9 @@ test('the posting link opens in a new tab and names its company', async () => {
   expect(link).toHaveAttribute('target', '_blank');
   expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   // No link, position or memo stored: only the name, the status and the deadline line are shown,
-  // with no empty line left for the missing parts.
+  // with no empty line left for the missing parts. The Edit link (#49) is the row's only link.
   const bare = item('새벽커머스');
-  expect(within(bare).queryByRole('link')).not.toBeInTheDocument();
+  expect(within(bare).queryByRole('link', { name: /Job posting/ })).not.toBeInTheDocument();
   expect(within(bare).queryByRole('term')).not.toBeInTheDocument();
   expect([...bare.querySelectorAll('p')].map((line) => line.textContent)).toEqual(['No deadline']);
 });
@@ -134,7 +134,10 @@ test('a posting link that is not a web address is never put in an href', async (
   });
   openApplications();
   await screen.findByRole('list', { name: 'Application list' });
-  expect(within(item('구름데이터')).queryByRole('link')).not.toBeInTheDocument();
+  expect(
+    within(item('구름데이터')).queryByRole('link', { name: /Job posting/ }),
+  ).not.toBeInTheDocument();
+  expect(item('구름데이터').querySelector('a[href^="javascript:"]')).toBeNull();
 });
 
 test('an empty list explains what will appear', async () => {
