@@ -1,0 +1,192 @@
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { expect, test, vi } from 'vitest';
+
+import { App } from './app';
+import type { Application } from './application-data';
+import { answerLength, answerLengthText, type CoverLetterQuestion } from './cover-letter-data';
+
+// All companies, questions, and answers here are made up for the test.
+
+const cloud: Application = {
+  id: 1,
+  companyName: '구름데이터',
+  position: '백엔드 개발',
+  postingUrl: null,
+  deadline: '2026-11-08',
+  status: 'drafting',
+  memo: null,
+};
+const sea: Application = { ...cloud, id: 2, companyName: '바다물류', position: null };
+
+const question = (
+  id: number,
+  text: string,
+  answer: string | null,
+  charLimit: number | null,
+): CoverLetterQuestion => ({ id, question: text, answer, charLimit });
+
+const questionsOf: Record<string, CoverLetterQuestion[]> = {
+  // Ids out of order on purpose: the screen keeps the API order, which is the saved order.
+  '1': [
+    question(7, '지원 동기를\n적어 주세요', '데이터 플랫폼을 만들고 싶습니다.', 500),
+    question(3, '협업 경험', null, null),
+    question(5, '입사 후 포부', '가'.repeat(12), 10),
+  ],
+  '2': [question(9, '바다물류 문항', '물류 답변', null)],
+};
+
+type Reply = { status: number; body: object } | 'offline';
+
+/** Answers the list, each application's questions (or `override`), and /api/health. */
+function serve(override?: Reply) {
+  const urls: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      const json = (body: object, status = 200) =>
+        Promise.resolve(new Response(JSON.stringify(body), { status }));
+      if (url === '/api/health') return json({ today: '2026-11-05' });
+      urls.push(url);
+      if (url === '/api/applications') return json({ applications: [cloud, sea] });
+      const id = /^\/api\/applications\/([^/]+)\/questions$/.exec(url)?.[1];
+      if (id === undefined) return json({ error: 'API not found' }, 404);
+      if (override === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
+      if (override) return json(override.body, override.status);
+      const questions = questionsOf[id];
+      return questions ? json({ questions }) : json({ error: 'Application not found' }, 404);
+    }),
+  );
+  return urls;
+}
+
+function open(path: string) {
+  window.history.replaceState(null, '', path);
+  render(<App />);
+}
+
+const titles = () =>
+  within(screen.getByRole('list', { name: 'Question list' }))
+    .getAllByRole('heading', { level: 2 })
+    .map((heading) => heading.textContent);
+
+test('the Questions link on a list row opens that application’s questions in saved order', async () => {
+  serve();
+  open('/applications');
+  fireEvent.click(
+    await screen.findByRole('link', { name: 'Cover letter questions for 구름데이터' }),
+  );
+  expect(await screen.findByRole('heading', { level: 1, name: '구름데이터' })).toBeInTheDocument();
+  expect(window.location.pathname).toBe('/applications/1');
+  await screen.findByRole('list', { name: 'Question list' });
+  expect(titles()).toEqual(['지원 동기를\n적어 주세요', '협업 경험', '입사 후 포부']);
+  expect(screen.getByRole('status')).toHaveTextContent('3 questions');
+
+  const [first, second, third] = within(
+    screen.getByRole('list', { name: 'Question list' }),
+  ).getAllByRole('listitem');
+  expect(first).toHaveAccessibleName('지원 동기를\n적어 주세요');
+  expect(first).toHaveTextContent('Question 1');
+  expect(first).toHaveTextContent('데이터 플랫폼을 만들고 싶습니다.');
+  expect(first).toHaveTextContent('18 / 500 characters');
+  expect(second).toHaveTextContent('Question 2');
+  expect(second).toHaveTextContent('No answer yet');
+  expect(second).toHaveTextContent('0 characters');
+  // #37 stores an answer over the limit; the screen points it out.
+  expect(third).toHaveTextContent('12 / 10 characters · 2 over the limit');
+});
+
+test('the page shows the application it belongs to', async () => {
+  serve();
+  open('/applications/1');
+  const header = (await screen.findByRole('heading', { level: 1, name: '구름데이터' })).closest(
+    'header',
+  ) as HTMLElement;
+  expect(within(header).getByText('Drafting')).toBeInTheDocument();
+  expect(within(header).getByText('백엔드 개발')).toBeInTheDocument();
+  expect(within(header).getByText(/^Due November 8, 2026/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Application list' })).toHaveAttribute(
+    'href',
+    '/applications',
+  );
+});
+
+test('another application shows only its own questions', async () => {
+  const urls = serve();
+  open('/applications/1');
+  await screen.findByRole('list', { name: 'Question list' });
+  fireEvent.click(screen.getByRole('link', { name: 'Application list' }));
+  fireEvent.click(await screen.findByRole('link', { name: 'Cover letter questions for 바다물류' }));
+  expect(await screen.findByRole('heading', { level: 1, name: '바다물류' })).toBeInTheDocument();
+  expect(
+    await screen.findByRole('heading', { level: 2, name: '바다물류 문항' }),
+  ).toBeInTheDocument();
+  expect(titles()).toEqual(['바다물류 문항']);
+  expect(screen.queryByText('협업 경험')).not.toBeInTheDocument();
+  expect(urls.filter((url) => url.endsWith('/questions'))).toEqual([
+    '/api/applications/1/questions',
+    '/api/applications/2/questions',
+  ]);
+});
+
+test('an application without questions says so', async () => {
+  serve({ status: 200, body: { questions: [] } });
+  open('/applications/1');
+  expect(await screen.findByRole('heading', { name: 'No questions yet' })).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('0 questions');
+  expect(screen.queryByRole('list', { name: 'Question list' })).not.toBeInTheDocument();
+});
+
+test('an application that no longer exists says so', async () => {
+  serve();
+  open('/applications/9');
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Application not found. It may already be deleted.',
+  );
+  // Nothing to name it by, so the title stays general.
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cover letter questions');
+});
+
+test('a failed request shows the reason, not an empty list', async () => {
+  serve({ status: 503, body: { error: 'Cannot connect to the database' } });
+  open('/applications/1');
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Could not load the questions. Cannot connect to the database',
+  );
+  expect(screen.queryByRole('heading', { name: 'No questions yet' })).not.toBeInTheDocument();
+});
+
+test('an unreachable server is reported, not shown as an empty list', async () => {
+  serve('offline');
+  open('/applications/1');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the questions.');
+  expect(screen.queryByRole('heading', { name: 'No questions yet' })).not.toBeInTheDocument();
+});
+
+test('the loading state is announced and marks the page busy', () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => new Promise<Response>(() => undefined)),
+  );
+  open('/applications/1');
+  expect(screen.getByRole('status')).toHaveTextContent('Loading questions');
+  expect(screen.getByRole('region', { name: 'Cover letter questions' })).toHaveAttribute(
+    'aria-busy',
+    'true',
+  );
+});
+
+test('display rules: answer length counts every character, spaces and line breaks included', () => {
+  expect(answerLength(null)).toBe(0);
+  expect(answerLength('가 나\n다')).toBe(5);
+  // One emoji is one character, not two UTF-16 units.
+  expect(answerLength('좋아요👍')).toBe(4);
+  expect(answerLengthText({ answer: null, charLimit: null })).toBe('0 characters');
+  expect(answerLengthText({ answer: '가'.repeat(1204), charLimit: null })).toBe('1,204 characters');
+  expect(answerLengthText({ answer: '가'.repeat(1500), charLimit: 1500 })).toBe(
+    '1,500 / 1,500 characters',
+  );
+  expect(answerLengthText({ answer: '가'.repeat(1620), charLimit: 1500 })).toBe(
+    '1,620 / 1,500 characters · 120 over the limit',
+  );
+});
