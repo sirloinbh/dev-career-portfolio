@@ -61,3 +61,11 @@ The #48 list under the "Cover letters" menu only showed applications. This chang
 ## Limits
 
 - The cover letter questions themselves are #50 and #51.
+
+## Review
+
+- Round 1 (PR #110): no bugs. Three nits.
+  - Applied: the status `select` now goes through its own setter that keeps only one of the three values, and the text setter no longer accepts `status`. Before, the type check let any string into `status` (safe only because the select offers three options).
+  - Not changed: nothing ties `applicationStatuses` to the backend list. The other item screens have the same pattern; the API refuses an unknown status.
+  - Not changed: `/applications/abc/edit` shows "Application not found", which is the intended answer.
+  - After the fix, `npm run check` passed again (backend 89 passed / 0 skipped, frontend 230 passed / 2 skipped).

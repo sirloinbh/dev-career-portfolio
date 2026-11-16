@@ -203,8 +203,13 @@ function ApplicationFields({
   const deadlineInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, submit, actions, pending } =
     useServerForm(applicationFieldErrors);
-  const set = (field: keyof ApplicationForm) => (value: string) =>
+  const set = (field: Exclude<keyof ApplicationForm, 'status'>) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
+  // Only one of the three values is kept, so the status stays typed instead of any string.
+  const setStatus = (value: string) => {
+    const status = applicationStatuses.find((item) => item === value);
+    if (status) setForm((current) => ({ ...current, status }));
+  };
 
   /** A one-line text input with its label and the server's message about it. */
   const textField = (
@@ -275,7 +280,7 @@ function ApplicationFields({
             id={fieldId('status')}
             className={cn(controlClass, 'h-9')}
             value={form.status}
-            onChange={(e) => set('status')(e.target.value)}
+            onChange={(e) => setStatus(e.target.value)}
             {...describe('status')}
           >
             {applicationStatuses.map((value) => (
