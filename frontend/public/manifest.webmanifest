@@ -1,7 +1,7 @@
 {
   "name": "Dev Career Portfolio",
   "short_name": "Dev Career",
-  "description": "A personal portfolio service for organizing my development career, projects, and technical growth. There is one user (me) and no login. Before any public exposure, design private access or authentication first.",
+  "description": "Organize your development career, projects, and technical growth.",
   "lang": "en",
   "start_url": "/",
   "scope": "/",
