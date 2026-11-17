@@ -1,5 +1,5 @@
 {
-  "centralSha": "1901a22201d9260771707565f0a9e48c58ac4548",
+  "centralSha": "a4fddb26b8350aee0cab6624a8a336a91fb88cd6",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -428,7 +428,7 @@
     },
     "frontend/public/manifest.webmanifest": {
       "mode": "full",
-      "sha256": "306e84a56db97d819d1d7c6beea3aed4ea18221bcb42689f88046197964731a6",
+      "sha256": "41bf7f92f2bb2a88841907378f0d83cc40303604795ac4e14305a0a61c92d2b4",
       "source": "templates/app/frontend/public/manifest.webmanifest.tmpl"
     },
     "frontend/public/offline.html": {
@@ -738,7 +738,7 @@
     },
     "knip.json": {
       "mode": "full",
-      "sha256": "d2bbbdec2d8561e99fae53f7465aa288df780f25a662a730a4243eef10d307ca",
+      "sha256": "98d012da1b99df680e21a39d1c4ea63cdebaffdf2ca1d7183aa554e2c019a93c",
       "source": "templates/app/knip.json"
     },
     "lighthouserc.json": {
