@@ -21,7 +21,7 @@ Issue: [#60](https://github.com/sirloinbh/dev-career-portfolio/issues/60) (paren
 
 ## Changes
 
-- `frontend/src/{application,career,certification,education,project,skill}-form.test.tsx`: after the heading of an edit page, the tests also wait for the form (`findByRole('button', { name: 'Save' })`) before reading a field. 12 places.
+- `frontend/src/{application,career,certification,education,project,skill}-form.test.tsx`: after the heading of an edit page, the tests also wait for the form (`findByRole('button', { name: 'Save' })`) before reading a field. 12 places in 6 files; with the cover letter test below, 13 tests.
 - `frontend/src/cover-letter-form.test.tsx`: the first test waits for the question list. The title comes from the application list, so it can show before the questions load.
 - `frontend/src/test/setup.ts`: the comment about #60 now gives the measured margin.
 
@@ -49,3 +49,7 @@ Issue: [#60](https://github.com/sirloinbh/dev-career-portfolio/issues/60) (paren
 ## Limits
 
 - Load varies from run to run. A PC much busier than 3 runs at once could still pass 15 s on a file's first test.
+
+## Review
+
+- Round 1 (PR #116): no bugs. The reviewer confirmed the race on all six edit pages and the separate question load on the cover letter form. It found no test with the same pattern left out, and confirmed "Save" is the only button with that name on those pages. Applied: the count above now says 12 places plus the cover letter test (13 tests), matching the commit message.
