@@ -194,6 +194,8 @@ test('a skill is edited with its saved values filled in', async () => {
   open('/skills');
   fireEvent.click(await screen.findByRole('link', { name: 'Edit Go' }));
   expect(await screen.findByRole('heading', { level: 1, name: 'Edit skill' })).toBeInTheDocument();
+  // The heading shows while the item loads; the fields come with the form.
+  await screen.findByRole('button', { name: 'Save' });
   expect(window.location.pathname).toBe('/skills/1/edit');
   expect(field('Skill name')).toHaveValue('Go');
   expect(field('Category')).toHaveValue('language');

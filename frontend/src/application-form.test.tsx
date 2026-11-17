@@ -244,6 +244,8 @@ test('an application is edited with its saved values filled in', async () => {
   expect(
     await screen.findByRole('heading', { level: 1, name: 'Edit application' }),
   ).toBeInTheDocument();
+  // The heading shows while the item loads; the fields come with the form.
+  await screen.findByRole('button', { name: 'Save' });
   expect(window.location.pathname).toBe('/applications/1/edit');
   expect(field('Company name')).toHaveValue('구름데이터');
   expect(field('Position')).toHaveValue('백엔드 개발');
@@ -271,6 +273,7 @@ test('clearing the deadline and the link stores no deadline and no link', async 
   const api = fakeApi([cloud]);
   open('/applications/1/edit');
   await screen.findByRole('heading', { level: 1, name: 'Edit application' });
+  await screen.findByRole('button', { name: 'Save' });
   type('Deadline', '');
   type('Job posting link', '');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));

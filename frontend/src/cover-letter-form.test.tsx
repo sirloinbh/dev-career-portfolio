@@ -111,6 +111,8 @@ test('Edit questions opens the form with the saved questions, and Save keeps the
     await screen.findByRole('heading', { level: 1, name: 'Edit questions: 구름데이터' }),
   ).toBeInTheDocument();
   expect(window.location.pathname).toBe('/applications/1/questions/edit');
+  // The title needs only the application list; the questions may still be loading.
+  await screen.findByRole('list', { name: 'Questions to save' });
   expect(fieldIn(1, 'Question')).toHaveValue('지원 동기');
   expect(fieldIn(1, 'Character limit')).toHaveValue('500');
   expect(fieldIn(1, 'Answer')).toHaveValue('데이터 플랫폼을 만들고 싶습니다.');
