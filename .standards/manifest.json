@@ -1,5 +1,5 @@
 {
-  "centralSha": "a4fddb26b8350aee0cab6624a8a336a91fb88cd6",
+  "centralSha": "aba0794137264f87dfdd25c776304fae7cb6ffba",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -738,7 +738,7 @@
     },
     "knip.json": {
       "mode": "full",
-      "sha256": "98d012da1b99df680e21a39d1c4ea63cdebaffdf2ca1d7183aa554e2c019a93c",
+      "sha256": "b3b9fcc9dd9c425b8d7043d4d5a306f32044317ee5c53ff6ce3c6700c2eefc85",
       "source": "templates/app/knip.json"
     },
     "lighthouserc.json": {
