@@ -53,3 +53,4 @@ Issue: [#60](https://github.com/sirloinbh/dev-career-portfolio/issues/60) (paren
 ## Review
 
 - Round 1 (PR #116): no bugs. The reviewer confirmed the race on all six edit pages and the separate question load on the cover letter form. It found no test with the same pattern left out, and confirmed "Save" is the only button with that name on those pages. Applied: the count above now says 12 places plus the cover letter test (13 tests), matching the commit message.
+- Round 2: no findings. The Save waits cannot match before the form loads, the cover letter list appears only after the questions load, and the counts and the `setup.ts` comment match the measurements.
