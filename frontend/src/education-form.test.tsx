@@ -220,6 +220,8 @@ test('an education is edited with its saved values filled in', async () => {
   expect(
     await screen.findByRole('heading', { level: 1, name: 'Edit education' }),
   ).toBeInTheDocument();
+  // The heading shows while the item loads; the fields come with the form.
+  await screen.findByRole('button', { name: 'Save' });
   expect(window.location.pathname).toBe('/educations/1/edit');
   expect(field('School')).toHaveValue('한빛대학교');
   expect(field('GPA')).toHaveValue('3.75');

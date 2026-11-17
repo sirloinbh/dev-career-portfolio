@@ -234,6 +234,8 @@ test('a project is edited with its saved values filled in', async () => {
   expect(
     await screen.findByRole('heading', { level: 1, name: 'Edit project' }),
   ).toBeInTheDocument();
+  // The heading shows while the item loads; the fields come with the form.
+  await screen.findByRole('button', { name: 'Save' });
   expect(window.location.pathname).toBe('/projects/1/edit');
   expect(field('Project name')).toHaveValue('사내 위키 검색');
   expect(field('End date')).toHaveValue('2021-08-31');
@@ -262,6 +264,7 @@ test('a refused edit shows the message under its field and stays on the form', a
   const api = fakeApi([past]);
   open('/projects/1/edit');
   await screen.findByRole('heading', { level: 1, name: 'Edit project' });
+  await screen.findByRole('button', { name: 'Save' });
   type('Start date', '2022-01-03');
   api.refuseNext('End date cannot be earlier than start date');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -278,6 +281,7 @@ test('saving a project deleted after the form opened says it is gone', async () 
   const api = fakeApi([past]);
   open('/projects/1/edit');
   await screen.findByRole('heading', { level: 1, name: 'Edit project' });
+  await screen.findByRole('button', { name: 'Save' });
   // Someone else deleted it after the form loaded.
   api.store.splice(0, 1);
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -290,6 +294,7 @@ test('clearing the end date of a finished project makes it Ongoing', async () =>
   const api = fakeApi([past]);
   open('/projects/1/edit');
   await screen.findByRole('heading', { level: 1, name: 'Edit project' });
+  await screen.findByRole('button', { name: 'Save' });
   type('End date', '');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const item = await screen.findByRole('listitem', { name: '사내 위키 검색' });

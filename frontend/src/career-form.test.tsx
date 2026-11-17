@@ -194,6 +194,8 @@ test('a career is edited with its saved values filled in', async () => {
   open('/careers');
   fireEvent.click(await screen.findByRole('link', { name: 'Edit 한빛소프트' }));
   expect(await screen.findByRole('heading', { level: 1, name: 'Edit career' })).toBeInTheDocument();
+  // The heading shows while the item loads; the fields come with the form.
+  await screen.findByRole('button', { name: 'Save' });
   expect(window.location.pathname).toBe('/careers/1/edit');
   expect(field('Company')).toHaveValue('한빛소프트');
   expect(field('Employment type')).toHaveValue('full_time');
@@ -213,6 +215,7 @@ test('clearing the end date of a past job makes it Current', async () => {
   const api = fakeApi([past]);
   open('/careers/1/edit');
   await screen.findByRole('heading', { level: 1, name: 'Edit career' });
+  await screen.findByRole('button', { name: 'Save' });
   type('End date', '');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const item = await screen.findByRole('listitem', { name: '한빛소프트' });

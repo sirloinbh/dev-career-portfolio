@@ -201,6 +201,8 @@ test('a certification is edited with its saved values filled in', async () => {
   expect(
     await screen.findByRole('heading', { level: 1, name: 'Edit certification' }),
   ).toBeInTheDocument();
+  // The heading shows while the item loads; the fields come with the form.
+  await screen.findByRole('button', { name: 'Save' });
   expect(window.location.pathname).toBe('/certifications/1/edit');
   expect(field('Certification name')).toHaveValue('TOEIC');
   expect(field('Issuer')).toHaveValue('ETS');
@@ -224,6 +226,7 @@ test('clearing the expiry date makes the certification No expiry', async () => {
   const api = fakeApi([toeic]);
   open('/certifications/1/edit');
   await screen.findByRole('heading', { level: 1, name: 'Edit certification' });
+  await screen.findByRole('button', { name: 'Save' });
   type('Expiry date', '');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const item = await screen.findByRole('listitem', { name: 'TOEIC' });
