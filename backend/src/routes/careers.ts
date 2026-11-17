@@ -8,7 +8,7 @@ import { calendarDate, objectBodyError, optionalText, requiredText } from './sha
 const employmentTypes = ['full_time', 'contract', 'intern', 'freelance', 'other'] as const;
 
 // An empty end date means the job is still held, so there is no separate status field.
-const careerInput = z
+export const careerInput = z
   .object(
     {
       company: requiredText('Company', 100),

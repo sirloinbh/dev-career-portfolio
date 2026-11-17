@@ -19,7 +19,7 @@ const gpaValue = (label: string) =>
     .nullable()
     .default(null);
 
-const educationInput = z
+export const educationInput = z
   .object(
     {
       school: requiredText('School', 100),

@@ -29,7 +29,7 @@ const technologies = z
   );
 
 // An empty end date means the project is still running, so there is no separate status field.
-const projectInput = z
+export const projectInput = z
   .object(
     {
       name: requiredText('Project name', 100),

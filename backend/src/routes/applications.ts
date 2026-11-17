@@ -14,7 +14,7 @@ import {
 // The list shows the statuses in this order (issue #36).
 const statuses = ['drafting', 'submitted', 'closed'] as const;
 
-const applicationInput = z.object(
+export const applicationInput = z.object(
   {
     companyName: requiredText('Company name', 100),
     position: optionalText('Position', 100),
