@@ -45,3 +45,4 @@ On this PC the OS hands out ports 1024–15000 (`netsh int ipv4 show dynamicport
   - Applied: the port counts in this record (82 in total, 19 in 1024–15000; it said 83 and 13), and `listenForFetch` now waits with `events.once`, which removes the `listening` and `error` listeners after either fires.
   - Not changed: the test checks that every listed port is refused, not that the list is complete. If a later Node blocks one more port, the retry would not know it, but that port would be one of about 14,000 the OS can hand out here.
   - After the fixes, the helper tests and the `withApi` tests passed again, and CI's `npm run check` ran on the final commit.
+- Round 2: the `events.once` change is correct (it rejects on `error` and removes both listeners), `withApi` behaves as before, and the counts match the list. No new findings.
