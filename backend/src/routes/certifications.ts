@@ -5,7 +5,7 @@ import { z } from 'zod/v4';
 import { HttpError, parseId } from '../standard/http.js';
 import { calendarDate, objectBodyError, optionalText, requiredText } from './shared.js';
 
-const certificationInput = z
+export const certificationInput = z
   .object(
     {
       name: requiredText('Certification name', 100),

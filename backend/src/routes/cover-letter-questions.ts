@@ -34,7 +34,7 @@ const questionInput = z.object(
   { error: 'Question must be an object' },
 );
 
-const questionsInput = z.object(
+export const questionsInput = z.object(
   {
     // The list order is the display order, so there is no separate order field.
     questions: z

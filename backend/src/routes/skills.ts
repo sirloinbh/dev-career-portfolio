@@ -17,7 +17,7 @@ const categories = [
 
 const proficiencyError = 'Proficiency must be a whole number from 1 to 5';
 
-const skillInput = z.object(
+export const skillInput = z.object(
   {
     name: requiredText('Skill name', 50),
     category: z.enum(categories, {
