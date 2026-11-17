@@ -1,3 +1,4 @@
+import { once } from 'node:events';
 import type { Server } from 'node:http';
 import type { TestContext } from 'node:test';
 
@@ -54,10 +55,8 @@ export async function listenForFetch(
 ) {
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const server = start();
-    await new Promise<void>((resolve, reject) => {
-      server.once('listening', resolve);
-      server.once('error', reject);
-    });
+    // Rejects on 'error', and leaves no listener behind either way.
+    await once(server, 'listening');
     const address = server.address();
     if (!address || typeof address === 'string') {
       await close(server);
