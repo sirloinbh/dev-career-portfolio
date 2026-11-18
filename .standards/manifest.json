@@ -1,5 +1,5 @@
 {
-  "centralSha": "d974c93bf39765824b671009f2b2d2cec202e6ee",
+  "centralSha": "5c449961854f81ed9802a621ae5ecd91bd6d72e2",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -339,7 +339,7 @@
     },
     "deploy/remote-deploy.sh": {
       "mode": "full",
-      "sha256": "8511fb3b2d01c82851c678d1f3c1334843c46f23805adfae2c61b0b7eb1d1b51",
+      "sha256": "9e2c72884f4ffab4e61642de8a8f8973f5044f4c9fd2e7e0a811c2a94a5b0b37",
       "source": "templates/app/deploy/remote-deploy.sh.tmpl"
     },
     "deploy/report.service": {
