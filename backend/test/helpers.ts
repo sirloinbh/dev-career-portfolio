@@ -68,7 +68,7 @@ export async function listenForFetch(
   throw new Error(`No port that fetch can reach after ${String(attempts)} attempts`);
 }
 
-type ApiResult = { status: number; data: Record<string, unknown> };
+type ApiResult = { status: number; data: Record<string, unknown>; headers: Headers };
 type ApiRequest = { method?: string; body?: unknown };
 
 export async function withApi(
@@ -94,6 +94,7 @@ export async function withApi(
       return {
         status: response.status,
         data: (text ? JSON.parse(text) : {}) as Record<string, unknown>,
+        headers: response.headers,
       };
     });
   } finally {
