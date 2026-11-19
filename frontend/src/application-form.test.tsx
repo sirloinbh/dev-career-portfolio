@@ -11,6 +11,7 @@ import {
   toApplicationInput,
 } from './application-data';
 import { toast } from './components/ui/sonner';
+import { findLive, queryLive } from './test/live';
 
 // All companies here are made up for the test.
 
@@ -222,7 +223,7 @@ test('each joined server message is shown under its own field, topmost focused',
     'Application status must be one of drafting, submitted, closed',
   );
   expect(field('Notes')).toHaveAccessibleDescription('Notes must be at most 2000 characters');
-  expect(screen.queryByRole('alert')).toBeEmptyDOMElement();
+  expect(queryLive('alert')).toBeNull();
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {
@@ -231,7 +232,7 @@ test('a message that names no field is shown below the form and focus returns to
   await screen.findByRole('heading', { level: 1, name: 'Add application' });
   api.refuseNext('Input contains a character that is not allowed (NUL)');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Input contains a character that is not allowed (NUL)',
   );
   await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
@@ -289,7 +290,7 @@ test('clearing the deadline and the link stores no deadline and no link', async 
 test('editing an application that no longer exists says so', async () => {
   fakeApi([]);
   open('/applications/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('Application not found');
+  expect(await findLive('alert')).toHaveTextContent('Application not found');
 });
 
 test('the delete dialog counts the cover letter questions that go with the application', async () => {

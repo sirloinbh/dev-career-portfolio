@@ -9,6 +9,7 @@ import {
   issuerText,
 } from './certification-data';
 import { serviceToday } from './service-date';
+import { findLive, getLive } from './test/live';
 
 // All certifications here are made up for the test.
 
@@ -92,7 +93,7 @@ test('certifications are listed in the API order with issuer, score and dates', 
   serve({ status: 200, body: { certifications: [toeic, cloud, engineer] } });
   openCertifications();
   await screen.findByRole('list', { name: 'Certification list' });
-  expect(screen.getByRole('status')).toHaveTextContent('3 entries');
+  expect(getLive('status')).toHaveTextContent('3 entries');
   expect(screen.getByRole('region', { name: 'Certifications' })).toHaveAttribute(
     'aria-busy',
     'false',
@@ -139,23 +140,21 @@ test('an empty list explains what will appear', async () => {
   serve({ status: 200, body: { certifications: [] } });
   openCertifications();
   expect(await screen.findByText('No certifications added yet')).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('0 entries');
+  expect(getLive('status')).toHaveTextContent('0 entries');
   expect(screen.queryByRole('list', { name: 'Certification list' })).not.toBeInTheDocument();
 });
 
 test('a failed request shows an English error with the reason', async () => {
   serve({ status: 500, body: { error: 'Server error' } });
   openCertifications();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Could not load certifications. Server error',
-  );
+  expect(await findLive('alert')).toHaveTextContent('Could not load certifications. Server error');
   expect(screen.queryByText('No certifications added yet')).not.toBeInTheDocument();
 });
 
 test('an unreachable server is reported, not shown as an empty list', async () => {
   serve('offline');
   openCertifications();
-  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load certifications.');
+  expect(await findLive('alert')).toHaveTextContent('Could not load certifications.');
   expect(screen.queryByText('No certifications added yet')).not.toBeInTheDocument();
 });
 
@@ -165,7 +164,7 @@ test('the loading state is announced and marks the page busy', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openCertifications();
-  expect(screen.getByRole('status')).toHaveTextContent('Loading certifications');
+  expect(getLive('status')).toHaveTextContent('Loading certifications');
   expect(screen.getByRole('region', { name: 'Certifications' })).toHaveAttribute(
     'aria-busy',
     'true',

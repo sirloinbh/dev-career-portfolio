@@ -11,6 +11,7 @@ import {
   toProjectForm,
   toProjectInput,
 } from './project-data';
+import { findLive, queryLive } from './test/live';
 
 // All projects here are made up for the test.
 
@@ -194,7 +195,7 @@ test('a repeated message about technologies is shown once, topmost field focused
   expect(field('Technologies')).toHaveAccessibleDescription(
     'Separate items with commas. Up to 30 items, 50 characters each. Technologies items must be at most 50 characters',
   );
-  expect(screen.queryByRole('alert')).toBeEmptyDOMElement();
+  expect(queryLive('alert')).toBeNull();
 });
 
 test('a long list of the same message keeps the count of the ones not shown', () => {
@@ -223,7 +224,7 @@ test('a message that names no field is shown below the form and focus returns to
   await screen.findByRole('heading', { level: 1, name: 'Add project' });
   api.refuseNext('Request body must be a JSON object');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Request body must be a JSON object');
+  expect(await findLive('alert')).toHaveTextContent('Request body must be a JSON object');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
@@ -285,7 +286,7 @@ test('saving a project deleted after the form opened says it is gone', async () 
   // Someone else deleted it after the form loaded.
   api.store.splice(0, 1);
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Project not found');
+  expect(await findLive('alert')).toHaveTextContent('Project not found');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toHaveFocus());
   expect(window.location.pathname).toBe('/projects/1/edit');
 });
@@ -305,7 +306,7 @@ test('clearing the end date of a finished project makes it Ongoing', async () =>
 test('editing a project that no longer exists says so', async () => {
   fakeApi([]);
   open('/projects/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('Project not found');
+  expect(await findLive('alert')).toHaveTextContent('Project not found');
 });
 
 test('cancelling the delete dialog keeps the project', async () => {

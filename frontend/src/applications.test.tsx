@@ -4,6 +4,7 @@ import { expect, test, vi } from 'vitest';
 import { App } from './app';
 import { type Application, deadlineText } from './application-data';
 import { daysUntil } from './service-date';
+import { findLive, getLive } from './test/live';
 
 // All companies here are made up for the test.
 
@@ -82,7 +83,7 @@ test('applications keep the API order and show status, position, deadline and me
   serve({ status: 200, body: { applications: [near, today, open, sent, done] } });
   openApplications();
   await screen.findByRole('list', { name: 'Application list' });
-  expect(screen.getByRole('status')).toHaveTextContent('5 entries');
+  expect(getLive('status')).toHaveTextContent('5 entries');
   expect(screen.getByRole('region', { name: 'Cover letters' })).toHaveAttribute(
     'aria-busy',
     'false',
@@ -144,23 +145,21 @@ test('an empty list explains what will appear', async () => {
   serve({ status: 200, body: { applications: [] } });
   openApplications();
   expect(await screen.findByText('No applications added yet')).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('0 entries');
+  expect(getLive('status')).toHaveTextContent('0 entries');
   expect(screen.queryByRole('list', { name: 'Application list' })).not.toBeInTheDocument();
 });
 
 test('a failed request shows an English error with the reason', async () => {
   serve({ status: 500, body: { error: 'Server error' } });
   openApplications();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Could not load applications. Server error',
-  );
+  expect(await findLive('alert')).toHaveTextContent('Could not load applications. Server error');
   expect(screen.queryByText('No applications added yet')).not.toBeInTheDocument();
 });
 
 test('an unreachable server is reported, not shown as an empty list', async () => {
   serve('offline');
   openApplications();
-  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load applications.');
+  expect(await findLive('alert')).toHaveTextContent('Could not load applications.');
   expect(screen.queryByText('No applications added yet')).not.toBeInTheDocument();
 });
 
@@ -170,7 +169,7 @@ test('the loading state is announced and marks the page busy', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openApplications();
-  expect(screen.getByRole('status')).toHaveTextContent('Loading applications');
+  expect(getLive('status')).toHaveTextContent('Loading applications');
   expect(screen.getByRole('region', { name: 'Cover letters' })).toHaveAttribute(
     'aria-busy',
     'true',

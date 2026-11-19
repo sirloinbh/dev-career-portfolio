@@ -3,6 +3,7 @@ import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
 import { groupSkills, proficiencyText, type Skill } from './skill-data';
+import { findLive, getLive } from './test/live';
 
 // All skills here are made up for the test.
 
@@ -64,7 +65,7 @@ test('skills are grouped by category in the fixed order, empty categories left o
   serve({ status: 200, body: { skills: [docker, typescript, go, postgres] } });
   openSkills();
   await screen.findByRole('heading', { level: 2, name: 'Language 2 entries' });
-  expect(screen.getByRole('status')).toHaveTextContent('4 entries');
+  expect(getLive('status')).toHaveTextContent('4 entries');
   expect(screen.getByRole('region', { name: 'Skills' })).toHaveAttribute('aria-busy', 'false');
   expect(
     screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
@@ -112,7 +113,7 @@ test('a placeholder shows while the list loads', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openSkills();
-  expect(screen.getByRole('status')).toHaveTextContent('Loading skills');
+  expect(getLive('status')).toHaveTextContent('Loading skills');
   expect(screen.getByRole('region', { name: 'Skills' })).toHaveAttribute('aria-busy', 'true');
 });
 
@@ -120,14 +121,14 @@ test('an empty list explains what will appear', async () => {
   serve({ status: 200, body: { skills: [] } });
   openSkills();
   expect(await screen.findByRole('heading', { name: 'No skills added yet' })).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('0 entries');
+  expect(getLive('status')).toHaveTextContent('0 entries');
   expect(screen.queryByRole('heading', { level: 2, name: /entr(y|ies)$/ })).not.toBeInTheDocument();
 });
 
 test('a server error is shown in English', async () => {
   serve({ status: 503, body: { error: 'Cannot connect to the database' } });
   openSkills();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load skills. Cannot connect to the database',
   );
 });
@@ -135,7 +136,7 @@ test('a server error is shown in English', async () => {
 test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openSkills();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load skills. Could not process the request',
   );
 });
@@ -143,7 +144,7 @@ test('an error without a server message still says what failed', async () => {
 test('an unreachable server is shown in English', async () => {
   serve('offline');
   openSkills();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load skills. Cannot reach the server',
   );
 });

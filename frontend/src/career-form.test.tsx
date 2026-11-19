@@ -10,6 +10,7 @@ import {
   toCareerInput,
 } from './career-data';
 import { toast } from './components/ui/sonner';
+import { findLive, queryLive } from './test/live';
 
 // All companies here are made up for the test.
 
@@ -174,7 +175,7 @@ test('each joined server message is shown under its own field, topmost focused',
   expect(field('Start date')).toHaveAccessibleDescription(
     'Start date must be a date in YYYY-MM-DD format',
   );
-  expect(screen.queryByRole('alert')).toBeEmptyDOMElement();
+  expect(queryLive('alert')).toBeNull();
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {
@@ -183,7 +184,7 @@ test('a message that names no field is shown below the form and focus returns to
   await screen.findByRole('heading', { level: 1, name: 'Add career' });
   api.refuseNext('Input contains a character that is not allowed (NUL)');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Input contains a character that is not allowed (NUL)',
   );
   await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
@@ -226,7 +227,7 @@ test('clearing the end date of a past job makes it Current', async () => {
 test('editing a career that no longer exists says so', async () => {
   fakeApi([]);
   open('/careers/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('Career not found');
+  expect(await findLive('alert')).toHaveTextContent('Career not found');
 });
 
 test('cancelling the delete dialog keeps the career', async () => {
