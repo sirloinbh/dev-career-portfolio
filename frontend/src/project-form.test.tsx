@@ -194,7 +194,7 @@ test('a repeated message about technologies is shown once, topmost field focused
   expect(field('Technologies')).toHaveAccessibleDescription(
     'Separate items with commas. Up to 30 items, 50 characters each. Technologies items must be at most 50 characters',
   );
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).toBeEmptyDOMElement();
 });
 
 test('a long list of the same message keeps the count of the ones not shown', () => {

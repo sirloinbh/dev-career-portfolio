@@ -164,7 +164,7 @@ test('a taken name (409) is shown under the name field, not as a general error',
   await waitFor(() => expect(field('Skill name')).toHaveFocus());
   expect(field('Skill name')).toHaveAttribute('aria-invalid', 'true');
   expect(field('Skill name')).toHaveAccessibleDescription('This skill is already registered');
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).toBeEmptyDOMElement();
 });
 
 test('a 409 that names no field still goes below the form', async () => {

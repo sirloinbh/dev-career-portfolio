@@ -174,7 +174,7 @@ test('each joined server message is shown under its own field, topmost focused',
   expect(field('Start date')).toHaveAccessibleDescription(
     'Start date must be a date in YYYY-MM-DD format',
   );
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).toBeEmptyDOMElement();
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {

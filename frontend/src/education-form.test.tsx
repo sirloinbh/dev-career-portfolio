@@ -406,7 +406,7 @@ test('each joined server message is shown under its own field', async () => {
   expect(field('Enrollment date')).toHaveAccessibleDescription(
     'Enrollment date must be a date in YYYY-MM-DD format',
   );
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).toBeEmptyDOMElement();
 });
 
 test('form values become the API input and back', () => {

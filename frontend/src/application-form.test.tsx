@@ -222,7 +222,7 @@ test('each joined server message is shown under its own field, topmost focused',
     'Application status must be one of drafting, submitted, closed',
   );
   expect(field('Notes')).toHaveAccessibleDescription('Notes must be at most 2000 characters');
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).toBeEmptyDOMElement();
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {
