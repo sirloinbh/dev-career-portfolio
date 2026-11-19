@@ -3,6 +3,7 @@ import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
 import { type Education, gpaText, periodText } from './education-data';
+import { findLive, getLive } from './test/live';
 
 // All schools here are made up for the test.
 
@@ -72,7 +73,7 @@ test('educations are listed in the order the API gives, not re-sorted', async ()
   serve({ status: 200, body: { educations: [university, graduate] } });
   openEducations();
   const list = await screen.findByRole('list', { name: 'Education list' });
-  expect(screen.getByRole('status')).toHaveTextContent('2 entries');
+  expect(getLive('status')).toHaveTextContent('2 entries');
   const items = within(list).getAllByRole('listitem');
   expect(items.map((item) => within(item).getByRole('heading', { level: 2 }).textContent)).toEqual([
     '한빛대학교',
@@ -107,7 +108,7 @@ test('a placeholder shows while the list loads', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openEducations();
-  expect(screen.getByRole('status')).toHaveTextContent('Loading education');
+  expect(getLive('status')).toHaveTextContent('Loading education');
 });
 
 test('an empty list explains what will appear', async () => {
@@ -122,7 +123,7 @@ test('an empty list explains what will appear', async () => {
 test('a server error is shown in English', async () => {
   serve({ status: 503, body: { error: 'Cannot connect to the database' } });
   openEducations();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load education. Cannot connect to the database',
   );
 });
@@ -130,7 +131,7 @@ test('a server error is shown in English', async () => {
 test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openEducations();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load education. Could not process the request',
   );
 });
@@ -138,7 +139,7 @@ test('an error without a server message still says what failed', async () => {
 test('an unreachable server is shown in English', async () => {
   serve('offline');
   openEducations();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load education. Cannot reach the server',
   );
 });

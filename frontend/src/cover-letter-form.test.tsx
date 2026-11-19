@@ -10,6 +10,7 @@ import {
   toQuestionsInput,
   typedLimit,
 } from './cover-letter-data';
+import { findLive } from './test/live';
 
 // All companies, questions, and answers here are made up for the test.
 
@@ -291,7 +292,7 @@ test('a failed save keeps everything typed on screen and says why', async () => 
   type(fieldIn(3, 'Question'), '새 문항');
   api.refuseNext(503, 'Cannot connect to the database');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Cannot connect to the database');
+  expect(await findLive('alert')).toHaveTextContent('Cannot connect to the database');
   expect(window.location.pathname).toBe('/applications/1/questions/edit');
   expect(fieldIn(1, 'Answer')).toHaveValue('고친 답변');
   expect(fieldIn(3, 'Question')).toHaveValue('새 문항');
@@ -307,7 +308,7 @@ test('a list another tab changed (409) is reported below the form, not under a f
   await openForm();
   api.refuseNext(409, 'Some questions do not belong to this application. Please reload the list');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Some questions do not belong to this application. Please reload the list',
   );
   expect(fieldIn(1, 'Question')).not.toHaveAttribute('aria-invalid');
@@ -346,7 +347,7 @@ test('an application without questions can start one, or save none', async () =>
 test('the form for an application that no longer exists says so', async () => {
   fakeApi([]);
   open('/applications/9/questions/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('Application not found');
+  expect(await findLive('alert')).toHaveTextContent('Application not found');
   expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
 });
 

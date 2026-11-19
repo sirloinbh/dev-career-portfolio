@@ -10,6 +10,7 @@ import {
   toEducationForm,
   toEducationInput,
 } from './education-data';
+import { findLive, queryLive } from './test/live';
 
 // All schools here are made up for the test.
 
@@ -158,7 +159,7 @@ test('a message that names no field is shown below the form', async () => {
   await screen.findByRole('heading', { level: 1, name: 'Add education' });
   api.refuseNext('Input contains a character that is not allowed (NUL)');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Input contains a character that is not allowed (NUL)',
   );
 });
@@ -239,7 +240,7 @@ test('an education is edited with its saved values filled in', async () => {
 test('editing an education that no longer exists says so', async () => {
   fakeApi([]);
   open('/educations/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('Education not found');
+  expect(await findLive('alert')).toHaveTextContent('Education not found');
 });
 
 test('cancelling the delete dialog keeps the education', async () => {
@@ -376,7 +377,7 @@ test('after a message that names no field, focus returns to the submit button', 
   await screen.findByRole('heading', { level: 1, name: 'Add education' });
   api.refuseNext('Input contains a character that is not allowed (NUL)');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await screen.findByRole('alert');
+  await findLive('alert');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
@@ -406,7 +407,7 @@ test('each joined server message is shown under its own field', async () => {
   expect(field('Enrollment date')).toHaveAccessibleDescription(
     'Enrollment date must be a date in YYYY-MM-DD format',
   );
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(queryLive('alert')).toBeNull();
 });
 
 test('form values become the API input and back', () => {

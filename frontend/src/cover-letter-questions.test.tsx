@@ -4,6 +4,7 @@ import { expect, test, vi } from 'vitest';
 import { App } from './app';
 import type { Application } from './application-data';
 import { answerLength, answerLengthText, type CoverLetterQuestion } from './cover-letter-data';
+import { findLive, getLive } from './test/live';
 
 // All companies, questions, and answers here are made up for the test.
 
@@ -93,7 +94,7 @@ test('the Questions link on a list row opens that application’s questions in s
   expect(window.location.pathname).toBe('/applications/1');
   await screen.findByRole('list', { name: 'Question list' });
   expect(titles()).toEqual(['지원 동기를\n적어 주세요', '협업 경험', '입사 후 포부']);
-  expect(screen.getByRole('status')).toHaveTextContent('3 questions');
+  expect(getLive('status')).toHaveTextContent('3 questions');
 
   const [first, second, third] = within(
     screen.getByRole('list', { name: 'Question list' }),
@@ -166,14 +167,14 @@ test('an application without questions says so', async () => {
   serve({ status: 200, body: { questions: [] } });
   open('/applications/1');
   expect(await screen.findByRole('heading', { name: 'No questions yet' })).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('0 questions');
+  expect(getLive('status')).toHaveTextContent('0 questions');
   expect(screen.queryByRole('list', { name: 'Question list' })).not.toBeInTheDocument();
 });
 
 test('an application that no longer exists says so', async () => {
   serve();
   open('/applications/9');
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Application not found. It may already be deleted.',
   );
   // Nothing to name it by, so the title stays general.
@@ -183,7 +184,7 @@ test('an application that no longer exists says so', async () => {
 test('a failed request shows the reason, not an empty list', async () => {
   serve({ status: 503, body: { error: 'Cannot connect to the database' } });
   open('/applications/1');
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load the questions. Cannot connect to the database',
   );
   expect(screen.queryByRole('heading', { name: 'No questions yet' })).not.toBeInTheDocument();
@@ -192,7 +193,7 @@ test('a failed request shows the reason, not an empty list', async () => {
 test('an unreachable server is reported, not shown as an empty list', async () => {
   serve('offline');
   open('/applications/1');
-  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the questions.');
+  expect(await findLive('alert')).toHaveTextContent('Could not load the questions.');
   expect(screen.queryByRole('heading', { name: 'No questions yet' })).not.toBeInTheDocument();
 });
 
@@ -202,7 +203,7 @@ test('the loading state is announced and marks the page busy', () => {
     vi.fn(() => new Promise<Response>(() => undefined)),
   );
   open('/applications/1');
-  expect(screen.getByRole('status')).toHaveTextContent('Loading questions');
+  expect(getLive('status')).toHaveTextContent('Loading questions');
   expect(screen.getByRole('region', { name: 'Cover letter questions' })).toHaveAttribute(
     'aria-busy',
     'true',

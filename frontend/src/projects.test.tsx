@@ -3,6 +3,7 @@ import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
 import { type Project, projectPeriodText, projectRoleText } from './project-data';
+import { findLive, getLive } from './test/live';
 import { webLink } from './web-link';
 
 // All projects here are made up for the test.
@@ -82,7 +83,7 @@ test('projects are listed in the order the API gives, not re-sorted', async () =
   serve({ status: 200, body: { projects: [finished, running] } });
   openProjects();
   const list = await screen.findByRole('list', { name: 'Project list' });
-  expect(screen.getByRole('status')).toHaveTextContent('2 entries');
+  expect(getLive('status')).toHaveTextContent('2 entries');
   expect(screen.getByRole('region', { name: 'Projects' })).toHaveAttribute('aria-busy', 'false');
   expect(
     rowsOf(list).map((item) => within(item).getByRole('heading', { level: 2 }).textContent),
@@ -161,7 +162,7 @@ test('a placeholder shows while the list loads', () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   openProjects();
-  expect(screen.getByRole('status')).toHaveTextContent('Loading projects');
+  expect(getLive('status')).toHaveTextContent('Loading projects');
   expect(screen.getByRole('region', { name: 'Projects' })).toHaveAttribute('aria-busy', 'true');
 });
 
@@ -169,14 +170,14 @@ test('an empty list explains what will appear', async () => {
   serve({ status: 200, body: { projects: [] } });
   openProjects();
   expect(await screen.findByRole('heading', { name: 'No projects added yet' })).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent('0 entries');
+  expect(getLive('status')).toHaveTextContent('0 entries');
   expect(screen.queryByRole('list', { name: 'Project list' })).not.toBeInTheDocument();
 });
 
 test('a server error is shown in English', async () => {
   serve({ status: 503, body: { error: 'Cannot connect to the database' } });
   openProjects();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load projects. Cannot connect to the database',
   );
 });
@@ -184,7 +185,7 @@ test('a server error is shown in English', async () => {
 test('an error without a server message still says what failed', async () => {
   serve({ status: 502, body: {} });
   openProjects();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load projects. Could not process the request',
   );
 });
@@ -192,7 +193,7 @@ test('an error without a server message still says what failed', async () => {
 test('an unreachable server is shown in English', async () => {
   serve('offline');
   openProjects();
-  expect(await screen.findByRole('alert')).toHaveTextContent(
+  expect(await findLive('alert')).toHaveTextContent(
     'Could not load projects. Cannot reach the server',
   );
 });

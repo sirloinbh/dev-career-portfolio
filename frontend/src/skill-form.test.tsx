@@ -11,6 +11,7 @@ import {
   toSkillForm,
   toSkillInput,
 } from './skill-data';
+import { findLive, queryLive } from './test/live';
 
 // All skills here are made up for the test.
 
@@ -164,7 +165,7 @@ test('a taken name (409) is shown under the name field, not as a general error',
   await waitFor(() => expect(field('Skill name')).toHaveFocus());
   expect(field('Skill name')).toHaveAttribute('aria-invalid', 'true');
   expect(field('Skill name')).toHaveAccessibleDescription('This skill is already registered');
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(queryLive('alert')).toBeNull();
 });
 
 test('a 409 that names no field still goes below the form', async () => {
@@ -174,7 +175,7 @@ test('a 409 that names no field still goes below the form', async () => {
   // The generic unique-violation answer (backend/src/standard/http.ts).
   api.refuseNext(409, 'This item already exists');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('This item already exists');
+  expect(await findLive('alert')).toHaveTextContent('This item already exists');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
   expect(field('Skill name')).not.toHaveAttribute('aria-invalid');
 });
@@ -185,7 +186,7 @@ test('a message that names no field is shown below the form and focus returns to
   await screen.findByRole('heading', { level: 1, name: 'Add skill' });
   api.refuseNext(400, 'Request body must be a JSON object');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Request body must be a JSON object');
+  expect(await findLive('alert')).toHaveTextContent('Request body must be a JSON object');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
@@ -221,7 +222,7 @@ test('a skill is edited with its saved values filled in', async () => {
 test('editing a skill that no longer exists says so', async () => {
   fakeApi([]);
   open('/skills/9/edit');
-  expect(await screen.findByRole('alert')).toHaveTextContent('Skill not found');
+  expect(await findLive('alert')).toHaveTextContent('Skill not found');
 });
 
 test('cancelling the delete dialog keeps the skill', async () => {
