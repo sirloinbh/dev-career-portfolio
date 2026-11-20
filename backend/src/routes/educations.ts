@@ -77,23 +77,20 @@ export const educationInput = z
     }
   });
 
-type EducationRow = { id: string } & Record<string, unknown>;
+type EducationRow = { id: number } & Record<string, unknown>;
 
 // bigint and numeric arrive as strings from pg, so the API casts them to JSON numbers here.
-const columns = `id::text AS id, school, major, degree, status, start_date AS "startDate",
+const columns = `id, school, major, degree, status, start_date AS "startDate",
   end_date AS "endDate", gpa::float8 AS gpa, gpa_scale::float8 AS "gpaScale", memo`;
-
-const toEducation = (row: EducationRow) => ({ ...row, id: Number(row.id) });
 
 const notFoundError = () => new HttpError(404, 'Education not found');
 
 export function registerEducationRoutes(app: Express, pool: Pool) {
   app.get('/api/educations', async (_req, res) => {
     const { rows } = await pool.query<EducationRow>(
-      // educations.id, not id: a bare name would pick the text output column and sort "10" before "9".
       `SELECT ${columns} FROM educations ORDER BY start_date DESC, educations.id DESC`,
     );
-    res.json({ educations: rows.map(toEducation) });
+    res.json({ educations: rows });
   });
 
   app.post('/api/educations', async (req, res) => {
@@ -114,7 +111,7 @@ export function registerEducationRoutes(app: Express, pool: Pool) {
         input.memo,
       ],
     );
-    res.status(201).json({ education: toEducation(rows[0]) });
+    res.status(201).json({ education: rows[0] });
   });
 
   app.put('/api/educations/:id', async (req, res) => {
@@ -140,7 +137,7 @@ export function registerEducationRoutes(app: Express, pool: Pool) {
       ],
     );
     if (rows.length === 0) throw notFoundError();
-    res.json({ education: toEducation(rows[0]) });
+    res.json({ education: rows[0] });
   });
 
   app.delete('/api/educations/:id', async (req, res) => {

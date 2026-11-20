@@ -29,13 +29,10 @@ export const applicationInput = z.object(
   objectBodyError,
 );
 
-type ApplicationRow = { id: string } & Record<string, unknown>;
+type ApplicationRow = { id: number } & Record<string, unknown>;
 
-// bigint arrives as a string from pg, so the API casts it to a JSON number here.
-const columns = `id::text AS id, company_name AS "companyName", position,
+const columns = `id, company_name AS "companyName", position,
   posting_url AS "postingUrl", deadline, status, memo`;
-
-const toApplication = (row: ApplicationRow) => ({ ...row, id: Number(row.id) });
 
 const notFoundError = () => new HttpError(404, 'Application not found');
 
@@ -44,7 +41,6 @@ export function registerApplicationRoutes(app: Express, pool: Pool, today: () =>
     // Status in the fixed order above. Inside drafting, a deadline already past (before today in
     // the service time zone; due today is not past, #83) goes after the rest, no deadline included.
     // Then the nearest deadline (none last), then the one added last.
-    // applications.id, not id: a bare name would pick the text output column.
     const { rows } = await pool.query<ApplicationRow>(
       `SELECT ${columns} FROM applications
        ORDER BY array_position($1::text[], status),
@@ -52,7 +48,7 @@ export function registerApplicationRoutes(app: Express, pool: Pool, today: () =>
          deadline ASC NULLS LAST, applications.id DESC`,
       [statuses, today()],
     );
-    res.json({ applications: rows.map(toApplication) });
+    res.json({ applications: rows });
   });
 
   app.post('/api/applications', async (req, res) => {
@@ -70,7 +66,7 @@ export function registerApplicationRoutes(app: Express, pool: Pool, today: () =>
         input.memo,
       ],
     );
-    res.status(201).json({ application: toApplication(rows[0]) });
+    res.status(201).json({ application: rows[0] });
   });
 
   app.put('/api/applications/:id', async (req, res) => {
@@ -93,7 +89,7 @@ export function registerApplicationRoutes(app: Express, pool: Pool, today: () =>
       ],
     );
     if (rows.length === 0) throw notFoundError();
-    res.json({ application: toApplication(rows[0]) });
+    res.json({ application: rows[0] });
   });
 
   app.delete('/api/applications/:id', async (req, res) => {

@@ -55,24 +55,20 @@ export const projectInput = z
     }
   });
 
-type ProjectRow = { id: string } & Record<string, unknown>;
+type ProjectRow = { id: number } & Record<string, unknown>;
 
-// bigint arrives as a string from pg, so the API casts it to a JSON number here.
-const columns = `id::text AS id, name, organization, start_date AS "startDate", end_date AS "endDate",
+const columns = `id, name, organization, start_date AS "startDate", end_date AS "endDate",
   role, summary, contributions, technologies, repository_url AS "repositoryUrl",
   service_url AS "serviceUrl"`;
-
-const toProject = (row: ProjectRow) => ({ ...row, id: Number(row.id) });
 
 const notFoundError = () => new HttpError(404, 'Project not found');
 
 export function registerProjectRoutes(app: Express, pool: Pool) {
   app.get('/api/projects', async (_req, res) => {
     const { rows } = await pool.query<ProjectRow>(
-      // projects.id, not id: a bare name would pick the text output column and sort "10" before "9".
       `SELECT ${columns} FROM projects ORDER BY start_date DESC, projects.id DESC`,
     );
-    res.json({ projects: rows.map(toProject) });
+    res.json({ projects: rows });
   });
 
   app.post('/api/projects', async (req, res) => {
@@ -95,7 +91,7 @@ export function registerProjectRoutes(app: Express, pool: Pool) {
         input.serviceUrl,
       ],
     );
-    res.status(201).json({ project: toProject(rows[0]) });
+    res.status(201).json({ project: rows[0] });
   });
 
   app.put('/api/projects/:id', async (req, res) => {
@@ -123,7 +119,7 @@ export function registerProjectRoutes(app: Express, pool: Pool) {
       ],
     );
     if (rows.length === 0) throw notFoundError();
-    res.json({ project: toProject(rows[0]) });
+    res.json({ project: rows[0] });
   });
 
   app.delete('/api/projects/:id', async (req, res) => {

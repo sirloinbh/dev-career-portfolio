@@ -34,23 +34,19 @@ export const careerInput = z
     }
   });
 
-type CareerRow = { id: string } & Record<string, unknown>;
+type CareerRow = { id: number } & Record<string, unknown>;
 
-// bigint arrives as a string from pg, so the API casts it to a JSON number here.
-const columns = `id::text AS id, company, department, position, employment_type AS "employmentType",
+const columns = `id, company, department, position, employment_type AS "employmentType",
   start_date AS "startDate", end_date AS "endDate", duties, achievements`;
-
-const toCareer = (row: CareerRow) => ({ ...row, id: Number(row.id) });
 
 const notFoundError = () => new HttpError(404, 'Career not found');
 
 export function registerCareerRoutes(app: Express, pool: Pool) {
   app.get('/api/careers', async (_req, res) => {
     const { rows } = await pool.query<CareerRow>(
-      // careers.id, not id: a bare name would pick the text output column and sort "10" before "9".
       `SELECT ${columns} FROM careers ORDER BY start_date DESC, careers.id DESC`,
     );
-    res.json({ careers: rows.map(toCareer) });
+    res.json({ careers: rows });
   });
 
   app.post('/api/careers', async (req, res) => {
@@ -71,7 +67,7 @@ export function registerCareerRoutes(app: Express, pool: Pool) {
         input.achievements,
       ],
     );
-    res.status(201).json({ career: toCareer(rows[0]) });
+    res.status(201).json({ career: rows[0] });
   });
 
   app.put('/api/careers/:id', async (req, res) => {
@@ -96,7 +92,7 @@ export function registerCareerRoutes(app: Express, pool: Pool) {
       ],
     );
     if (rows.length === 0) throw notFoundError();
-    res.json({ career: toCareer(rows[0]) });
+    res.json({ career: rows[0] });
   });
 
   app.delete('/api/careers/:id', async (req, res) => {

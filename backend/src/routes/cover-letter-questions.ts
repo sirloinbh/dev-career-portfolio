@@ -64,12 +64,9 @@ function parseQuestions(body: unknown): QuestionsInput {
   );
 }
 
-type QuestionRow = { id: string } & Record<string, unknown>;
+type QuestionRow = { id: number } & Record<string, unknown>;
 
-// bigint arrives as a string from pg, so the API casts it to a JSON number here.
-const columns = `id::text AS id, question, answer, char_limit AS "charLimit"`;
-
-const toQuestion = (row: QuestionRow) => ({ ...row, id: Number(row.id) });
+const columns = `id, question, answer, char_limit AS "charLimit"`;
 
 const applicationNotFound = () => new HttpError(404, 'Application not found');
 
@@ -79,7 +76,7 @@ async function listQuestions(db: Pool | PoolClient, applicationId: number) {
      WHERE application_id = $1 ORDER BY display_order`,
     [applicationId],
   );
-  return rows.map(toQuestion);
+  return rows;
 }
 
 // Every write to one application's questions takes this row lock first, so list saves and single
@@ -130,11 +127,11 @@ export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
 
       // FOR UPDATE as well: even a writer that skipped the application lock could not delete a
       // question between this read and the UPDATE below, which would silently drop its edits.
-      const existing = await client.query<{ id: string }>(
-        'SELECT id::text AS id FROM cover_letter_questions WHERE application_id = $1 FOR UPDATE',
+      const existing = await client.query<{ id: number }>(
+        'SELECT id FROM cover_letter_questions WHERE application_id = $1 FOR UPDATE',
         [applicationId],
       );
-      const known = new Set(existing.rows.map((row) => Number(row.id)));
+      const known = new Set(existing.rows.map((row) => row.id));
       const keptIds = questions.flatMap((item) => (item.id === undefined ? [] : [item.id]));
       // Another application's question, or one deleted in another tab since the list was loaded.
       if (keptIds.some((id) => !known.has(id))) {

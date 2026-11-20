@@ -33,12 +33,9 @@ export const skillInput = z.object(
   objectBodyError,
 );
 
-type SkillRow = { id: string } & Record<string, unknown>;
+type SkillRow = { id: number } & Record<string, unknown>;
 
-// bigint arrives as a string from pg, so the API casts it to a JSON number here.
-const columns = 'id::text AS id, name, category, proficiency, memo';
-
-const toSkill = (row: SkillRow) => ({ ...row, id: Number(row.id) });
+const columns = 'id, name, category, proficiency, memo';
 
 const notFoundError = () => new HttpError(404, 'Skill not found');
 
@@ -64,7 +61,7 @@ export function registerSkillRoutes(app: Express, pool: Pool) {
        ORDER BY array_position($1::text[], category), proficiency DESC, lower(name) COLLATE "C"`,
       [categories],
     );
-    res.json({ skills: rows.map(toSkill) });
+    res.json({ skills: rows });
   });
 
   app.post('/api/skills', async (req, res) => {
@@ -77,7 +74,7 @@ export function registerSkillRoutes(app: Express, pool: Pool) {
         [input.name, input.category, input.proficiency, input.memo],
       ),
     );
-    res.status(201).json({ skill: toSkill(rows[0]) });
+    res.status(201).json({ skill: rows[0] });
   });
 
   app.put('/api/skills/:id', async (req, res) => {
@@ -93,7 +90,7 @@ export function registerSkillRoutes(app: Express, pool: Pool) {
       ),
     );
     if (rows.length === 0) throw notFoundError();
-    res.json({ skill: toSkill(rows[0]) });
+    res.json({ skill: rows[0] });
   });
 
   app.delete('/api/skills/:id', async (req, res) => {
