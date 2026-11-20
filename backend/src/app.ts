@@ -3,6 +3,7 @@ import express from 'express';
 import type { Pool } from 'pg';
 import { types } from 'pg';
 
+import { tools } from './ai-tools.js';
 import { registerApplicationRoutes } from './routes/applications.js';
 import { registerCareerRoutes } from './routes/careers.js';
 import { registerCertificationRoutes } from './routes/certifications.js';
@@ -13,6 +14,7 @@ import { registerSkillRoutes } from './routes/skills.js';
 import { setInt8Parser } from './standard/db.js';
 import { errorHandler, notFound, requestLog, serviceDate } from './standard/http.js';
 import { apiRateLimit } from './standard/rate-limit.js';
+import { registerToolRoutes } from './standard/tools.js';
 
 // DATE columns stay YYYY-MM-DD strings so the service time zone never shifts them.
 types.setTypeParser(1082, (value) => value);
@@ -25,6 +27,7 @@ export function createApp(
     today?: () => string;
     requestsPerMinute?: number;
     auth?: express.RequestHandler;
+    toolsPublicKey?: string;
   } = {},
 ) {
   const today = options.today ?? (() => serviceDate());
@@ -49,6 +52,14 @@ export function createApp(
   registerCertificationRoutes(app, pool);
   registerApplicationRoutes(app, pool, today);
   registerCoverLetterQuestionRoutes(app, pool);
+  // #711: shared-ai calls the AI tools here with a signed token. Outside /api, so the proxy never reaches it.
+  registerToolRoutes(app, {
+    app: 'dev-career-portfolio',
+    tools,
+    pool,
+    publicKey: options.toolsPublicKey,
+    requireBinding: true,
+  });
   app.use('/api', notFound);
   app.use(errorHandler);
   return app;
