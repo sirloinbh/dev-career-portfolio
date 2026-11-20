@@ -2,6 +2,7 @@ import type { Express } from 'express';
 import type { Pool, PoolClient } from 'pg';
 import { z } from 'zod/v4';
 
+import { withTransaction } from '../standard/db.js';
 import { HttpError, parseId } from '../standard/http.js';
 import { objectBodyError, optionalText, requiredText } from './shared.js';
 
@@ -88,26 +89,8 @@ async function lockApplication(client: PoolClient, applicationId: number) {
   if (found.rowCount === 0) throw applicationNotFound();
 }
 
-async function inTransaction<T>(pool: Pool, run: (client: PoolClient) => Promise<T>) {
-  const client = await pool.connect();
-  let broken = false;
-  try {
-    await client.query('BEGIN');
-    const result = await run(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    try {
-      await client.query('ROLLBACK');
-    } catch {
-      // A connection that cannot even roll back is closed instead of going back to the pool.
-      broken = true;
-    }
-    throw error;
-  } finally {
-    client.release(broken);
-  }
-}
+const inTransaction = <T>(pool: Pool, run: (client: PoolClient) => Promise<T>) =>
+  withTransaction<T, PoolClient>(pool, run);
 
 export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
   app.get('/api/applications/:id/questions', async (req, res) => {
