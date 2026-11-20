@@ -69,7 +69,7 @@ export async function listenForFetch(
 }
 
 type ApiResult = { status: number; data: Record<string, unknown>; headers: Headers };
-type ApiRequest = { method?: string; body?: unknown };
+type ApiRequest = { method?: string; body?: unknown; headers?: Record<string, string> };
 
 export async function withApi(
   pool: Pool,
@@ -83,12 +83,11 @@ export async function withApi(
     await run(async (path, request = {}) => {
       const response = await fetch(`http://127.0.0.1:${String(port)}${path}`, {
         method: request.method ?? 'GET',
-        ...(request.body === undefined
-          ? {}
-          : {
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(request.body),
-            }),
+        headers: {
+          ...(request.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...request.headers,
+        },
+        ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
       });
       const text = await response.text();
       return {
