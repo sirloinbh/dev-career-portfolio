@@ -52,16 +52,25 @@ async function refuseDuplicateName<T>(query: Promise<T>) {
   }
 }
 
+export type Db = Pick<Pool, 'query'>;
+
+/** The skills in the order the list shows them. `limit` bounds the result for callers that need it (the AI tool). */
+export async function listSkills(db: Db, limit?: number) {
+  // Category in the fixed order above, then the strongest first, then the name. COLLATE "C" keeps
+  // the name order the same on every database locale: Latin letters first, then Korean alphabetical order.
+  const params: unknown[] = [categories];
+  if (limit !== undefined) params.push(limit);
+  const { rows } = await db.query<SkillRow>(
+    `SELECT ${columns} FROM skills
+     ORDER BY array_position($1::text[], category), proficiency DESC, lower(name) COLLATE "C"${limit === undefined ? '' : ' LIMIT $2'}`,
+    params,
+  );
+  return rows;
+}
+
 export function registerSkillRoutes(app: Express, pool: Pool) {
   app.get('/api/skills', async (_req, res) => {
-    // Category in the fixed order above, then the strongest first, then the name. COLLATE "C" keeps
-    // the name order the same on every database locale: Latin letters first, then Korean alphabetical order.
-    const { rows } = await pool.query<SkillRow>(
-      `SELECT ${columns} FROM skills
-       ORDER BY array_position($1::text[], category), proficiency DESC, lower(name) COLLATE "C"`,
-      [categories],
-    );
-    res.json({ skills: rows });
+    res.json({ skills: await listSkills(pool) });
   });
 
   app.post('/api/skills', async (req, res) => {
