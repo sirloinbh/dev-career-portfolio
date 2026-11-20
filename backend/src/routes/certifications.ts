@@ -30,25 +30,21 @@ export const certificationInput = z
     }
   });
 
-type CertificationRow = { id: string } & Record<string, unknown>;
+type CertificationRow = { id: number } & Record<string, unknown>;
 
-// bigint arrives as a string from pg, so the API casts it to a JSON number here.
-const columns = `id::text AS id, name, issuer, acquired_date AS "acquiredDate",
+const columns = `id, name, issuer, acquired_date AS "acquiredDate",
   expiry_date AS "expiryDate", score, memo`;
-
-const toCertification = (row: CertificationRow) => ({ ...row, id: Number(row.id) });
 
 const notFoundError = () => new HttpError(404, 'Certification not found');
 
 export function registerCertificationRoutes(app: Express, pool: Pool) {
   app.get('/api/certifications', async (_req, res) => {
     const { rows } = await pool.query<CertificationRow>(
-      // certifications.id, not id: a bare name would pick the text output column and sort "10"
-      // before "9". The same acquisition date shows the one added last first.
+      // The same acquisition date shows the one added last first.
       `SELECT ${columns} FROM certifications
        ORDER BY acquired_date DESC, certifications.id DESC`,
     );
-    res.json({ certifications: rows.map(toCertification) });
+    res.json({ certifications: rows });
   });
 
   app.post('/api/certifications', async (req, res) => {
@@ -59,7 +55,7 @@ export function registerCertificationRoutes(app: Express, pool: Pool) {
        RETURNING ${columns}`,
       [input.name, input.issuer, input.acquiredDate, input.expiryDate, input.score, input.memo],
     );
-    res.status(201).json({ certification: toCertification(rows[0]) });
+    res.status(201).json({ certification: rows[0] });
   });
 
   app.put('/api/certifications/:id', async (req, res) => {
@@ -74,7 +70,7 @@ export function registerCertificationRoutes(app: Express, pool: Pool) {
       [id, input.name, input.issuer, input.acquiredDate, input.expiryDate, input.score, input.memo],
     );
     if (rows.length === 0) throw notFoundError();
-    res.json({ certification: toCertification(rows[0]) });
+    res.json({ certification: rows[0] });
   });
 
   app.delete('/api/certifications/:id', async (req, res) => {

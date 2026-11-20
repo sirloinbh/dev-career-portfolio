@@ -11,10 +11,13 @@ import { registerCoverLetterQuestionRoutes } from './routes/cover-letter-questio
 import { registerEducationRoutes } from './routes/educations.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerSkillRoutes } from './routes/skills.js';
+import { setInt8Parser } from './standard/db.js';
 import { errorHandler, notFound, requestLog, serviceDate } from './standard/http.js';
 
 // DATE columns stay YYYY-MM-DD strings so the service time zone never shifts them.
 types.setTypeParser(1082, (value) => value);
+// BIGINT ids come back as numbers, and a value above 2^53 throws instead of rounding (ADR-0025).
+setInt8Parser(types);
 
 export function createApp(
   pool: Pool,

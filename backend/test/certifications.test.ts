@@ -110,7 +110,7 @@ test('a missing expiry date and blank optional text reach the database as NULL',
   const pool = {
     query: async (_sql: string, values: unknown[]) => {
       received.push(values);
-      return { rows: [{ id: '1' }], rowCount: 1 };
+      return { rows: [{ id: 1 }], rowCount: 1 };
     },
   } as unknown as Pool;
   await withApi(pool, async (call) => {

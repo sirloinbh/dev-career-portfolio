@@ -100,7 +100,7 @@ test('missing optional fields reach the database as NULL', async () => {
   const pool = {
     query: async (_sql: string, values: unknown[]) => {
       received.push(values);
-      return { rows: [{ id: '1' }], rowCount: 1 };
+      return { rows: [{ id: 1 }], rowCount: 1 };
     },
   } as unknown as Pool;
   await withApi(pool, async (call) => {
