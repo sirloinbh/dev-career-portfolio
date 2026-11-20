@@ -1,5 +1,5 @@
 {
-  "centralSha": "9c1f654987fbeb535abcfddb0cb2bf5828c53c10",
+  "centralSha": "c8ec08e7d9887071c29524c1817ccced8e22a625",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -345,7 +345,7 @@
     },
     "deploy/autodeploy.sh": {
       "mode": "full",
-      "sha256": "ba1fa73d523bf313ed989eb25251e1b695d432c4ce0baa92bb101e85a55506b9",
+      "sha256": "307068bc5c120cdc98d29dd20bd980d698b0b91b75311bbcb735fee574cbc0d3",
       "source": "templates/deploy/deploy/autodeploy.sh.tmpl"
     },
     "deploy/autodeploy.timer": {
