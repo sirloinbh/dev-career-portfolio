@@ -1,5 +1,5 @@
 {
-  "centralSha": "efcff846b8890e7e2aa35a9a5762018d10521c4f",
+  "centralSha": "52d0d2c2eb7310dae0d93356742a36fc4914fb30",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -115,7 +115,7 @@
     },
     ".dockerignore": {
       "mode": "full",
-      "sha256": "5ed5e711032081e3f5219896e9d11be7e59e67562a55d20f6310e0bf1e5c3aba",
+      "sha256": "f8b83b53552e65e003ebd36ac56870b323a1f1cc9d7062e408ec4a1ad5e62e38",
       "source": "templates/app/.dockerignore.tmpl"
     },
     ".editorconfig": {
@@ -240,7 +240,7 @@
     },
     "backend/Dockerfile": {
       "mode": "full",
-      "sha256": "3c1b5c0344a1b086373cdc4413c4dd5ec965c91cabafed0e378d32941b83f767",
+      "sha256": "5fdf6dd7bc8306fe3fd647dfb60d0c09e84eaa81e7754a2e3830c7087efc7f4b",
       "source": "templates/app/backend/Dockerfile.tmpl"
     },
     "backend/package.json": {
@@ -405,7 +405,7 @@
     },
     "deploy/remote-deploy.sh": {
       "mode": "full",
-      "sha256": "56c15fb6fd0d9cf055a24486e98b88dc82d0016e0bf56ecb700a2add33fae639",
+      "sha256": "57c84597a764bea8ea0f735e254cb89fba27cdc19812f3ebbf4b786bf95ac122",
       "source": "templates/deploy/deploy/remote-deploy.sh.tmpl"
     },
     "deploy/report.service": {
