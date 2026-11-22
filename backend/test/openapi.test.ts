@@ -97,3 +97,11 @@ test('a duplicate skill name is documented as 409 on both write operations', () 
   assert.ok(operations['POST /api/skills']!.status.includes(409));
   assert.ok(operations['PUT /api/skills/:id']!.status.includes(409));
 });
+
+test('the Error schema keeps error required and lists the validation fields (#200)', () => {
+  const error = (document.components as { schemas: Record<string, Record<string, unknown>> })
+    .schemas.Error!;
+  assert.deepEqual(error.required, ['error']);
+  const properties = error.properties as Record<string, { items?: { required?: string[] } }>;
+  assert.deepEqual(properties.fields?.items?.required, ['path', 'message']);
+});
