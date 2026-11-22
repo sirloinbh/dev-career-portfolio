@@ -63,12 +63,12 @@ export const operations: Record<string, Operation> = {
   'POST /api/skills': {
     summary: 'Add a skill',
     body: ['Skill', skillInput],
-    status: [201, 400],
+    status: [201, 400, 409],
   },
   'PUT /api/skills/:id': {
     summary: 'Replace a skill',
     body: ['Skill', skillInput],
-    status: [200, 400, 404],
+    status: [200, 400, 404, 409],
   },
   'DELETE /api/skills/:id': { summary: 'Delete a skill', status: [204, 400, 404] },
 

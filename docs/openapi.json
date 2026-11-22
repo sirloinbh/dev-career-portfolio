@@ -903,6 +903,16 @@
               }
             }
           },
+          "409": {
+            "description": "Duplicate or conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Request body too large",
             "content": {
@@ -1634,6 +1644,16 @@
           },
           "401": {
             "description": "Sign-in required (no session from the shared sign-in)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate or conflict",
             "content": {
               "application/json": {
                 "schema": {
