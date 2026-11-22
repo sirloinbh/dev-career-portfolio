@@ -163,9 +163,12 @@ function SkillFields({
   onSubmit: (form: SkillForm) => Promise<unknown>;
 }) {
   const [form, setForm] = useState(initial);
-  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm(skillFieldOf, {
-    conflictField: 'name',
-  });
+  const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } = useServerForm(
+    skillFieldOf,
+    {
+      conflictField: 'name',
+    },
+  );
   const set = (field: keyof SkillForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
   const proficiency = describe('proficiency', `${fieldId('proficiency')}-hint`);
@@ -175,6 +178,7 @@ function SkillFields({
     // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
+      onChange={clearOnEdit}
       onSubmit={submit(() => onSubmit(form))}
       className="flex max-w-2xl flex-col gap-5"
       aria-busy={pending || undefined}

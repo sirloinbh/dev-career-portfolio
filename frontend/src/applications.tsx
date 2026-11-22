@@ -193,7 +193,7 @@ function ApplicationFields({
 }) {
   const [form, setForm] = useState(initial);
   const deadlineInput = useRef<HTMLInputElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } =
+  const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } =
     useServerForm(applicationFieldOf);
   const set = (field: Exclude<keyof ApplicationForm, 'status'>) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
@@ -231,6 +231,7 @@ function ApplicationFields({
     // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
+      onChange={clearOnEdit}
       onSubmit={submit(() =>
         onSubmit({ ...form, deadline: typedDate(deadlineInput.current, form.deadline) }),
       )}

@@ -134,6 +134,23 @@ test('the five steps each say what they mean, and none is chosen for a new skill
   }
 });
 
+test('choosing any proficiency step removes the proficiency message', async () => {
+  const api = fakeApi([]);
+  open('/skills/new');
+  await screen.findByRole('heading', { level: 1, name: 'Add skill' });
+  api.refuseNext(
+    400,
+    validation(['proficiency', 'Proficiency must be a whole number from 1 to 5']),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(level(/^1 · /)).toHaveFocus());
+  fireEvent.click(level(/^3 · /));
+  expect(screen.getByRole('group', { name: 'Proficiency' })).not.toHaveAttribute('aria-invalid');
+  expect(
+    screen.queryByText('Proficiency must be a whole number from 1 to 5'),
+  ).not.toBeInTheDocument();
+});
+
 test('no proficiency chosen: the server message is tied to the steps and focus goes to the first', async () => {
   const api = fakeApi([]);
   open('/skills/new');

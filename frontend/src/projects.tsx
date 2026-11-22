@@ -157,7 +157,8 @@ function ProjectFields({
 }) {
   const [form, setForm] = useState(initial);
   const endDateInput = useRef<HTMLInputElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm(projectFieldOf);
+  const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } =
+    useServerForm(projectFieldOf);
   const set = (field: keyof ProjectForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -223,6 +224,7 @@ function ProjectFields({
     // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
+      onChange={clearOnEdit}
       onSubmit={submit(() =>
         onSubmit({ ...form, endDate: typedDate(endDateInput.current, form.endDate) }),
       )}

@@ -165,6 +165,25 @@ test('the server message is shown under the field it is about, and focus moves t
   expect(window.location.pathname).toBe('/careers/new');
 });
 
+test('editing a field removes the server message under it and leaves the others', async () => {
+  const api = fakeApi([]);
+  open('/careers/new');
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  api.refuseNext(
+    validation(
+      ['startDate', 'Start date must be a date in YYYY-MM-DD format'],
+      ['company', 'Company is required'],
+    ),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() => expect(field('Company')).toHaveAttribute('aria-invalid', 'true'));
+  type('Company', '한빛소프트');
+  expect(field('Company')).not.toHaveAttribute('aria-invalid');
+  expect(screen.queryByText('Company is required')).not.toBeInTheDocument();
+  expect(field('Start date')).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByText('Start date must be a date in YYYY-MM-DD format')).toBeInTheDocument();
+});
+
 test('each joined server message is shown under its own field, topmost focused', async () => {
   const api = fakeApi([]);
   open('/careers/new');
