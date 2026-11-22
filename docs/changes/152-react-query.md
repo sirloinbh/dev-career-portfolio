@@ -42,3 +42,9 @@ Branch `feat/152-shared-query-layer`. Steps 2 and 3 are done: sirloinbh/project-
 Tests: `test/query.tsx` (new) gives a screen rendered without `<App />` a fresh client with retries off, and `serveList` answers one list path. `item-list-page.test.tsx` and `item-form-page.test.tsx` load through it; the malformed-id test also checks that nothing is fetched. `careers.test.tsx`: the failed-refresh test now fails both tries (the shared layer retries a 5xx once), and a new test checks that opening Edit from the list sends no second `GET /api/careers`.
 
 Behaviour change to note: coming back to a list within 30 s shows the cached rows without a request; after 30 s it shows them at once and refreshes in the background.
+
+### Verification
+
+- `npm run check`: passed (frontend 412 passed, 3 skipped; backend DB integration tests skip locally without `TEST_DATABASE_URL` and run in CI).
+- `npm run knip`: nothing new. Locally it reports only `e2e/smoke.spec.ts` and `@axe-core/playwright`, because `playwright.config.ts` needs a test database (same on `origin/main`).
+- Browser check (Vite dev server, the API faked in the browser with Playwright routes, Chromium) at 390x844 and 1440x900: the career list loads; Edit opens the filled form with no second `GET /api/careers`; saving sends `PUT /api/careers/2` and one `GET /api/careers`, and the list shows the new company name. No horizontal scroll, no console errors, the layout is unchanged.
