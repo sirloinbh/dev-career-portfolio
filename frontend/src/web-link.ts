@@ -5,5 +5,5 @@
  * scheme, such as javascript:, out of an href all the same.
  */
 export function webLink(url: string | null) {
-  return url && /^https?:\/\//i.test(url) ? url : null;
+  return url !== null && /^https?:\/\//i.test(url) ? url : null;
 }
