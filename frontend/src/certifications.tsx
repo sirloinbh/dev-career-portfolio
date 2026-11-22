@@ -1,6 +1,6 @@
 import { Award, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link } from 'react-router';
 
 import {
   type Certification,
@@ -23,19 +23,18 @@ import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
-import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
-import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { EditItemPage, NewItemPage } from './item-form-page';
 import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
-import { BackLink, PageHeader } from './page-header';
+import { PageHeader } from './page-header';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useReloading } from './use-load';
 
 const loadCertifications = () => certificationApi.list();
 
@@ -280,79 +279,33 @@ function CertificationFields({
   );
 }
 
+const loadCertificationRows = () =>
+  certificationApi.list().then(({ certifications }) => certifications);
+
 export function NewCertification({ paths }: { paths: CertificationPaths }) {
-  const navigate = useNavigate();
-  const create = async (form: CertificationForm) => {
-    const { certification } = await certificationApi.create(toCertificationInput(form));
-    toast.success(`Added '${certification.name}'`);
-    void navigate(paths.list);
-  };
   return (
-    <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="Certification list" />
-      <PageHeader
-        title="Add certification"
-        description="Certification name, issuer, and date earned are all you need. The rest can stay empty."
-      />
-      <CertificationFields
-        initial={emptyCertificationForm}
-        submitLabel="Add"
-        cancelTo={paths.list}
-        onSubmit={create}
-      />
-    </section>
+    <NewItemPage
+      paths={paths}
+      texts={{ noun: 'certification', backLabel: 'Certification list' }}
+      description="Certification name, issuer, and date earned are all you need. The rest can stay empty."
+      initial={emptyCertificationForm}
+      create={async (form) =>
+        (await certificationApi.create(toCertificationInput(form))).certification.name
+      }
+      Fields={CertificationFields}
+    />
   );
 }
 
 export function EditCertification({ paths }: { paths: CertificationPaths }) {
-  const { id = '' } = useParams();
-  const valid = isValidId(id);
-  // There is no single-item API (#35): the list is small, so the form finds its row there.
-  const loaded = useLoad('all', loadCertifications);
-  const navigate = useNavigate();
-  const certification =
-    loaded.state === 'ok'
-      ? loaded.data.certifications.find((item) => String(item.id) === id)
-      : undefined;
-  const update = async (form: CertificationForm) => {
-    if (!certification) return;
-    await certificationApi.update(certification.id, toCertificationInput(form));
-    toast.success('Saved');
-    void navigate(paths.list);
-  };
   return (
-    <section
-      aria-labelledby="page-title"
-      aria-busy={loaded.state === 'loading'}
-      className="flex flex-col gap-6"
-    >
-      <BackLink to={paths.list} label="Certification list" />
-      <PageHeader title="Edit certification" description="Change what you need, then save." />
-      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
-      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {valid && loaded.state === 'error' ? (
-        <Notice
-          notice={{
-            kind: 'error',
-            text: `Could not load certifications. ${errorText(loaded.error)}`,
-          }}
-        />
-      ) : null}
-      {valid && loaded.state === 'ok' && !certification ? (
-        <Notice
-          notice={{ kind: 'error', text: 'Certification not found. It may already be deleted.' }}
-        />
-      ) : null}
-      {certification ? (
-        <CertificationFields
-          // A new id starts a fresh form instead of keeping the previous row's typing.
-          key={certification.id}
-          initial={toCertificationForm(certification)}
-          submitLabel="Save"
-          cancelTo={paths.list}
-          onSubmit={update}
-        />
-      ) : null}
-    </section>
+    <EditItemPage
+      paths={paths}
+      texts={{ noun: 'certification', backLabel: 'Certification list' }}
+      loadItems={loadCertificationRows}
+      toForm={toCertificationForm}
+      update={(item, form) => certificationApi.update(item.id, toCertificationInput(form))}
+      Fields={CertificationFields}
+    />
   );
 }

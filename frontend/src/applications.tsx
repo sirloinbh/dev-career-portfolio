@@ -1,6 +1,6 @@
 import { FileText, ListOrdered, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link } from 'react-router';
 
 import {
   type Application,
@@ -24,21 +24,20 @@ import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
-import { toast } from './components/ui/sonner';
 import { coverLetterApi } from './cover-letter-data';
 import { deleteItem } from './delete-item';
-import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { EditItemPage, NewItemPage } from './item-form-page';
 import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { OutLink } from './out-link';
-import { BackLink, PageHeader } from './page-header';
+import { PageHeader } from './page-header';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useReloading } from './use-load';
 import { webLink } from './web-link';
 
 const loadApplications = () => applicationApi.list();
@@ -357,79 +356,32 @@ function ApplicationFields({
   );
 }
 
+const loadApplicationRows = () => applicationApi.list().then(({ applications }) => applications);
+
 export function NewApplication({ paths }: { paths: ApplicationPaths }) {
-  const navigate = useNavigate();
-  const create = async (form: ApplicationForm) => {
-    const { application } = await applicationApi.create(toApplicationInput(form));
-    toast.success(`Added '${application.companyName}'`);
-    void navigate(paths.list);
-  };
   return (
-    <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="Application list" />
-      <PageHeader
-        title="Add application"
-        description="Company name and status are all you need. The rest can stay empty."
-      />
-      <ApplicationFields
-        initial={emptyApplicationForm}
-        submitLabel="Add"
-        cancelTo={paths.list}
-        onSubmit={create}
-      />
-    </section>
+    <NewItemPage
+      paths={paths}
+      texts={{ noun: 'application', backLabel: 'Application list' }}
+      description="Company name and status are all you need. The rest can stay empty."
+      initial={emptyApplicationForm}
+      create={async (form) =>
+        (await applicationApi.create(toApplicationInput(form))).application.companyName
+      }
+      Fields={ApplicationFields}
+    />
   );
 }
 
 export function EditApplication({ paths }: { paths: ApplicationPaths }) {
-  const { id = '' } = useParams();
-  const valid = isValidId(id);
-  // There is no single-item API (#36): the list is small, so the form finds its row there.
-  const loaded = useLoad('all', loadApplications);
-  const navigate = useNavigate();
-  const application =
-    loaded.state === 'ok'
-      ? loaded.data.applications.find((item) => String(item.id) === id)
-      : undefined;
-  const update = async (form: ApplicationForm) => {
-    if (!application) return;
-    await applicationApi.update(application.id, toApplicationInput(form));
-    toast.success('Saved');
-    void navigate(paths.list);
-  };
   return (
-    <section
-      aria-labelledby="page-title"
-      aria-busy={loaded.state === 'loading'}
-      className="flex flex-col gap-6"
-    >
-      <BackLink to={paths.list} label="Application list" />
-      <PageHeader title="Edit application" description="Change what you need, then save." />
-      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
-      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {valid && loaded.state === 'error' ? (
-        <Notice
-          notice={{
-            kind: 'error',
-            text: `Could not load applications. ${errorText(loaded.error)}`,
-          }}
-        />
-      ) : null}
-      {valid && loaded.state === 'ok' && !application ? (
-        <Notice
-          notice={{ kind: 'error', text: 'Application not found. It may already be deleted.' }}
-        />
-      ) : null}
-      {application ? (
-        <ApplicationFields
-          // A new id starts a fresh form instead of keeping the previous row's typing.
-          key={application.id}
-          initial={toApplicationForm(application)}
-          submitLabel="Save"
-          cancelTo={paths.list}
-          onSubmit={update}
-        />
-      ) : null}
-    </section>
+    <EditItemPage
+      paths={paths}
+      texts={{ noun: 'application', backLabel: 'Application list' }}
+      loadItems={loadApplicationRows}
+      toForm={toApplicationForm}
+      update={(item, form) => applicationApi.update(item.id, toApplicationInput(form))}
+      Fields={ApplicationFields}
+    />
   );
 }

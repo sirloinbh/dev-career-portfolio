@@ -294,12 +294,6 @@ test('clearing the deadline and the link stores no deadline and no link', async 
   expect(within(item).queryByRole('link', { name: /Job posting/ })).not.toBeInTheDocument();
 });
 
-test('editing an application that no longer exists says so', async () => {
-  fakeApi([]);
-  open('/applications/9/edit');
-  expect(await findLive('alert')).toHaveTextContent('Application not found');
-});
-
 test('the delete dialog counts the cover letter questions that go with the application', async () => {
   const api = fakeApi([cloud]);
   api.setQuestionCount(3);

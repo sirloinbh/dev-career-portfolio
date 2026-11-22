@@ -1,6 +1,6 @@
 import { Pencil, Plus, Trash2, Wrench } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link } from 'react-router';
 
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
@@ -9,16 +9,15 @@ import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
-import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
-import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { useServerForm } from './form-state';
+import { EditItemPage, NewItemPage } from './item-form-page';
 import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
-import { BackLink, PageHeader } from './page-header';
+import { PageHeader } from './page-header';
 import {
   emptySkillForm,
   groupSkills,
@@ -37,7 +36,7 @@ import {
   toSkillInput,
 } from './skill-data';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useReloading } from './use-load';
 
 const loadSkills = () => skillApi.list();
 
@@ -321,72 +320,30 @@ function SkillFields({
   );
 }
 
+const loadSkillRows = () => skillApi.list().then(({ skills }) => skills);
+
 export function NewSkill({ paths }: { paths: SkillPaths }) {
-  const navigate = useNavigate();
-  const create = async (form: SkillForm) => {
-    const { skill } = await skillApi.create(toSkillInput(form));
-    toast.success(`Added '${skill.name}'`);
-    void navigate(paths.list);
-  };
   return (
-    <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="Skill list" />
-      <PageHeader
-        title="Add skill"
-        description="Choose a skill name, category, and proficiency. Notes can stay empty."
-      />
-      <SkillFields
-        initial={emptySkillForm}
-        submitLabel="Add"
-        cancelTo={paths.list}
-        onSubmit={create}
-      />
-    </section>
+    <NewItemPage
+      paths={paths}
+      texts={{ noun: 'skill', backLabel: 'Skill list' }}
+      description="Choose a skill name, category, and proficiency. Notes can stay empty."
+      initial={emptySkillForm}
+      create={async (form) => (await skillApi.create(toSkillInput(form))).skill.name}
+      Fields={SkillFields}
+    />
   );
 }
 
 export function EditSkill({ paths }: { paths: SkillPaths }) {
-  const { id = '' } = useParams();
-  const valid = isValidId(id);
-  // There is no single-item API (#34): the list is small, so the form finds its row there.
-  const loaded = useLoad('all', loadSkills);
-  const navigate = useNavigate();
-  const skill =
-    loaded.state === 'ok' ? loaded.data.skills.find((item) => String(item.id) === id) : undefined;
-  const update = async (form: SkillForm) => {
-    if (!skill) return;
-    await skillApi.update(skill.id, toSkillInput(form));
-    toast.success('Saved');
-    void navigate(paths.list);
-  };
   return (
-    <section
-      aria-labelledby="page-title"
-      aria-busy={loaded.state === 'loading'}
-      className="flex flex-col gap-6"
-    >
-      <BackLink to={paths.list} label="Skill list" />
-      <PageHeader title="Edit skill" description="Change what you need, then save." />
-      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
-      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {valid && loaded.state === 'error' ? (
-        <Notice
-          notice={{ kind: 'error', text: `Could not load skills. ${errorText(loaded.error)}` }}
-        />
-      ) : null}
-      {valid && loaded.state === 'ok' && !skill ? (
-        <Notice notice={{ kind: 'error', text: 'Skill not found. It may already be deleted.' }} />
-      ) : null}
-      {skill ? (
-        <SkillFields
-          // A new id starts a fresh form instead of keeping the previous row's typing.
-          key={skill.id}
-          initial={toSkillForm(skill)}
-          submitLabel="Save"
-          cancelTo={paths.list}
-          onSubmit={update}
-        />
-      ) : null}
-    </section>
+    <EditItemPage
+      paths={paths}
+      texts={{ noun: 'skill', backLabel: 'Skill list' }}
+      loadItems={loadSkillRows}
+      toForm={toSkillForm}
+      update={(item, form) => skillApi.update(item.id, toSkillInput(form))}
+      Fields={SkillFields}
+    />
   );
 }

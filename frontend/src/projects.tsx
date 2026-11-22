@@ -1,6 +1,6 @@
 import { FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link } from 'react-router';
 
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
@@ -10,17 +10,16 @@ import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
-import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
-import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { EditItemPage, NewItemPage } from './item-form-page';
 import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { OutLink } from './out-link';
-import { BackLink, PageHeader } from './page-header';
+import { PageHeader } from './page-header';
 import {
   emptyProjectForm,
   isRunning,
@@ -35,7 +34,7 @@ import {
   toProjectInput,
 } from './project-data';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useReloading } from './use-load';
 import { webLink } from './web-link';
 
 const loadProjects = () => projectApi.list();
@@ -349,75 +348,30 @@ function ProjectFields({
   );
 }
 
+const loadProjectRows = () => projectApi.list().then(({ projects }) => projects);
+
 export function NewProject({ paths }: { paths: ProjectPaths }) {
-  const navigate = useNavigate();
-  const create = async (form: ProjectForm) => {
-    const { project } = await projectApi.create(toProjectInput(form));
-    toast.success(`Added '${project.name}'`);
-    void navigate(paths.list);
-  };
   return (
-    <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="Project list" />
-      <PageHeader
-        title="Add project"
-        description="Project name and start date are all you need. The rest can stay empty."
-      />
-      <ProjectFields
-        initial={emptyProjectForm}
-        submitLabel="Add"
-        cancelTo={paths.list}
-        onSubmit={create}
-      />
-    </section>
+    <NewItemPage
+      paths={paths}
+      texts={{ noun: 'project', backLabel: 'Project list' }}
+      description="Project name and start date are all you need. The rest can stay empty."
+      initial={emptyProjectForm}
+      create={async (form) => (await projectApi.create(toProjectInput(form))).project.name}
+      Fields={ProjectFields}
+    />
   );
 }
 
 export function EditProject({ paths }: { paths: ProjectPaths }) {
-  const { id = '' } = useParams();
-  const valid = isValidId(id);
-  // There is no single-item API (#33): the list is small, so the form finds its row there.
-  const loaded = useLoad('all', loadProjects);
-  const navigate = useNavigate();
-  const project =
-    loaded.state === 'ok' ? loaded.data.projects.find((item) => String(item.id) === id) : undefined;
-  const update = async (form: ProjectForm) => {
-    if (!project) return;
-    await projectApi.update(project.id, toProjectInput(form));
-    toast.success('Saved');
-    void navigate(paths.list);
-  };
   return (
-    <section
-      aria-labelledby="page-title"
-      aria-busy={loaded.state === 'loading'}
-      className="flex flex-col gap-6"
-    >
-      <BackLink to={paths.list} label="Project list" />
-      <PageHeader title="Edit project" description="Change what you need, then save." />
-      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
-      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {valid && loaded.state === 'error' ? (
-        <Notice
-          notice={{
-            kind: 'error',
-            text: `Could not load projects. ${errorText(loaded.error)}`,
-          }}
-        />
-      ) : null}
-      {valid && loaded.state === 'ok' && !project ? (
-        <Notice notice={{ kind: 'error', text: 'Project not found. It may already be deleted.' }} />
-      ) : null}
-      {project ? (
-        <ProjectFields
-          // A new id starts a fresh form instead of keeping the previous row's typing.
-          key={project.id}
-          initial={toProjectForm(project)}
-          submitLabel="Save"
-          cancelTo={paths.list}
-          onSubmit={update}
-        />
-      ) : null}
-    </section>
+    <EditItemPage
+      paths={paths}
+      texts={{ noun: 'project', backLabel: 'Project list' }}
+      loadItems={loadProjectRows}
+      toForm={toProjectForm}
+      update={(item, form) => projectApi.update(item.id, toProjectInput(form))}
+      Fields={ProjectFields}
+    />
   );
 }

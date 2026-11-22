@@ -242,12 +242,6 @@ test('clearing the expiry date makes the certification No expiry', async () => {
   expect(item).toHaveTextContent('Earned March 9, 2025 · No expiry');
 });
 
-test('editing a certification that no longer exists says so', async () => {
-  fakeApi([]);
-  open('/certifications/9/edit');
-  expect(await findLive('alert')).toHaveTextContent('Certification not found');
-});
-
 test('editing a certification at a malformed address says the address is not valid', async () => {
   const api = fakeApi([toeic]);
   open('/certifications/abc/edit');

@@ -1,6 +1,6 @@
 import { GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link } from 'react-router';
 
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
@@ -10,7 +10,6 @@ import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
-import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
 import {
   degreeLabels,
@@ -28,15 +27,15 @@ import {
   toEducationForm,
   toEducationInput,
 } from './education-data';
-import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { EditItemPage, NewItemPage } from './item-form-page';
 import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
-import { BackLink, PageHeader } from './page-header';
-import { useLoad, useReloading } from './use-load';
+import { PageHeader } from './page-header';
+import { useReloading } from './use-load';
 
 const loadEducations = () => educationApi.list();
 
@@ -373,76 +372,30 @@ function EducationFields({
   );
 }
 
+const loadEducationRows = () => educationApi.list().then(({ educations }) => educations);
+
 export function NewEducation({ paths }: { paths: EducationPaths }) {
-  const navigate = useNavigate();
-  const create = async (form: EducationForm) => {
-    const { education } = await educationApi.create(toEducationInput(form));
-    toast.success(`Added '${education.school}'`);
-    void navigate(paths.list);
-  };
   return (
-    <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="Education list" />
-      <PageHeader
-        title="Add education"
-        description="School, degree, status, and enrollment date are all you need. The rest can stay empty."
-      />
-      <EducationFields
-        initial={emptyEducationForm}
-        submitLabel="Add"
-        cancelTo={paths.list}
-        onSubmit={create}
-      />
-    </section>
+    <NewItemPage
+      paths={paths}
+      texts={{ noun: 'education', backLabel: 'Education list' }}
+      description="School, degree, status, and enrollment date are all you need. The rest can stay empty."
+      initial={emptyEducationForm}
+      create={async (form) => (await educationApi.create(toEducationInput(form))).education.school}
+      Fields={EducationFields}
+    />
   );
 }
 
 export function EditEducation({ paths }: { paths: EducationPaths }) {
-  const { id = '' } = useParams();
-  const valid = isValidId(id);
-  // There is no single-item API (#31): the list is small, so the form finds its row there.
-  const loaded = useLoad('all', loadEducations);
-  const navigate = useNavigate();
-  const education =
-    loaded.state === 'ok'
-      ? loaded.data.educations.find((item) => String(item.id) === id)
-      : undefined;
-  const update = async (form: EducationForm) => {
-    if (!education) return;
-    await educationApi.update(education.id, toEducationInput(form));
-    toast.success('Saved');
-    void navigate(paths.list);
-  };
   return (
-    <section
-      aria-labelledby="page-title"
-      aria-busy={loaded.state === 'loading'}
-      className="flex flex-col gap-6"
-    >
-      <BackLink to={paths.list} label="Education list" />
-      <PageHeader title="Edit education" description="Change what you need, then save." />
-      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
-      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {valid && loaded.state === 'error' ? (
-        <Notice
-          notice={{ kind: 'error', text: `Could not load education. ${errorText(loaded.error)}` }}
-        />
-      ) : null}
-      {valid && loaded.state === 'ok' && !education ? (
-        <Notice
-          notice={{ kind: 'error', text: 'Education not found. It may already be deleted.' }}
-        />
-      ) : null}
-      {education ? (
-        <EducationFields
-          // A new id starts a fresh form instead of keeping the previous row's typing.
-          key={education.id}
-          initial={toEducationForm(education)}
-          submitLabel="Save"
-          cancelTo={paths.list}
-          onSubmit={update}
-        />
-      ) : null}
-    </section>
+    <EditItemPage
+      paths={paths}
+      texts={{ noun: 'education', backLabel: 'Education list' }}
+      loadItems={loadEducationRows}
+      toForm={toEducationForm}
+      update={(item, form) => educationApi.update(item.id, toEducationInput(form))}
+      Fields={EducationFields}
+    />
   );
 }

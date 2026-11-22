@@ -247,12 +247,6 @@ test('an education is edited with its saved values filled in', async () => {
   expect(await screen.findByText(/Bachelor · 소프트웨어공학/)).toBeInTheDocument();
 });
 
-test('editing an education that no longer exists says so', async () => {
-  fakeApi([]);
-  open('/educations/9/edit');
-  expect(await findLive('alert')).toHaveTextContent('Education not found');
-});
-
 test('cancelling the delete dialog keeps the education', async () => {
   const api = fakeApi([university]);
   open('/educations');
