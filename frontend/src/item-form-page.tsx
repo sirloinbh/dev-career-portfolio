@@ -96,6 +96,10 @@ export function EditItemPage<Form, Item extends { id: number }>({
     >
       <BackLink to={paths.list} label={texts.backLabel} />
       <PageHeader title={`Edit ${texts.noun}`} description="Change what you need, then save." />
+      {/* Always mounted, so screen readers hear the text appear and go. */}
+      <p role="status" className="sr-only">
+        {valid && loaded.state === 'loading' ? `Loading ${texts.noun}` : ''}
+      </p>
       {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
       {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
       {valid && loaded.state === 'error' ? (
