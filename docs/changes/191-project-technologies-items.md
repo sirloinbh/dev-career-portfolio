@@ -1,0 +1,5 @@
+# Constrain project technology items in the database (#191)
+
+- `database/migrations/011_project_technologies_items.sql` adds the IMMUTABLE SQL function `projects_technologies_valid(text[])` (every item non-NULL, non-blank, at most 50 characters) and the named CHECK `projects_technologies_items` that uses it. These are the API's rules for `technologies` items (`backend/src/routes/projects.ts`); the count limit (`projects_technologies_count`) stays. Safe to run again: `CREATE OR REPLACE FUNCTION`, and the constraint is skipped if it exists.
+- Test: `backend/test/project-technologies.integration.test.ts` (blank, whitespace-only, NULL and 51-character items refused; 50 characters and an empty list accepted). It needs `TEST_DATABASE_URL`, so it is skipped locally and runs in CI.
+- Not verified here: no local PostgreSQL, so the migration was not applied locally. CI applies every file with `psql` and then the runner (twice in total). Existing rows were written through the API with the same rules, so they should pass; if one does not, the runner rolls the file back and names it.
