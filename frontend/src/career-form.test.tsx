@@ -169,6 +169,50 @@ test('the server message is shown under the field it is about, and focus moves t
   expect(window.location.pathname).toBe('/careers/new');
 });
 
+const reloadAsksFirst = () => {
+  const event = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(event);
+  return event.defaultPrevented;
+};
+
+test('an untouched form lets Cancel and a reload go straight through', async () => {
+  fakeApi([]);
+  open('/careers/new');
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  expect(reloadAsksFirst()).toBe(false);
+  expect(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/careers');
+});
+
+test('a changed form asks before a reload and before Cancel throws the input away', async () => {
+  fakeApi([]);
+  open('/careers/new');
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  type('Company', '한빛소프트');
+  expect(reloadAsksFirst()).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Discard what you typed?' });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(field('Company')).toHaveValue('한빛소프트');
+  expect(window.location.pathname).toBe('/careers/new');
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  fireEvent.click(
+    within(await screen.findByRole('dialog')).getByRole('button', { name: 'Discard' }),
+  );
+  expect(await screen.findByRole('heading', { level: 1, name: 'Career' })).toBeInTheDocument();
+});
+
+test('a saved form no longer asks before a reload', async () => {
+  fakeApi([]);
+  open('/careers/new');
+  await screen.findByRole('heading', { level: 1, name: 'Add career' });
+  type('Company', '한빛소프트');
+  type('Start date', '2023-03-02');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await screen.findByRole('heading', { level: 1, name: 'Career' });
+  expect(reloadAsksFirst()).toBe(false);
+});
+
 test('editing a field removes the server message under it and leaves the others', async () => {
   const api = fakeApi([]);
   open('/careers/new');

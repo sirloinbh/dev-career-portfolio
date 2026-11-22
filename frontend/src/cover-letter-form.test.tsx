@@ -367,6 +367,20 @@ test('the form page announces loading and clears it once the questions are in', 
   expect(screen.queryByText('Loading questions')).toBeNull();
 });
 
+test('adding, moving or removing a question counts as a change', async () => {
+  fakeApi(saved);
+  await openForm();
+  const asksFirst = () => {
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  };
+  expect(asksFirst()).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Move question 2 up' }));
+  expect(asksFirst()).toBe(true);
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+});
+
 test('Add question stops at ten questions', async () => {
   fakeApi(
     Array.from({ length: 9 }, (_, n) => ({

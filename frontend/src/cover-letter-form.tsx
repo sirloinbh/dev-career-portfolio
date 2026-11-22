@@ -57,9 +57,8 @@ function QuestionsForm({
   // The keys in the order the list was last sent, so the server's "Question 2" finds its question.
   const sentKeys = useRef<number[]>([]);
   const addButton = useRef<HTMLButtonElement>(null);
-  const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } = useServerForm(
-    (path) => questionFieldOf(sentKeys.current)(path),
-  );
+  const { fieldId, describe, errorFor, clearOnEdit, markDirty, submit, actions, pending } =
+    useServerForm((path) => questionFieldOf(sentKeys.current)(path));
   const viewPath = paths.questions(applicationId);
 
   const update = (key: number, field: 'question' | 'answer' | 'charLimit', value: string) =>
@@ -68,12 +67,14 @@ function QuestionsForm({
     );
 
   const add = () => {
+    markDirty();
     const key = nextKey.current++;
     setDrafts((current) => [...current, emptyDraft(key)]);
     requestAnimationFrame(() => document.getElementById(fieldId(`${key}:question`))?.focus());
   };
 
   const move = (key: number, by: -1 | 1) => {
+    markDirty();
     const from = drafts.findIndex((draft) => draft.key === key);
     const to = from + by;
     if (to < 0 || to >= drafts.length) return;
@@ -89,8 +90,10 @@ function QuestionsForm({
     );
   };
 
-  const remove = (key: number) =>
+  const remove = (key: number) => {
+    markDirty();
     setDrafts((current) => current.filter((draft) => draft.key !== key));
+  };
 
   const save = async () => {
     sentKeys.current = drafts.map((draft) => draft.key);

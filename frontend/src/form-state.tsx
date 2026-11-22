@@ -1,7 +1,8 @@
-import { type FormEvent, useId, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 
 import { Button } from './components/ui/button';
+import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Notice } from './components/ui/notice';
 import { Spinner } from './components/ui/spinner';
 import { RequestError } from './lib/api';
@@ -42,11 +43,23 @@ export function useServerForm<F extends string>(
   fieldOf: (path: string) => F | undefined,
   options: { conflictField?: F } = {},
 ) {
+  const navigate = useNavigate();
   const [pending, setPending] = useState(false);
+  // True once the person has changed something; the browser asks before a reload or a closed tab loses it, and
+  // Cancel asks first (#197). Following an in-app link is not blocked: BrowserRouter has no blocker.
+  const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<F, string>>>({});
   const notice = useNotice();
   const submitButton = useRef<HTMLButtonElement>(null);
   const id = useId();
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
   const fieldId = (field: F) => `${id}-${field}`;
 
   /** aria props that tie a field to its hints and to the server's message about it. */
@@ -68,11 +81,12 @@ export function useServerForm<F extends string>(
   const clearError = (field: F) => setErrors((current) => ({ ...current, [field]: undefined }));
 
   /**
-   * For the form's `onChange` (change events bubble up to it): the message under a field goes as soon as that field
+   * For the form's `onChange` (change events bubble up to it): the form counts as changed, and the message under a field goes as soon as that field
    * is edited, so a message about text that is already fixed never stays on screen. A group of inputs (radios in a
    * fieldset) counts as one field when the group has the field's id.
    */
   const clearOnEdit = (event: FormEvent<HTMLFormElement>) => {
+    setDirty(true);
     const target = event.target as Node;
     for (const field of Object.keys(errors) as F[]) {
       const element = document.getElementById(fieldId(field));
@@ -86,43 +100,46 @@ export function useServerForm<F extends string>(
     setPending(true);
     setErrors({});
     notice.clear();
-    save().catch((error: unknown) => {
-      setPending(false);
-      const message = errorText(error, 'Could not save');
-      const byField: Partial<Record<F, string[]>> = {};
-      const unplaced: string[] = [];
-      const place = (field: F | undefined, text: string) => {
-        if (field === undefined) unplaced.push(text);
-        else if (!byField[field]?.includes(text)) (byField[field] ??= []).push(text);
-      };
-      if (error instanceof RequestError && error.status === 400 && error.fields.length > 0) {
-        for (const item of error.fields) place(fieldOf(item.path), item.message);
-      } else if (error instanceof RequestError && error.status === 409) {
-        place(options.conflictField, message);
-      } else {
-        unplaced.push(message);
-      }
-      if (unplaced.length) notice.error(unplaced.join(', '));
-      const placed = Object.keys(byField) as F[];
-      const first = placed
-        .map((field) => document.getElementById(fieldId(field)))
-        .filter((element) => element !== null)
-        .sort((a, b) =>
-          a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
-        )[0];
-      if (!first) {
-        // The disabled button dropped focus; give it back so keyboard users stay in the form.
-        requestAnimationFrame(() => submitButton.current?.focus());
-        return;
-      }
-      // Show each message under its input and move to the first, so it is read with the field.
-      setErrors(
-        Object.fromEntries(placed.map((field) => [field, byField[field]?.join(', ')])) as Partial<
-          Record<F, string>
-        >,
-      );
-      requestAnimationFrame(() => first.focus());
-    });
+    save().then(
+      () => setDirty(false),
+      (error: unknown) => {
+        setPending(false);
+        const message = errorText(error, 'Could not save');
+        const byField: Partial<Record<F, string[]>> = {};
+        const unplaced: string[] = [];
+        const place = (field: F | undefined, text: string) => {
+          if (field === undefined) unplaced.push(text);
+          else if (!byField[field]?.includes(text)) (byField[field] ??= []).push(text);
+        };
+        if (error instanceof RequestError && error.status === 400 && error.fields.length > 0) {
+          for (const item of error.fields) place(fieldOf(item.path), item.message);
+        } else if (error instanceof RequestError && error.status === 409) {
+          place(options.conflictField, message);
+        } else {
+          unplaced.push(message);
+        }
+        if (unplaced.length) notice.error(unplaced.join(', '));
+        const placed = Object.keys(byField) as F[];
+        const first = placed
+          .map((field) => document.getElementById(fieldId(field)))
+          .filter((element) => element !== null)
+          .sort((a, b) =>
+            a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+          )[0];
+        if (!first) {
+          // The disabled button dropped focus; give it back so keyboard users stay in the form.
+          requestAnimationFrame(() => submitButton.current?.focus());
+          return;
+        }
+        // Show each message under its input and move to the first, so it is read with the field.
+        setErrors(
+          Object.fromEntries(placed.map((field) => [field, byField[field]?.join(', ')])) as Partial<
+            Record<F, string>
+          >,
+        );
+        requestAnimationFrame(() => first.focus());
+      },
+    );
   };
 
   const actions = ({ submitLabel, cancelTo }: { submitLabel: string; cancelTo: string }) => (
@@ -138,12 +155,40 @@ export function useServerForm<F extends string>(
           {pending ? <Spinner size="sm" label="Saving" /> : null}
           {submitLabel}
         </Button>
-        <Button asChild variant="outline">
-          <Link to={cancelTo}>Cancel</Link>
-        </Button>
+        {dirty && !pending ? (
+          <ConfirmDialog
+            title="Discard what you typed?"
+            description="Your changes have not been saved and will be lost."
+            confirmLabel="Discard"
+            cancelLabel="Keep editing"
+            onConfirm={() => navigate(cancelTo)}
+            trigger={
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            }
+          />
+        ) : (
+          <Button asChild variant="outline">
+            <Link to={cancelTo}>Cancel</Link>
+          </Button>
+        )}
       </div>
     </>
   );
 
-  return { pending, fieldId, describe, errorFor, clearError, clearOnEdit, submit, actions };
+  /** For changes that raise no change event, such as adding, moving or removing a cover letter question. */
+  const markDirty = () => setDirty(true);
+
+  return {
+    pending,
+    fieldId,
+    describe,
+    errorFor,
+    clearError,
+    clearOnEdit,
+    markDirty,
+    submit,
+    actions,
+  };
 }
