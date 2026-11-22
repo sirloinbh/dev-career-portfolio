@@ -139,3 +139,18 @@ test('a malformed id is an invalid address, not a missing row, and loads nothing
   expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   expect(queryLive('status')).toBeNull();
 });
+
+test('the Edit page announces loading while the list is pending and clears it after', async () => {
+  let release: (rows: Row[]) => void = () => undefined;
+  const pending = new Promise<Row[]>((resolve) => {
+    release = resolve;
+  });
+  renderAt('/things/3/edit', edit({ loadItems: () => pending }));
+  expect(screen.getByRole('status')).toHaveTextContent('Loading thing');
+  await act(async () => {
+    release(rows);
+    await pending;
+  });
+  expect(await screen.findByText('Form for Alpha')).toBeInTheDocument();
+  expect(screen.getByRole('status')).toBeEmptyDOMElement();
+});

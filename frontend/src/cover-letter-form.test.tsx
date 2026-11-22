@@ -359,6 +359,14 @@ test('a list another tab changed (409) is reported below the form, not under a f
   expect(fieldIn(1, 'Question')).not.toHaveAttribute('aria-invalid');
 });
 
+test('the form page announces loading and clears it once the questions are in', async () => {
+  fakeApi(saved);
+  open('/applications/1/questions/edit');
+  expect(screen.getByText('Loading questions')).toHaveAttribute('role', 'status');
+  await screen.findByRole('list', { name: 'Questions to save' });
+  expect(screen.queryByText('Loading questions')).toBeNull();
+});
+
 test('Add question stops at ten questions', async () => {
   fakeApi(
     Array.from({ length: 9 }, (_, n) => ({

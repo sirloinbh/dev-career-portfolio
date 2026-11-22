@@ -312,6 +312,10 @@ export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
         description="Write the questions and answers, put them in order, then save them all at once."
       />
       {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {/* Always mounted, so screen readers hear the text appear and go. */}
+      <p role="status" className="sr-only">
+        {valid && questions.state === 'loading' ? 'Loading questions' : ''}
+      </p>
       {valid && questions.state === 'loading' ? <SkeletonList rows={3} /> : null}
       {missing ? (
         <Notice
