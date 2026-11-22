@@ -6,6 +6,7 @@ import { toast } from './components/ui/sonner';
 import type { Project } from './project-data';
 import { findLive, queryLive } from './test/live';
 import { parseRequest, unexpectedRequest } from './test/route';
+import { type ErrorBody, validation } from './test/server-errors';
 
 // All projects here are made up for the test.
 
@@ -38,7 +39,7 @@ type Call = { method: string; url: string; body: unknown };
 function fakeApi(rows: Project[]) {
   const store = [...rows];
   const calls: Call[] = [];
-  let refuse: string | undefined;
+  let refuse: ErrorBody | undefined;
   let deleteFails: { status: number; error: string } | undefined;
   let nextId = 100;
   const json = (body: unknown, status = 200) =>
@@ -56,9 +57,9 @@ function fakeApi(rows: Project[]) {
       if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
-        const error = refuse;
+        const refused = refuse;
         refuse = undefined;
-        return json({ error }, 400);
+        return json(refused, 400);
       }
       const index = store.findIndex((row) => row.id === id);
       if (method === 'GET') return json({ projects: store });
@@ -86,8 +87,8 @@ function fakeApi(rows: Project[]) {
   return {
     store,
     calls,
-    refuseNext: (message: string) => {
-      refuse = message;
+    refuseNext: (body: string | ErrorBody) => {
+      refuse = typeof body === 'string' ? { error: body } : body;
     },
     failDeletes: (status: number, error: string) => {
       deleteFails = { status, error };
@@ -164,7 +165,9 @@ test('the server message is shown under the field it is about, and focus moves t
   type('Project name', '사내 위키 검색');
   type('Start date', '2021-03-02');
   type('Repository link', 'github.com/example/wiki');
-  api.refuseNext('Repository link must start with http:// or https://');
+  api.refuseNext(
+    validation(['repositoryUrl', 'Repository link must start with http:// or https://']),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
   await waitFor(() => expect(field('Repository link')).toHaveFocus());
@@ -184,7 +187,11 @@ test('a repeated message about technologies is shown once, topmost field focused
   await screen.findByRole('heading', { level: 1, name: 'Add project' });
   // One issue per item that is too long, then the name; as the server joins them.
   api.refuseNext(
-    'Technologies items must be at most 50 characters, Technologies items must be at most 50 characters, Project name is required',
+    validation(
+      ['technologies.0', 'Technologies items must be at most 50 characters'],
+      ['technologies.1', 'Technologies items must be at most 50 characters'],
+      ['name', 'Project name is required'],
+    ),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('Project name')).toHaveFocus());
@@ -201,7 +208,7 @@ test('a half-typed end date is sent as text the server refuses, not as running',
   await screen.findByRole('heading', { level: 1, name: 'Add project' });
   // A browser reads an unfinished date ("2023-12-__") as '' and flags it as bad input.
   Object.defineProperty(field('End date'), 'validity', { value: { badInput: true } });
-  api.refuseNext('End date must be a date in YYYY-MM-DD format');
+  api.refuseNext(validation(['endDate', 'End date must be a date in YYYY-MM-DD format']));
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('End date')).toHaveFocus());
   expect(postBody(api)).toMatchObject({ endDate: 'incomplete' });
@@ -256,7 +263,7 @@ test('a refused edit shows the message under its field and stays on the form', a
   await screen.findByRole('heading', { level: 1, name: 'Edit project' });
   await screen.findByRole('button', { name: 'Save' });
   type('Start date', '2022-01-03');
-  api.refuseNext('End date cannot be earlier than start date');
+  api.refuseNext(validation(['endDate', 'End date cannot be earlier than start date']));
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() => expect(field('End date')).toHaveFocus());
   expect(field('End date')).toHaveAccessibleDescription(

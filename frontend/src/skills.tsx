@@ -28,7 +28,7 @@ import {
   skillApi,
   skillCategories,
   skillCategoryLabels,
-  skillFieldErrors,
+  skillFieldOf,
   type SkillForm,
   type SkillPaths,
   toSkillForm,
@@ -169,7 +169,9 @@ function SkillFields({
   onSubmit: (form: SkillForm) => Promise<unknown>;
 }) {
   const [form, setForm] = useState(initial);
-  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm(skillFieldErrors);
+  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm(skillFieldOf, {
+    conflictField: 'name',
+  });
   const set = (field: keyof SkillForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
   const proficiency = describe('proficiency', `${fieldId('proficiency')}-hint`);

@@ -4,7 +4,6 @@ import { Link } from 'react-router';
 import { Button } from './components/ui/button';
 import { Notice } from './components/ui/notice';
 import { Spinner } from './components/ui/spinner';
-import type { FieldError } from './field-errors';
 import { RequestError } from './lib/api';
 import { errorText, useNotice } from './lib/use-notice';
 
@@ -22,11 +21,27 @@ export function typedDate(input: HTMLInputElement | null, value: string) {
 }
 
 /**
- * Form state for one item form. `split` turns the server's 400 or 409 message into per-field messages
- * (see field-errors.ts). `submit(save)` runs the save, and on failure shows each message under its
- * field and focuses the topmost one; a message that names no field goes in the notice below the form.
+ * The field of a flat form that a validation path names, or undefined: the server's paths start with the input's key
+ * (`company`, or `technologies.3` for one list item), and those are the form's keys too. `form` is any value of the
+ * form, such as its empty one.
  */
-export function useServerForm<F extends string>(split: (message: string) => FieldError<F>[]) {
+export const flatFieldOf =
+  <F extends string>(form: Record<F, unknown>) =>
+  (path: string): F | undefined => {
+    const key = path.split('.')[0];
+    return Object.hasOwn(form, key) ? (key as F) : undefined;
+  };
+
+/**
+ * Form state for one item form. `fieldOf` maps the path of a 400 body's `fields` entry to the form field it is
+ * about. `submit(save)` runs the save, and on failure shows each message under its field and focuses the first
+ * one in the page; a message that names no field goes in the notice below the form. A 409 has no paths:
+ * `conflictField` (a taken skill name) is the field its message belongs under.
+ */
+export function useServerForm<F extends string>(
+  fieldOf: (path: string) => F | undefined,
+  options: { conflictField?: F } = {},
+) {
   const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<F, string>>>({});
   const notice = useNotice();
@@ -60,25 +75,39 @@ export function useServerForm<F extends string>(split: (message: string) => Fiel
     save().catch((error: unknown) => {
       setPending(false);
       const message = errorText(error, 'Could not save');
-      // 400 is a rule an input broke; 409 is a value taken by another row (a skill name). Both can be
-      // about one field, so both are split; any other failure goes in the notice.
-      const aboutInput =
-        error instanceof RequestError && (error.status === 400 || error.status === 409);
-      const pieces = aboutInput ? split(message) : [];
-      const byField = Object.fromEntries(
-        pieces.flatMap((piece) => (piece.field ? [[piece.field, piece.message]] : [])),
-      ) as Partial<Record<F, string>>;
-      const first = pieces.find((piece) => piece.field)?.field;
-      const unplaced = pieces.length ? pieces.filter((piece) => !piece.field) : [{ message }];
-      if (unplaced.length) notice.error(unplaced.map((piece) => piece.message).join(', '));
+      const byField: Partial<Record<F, string[]>> = {};
+      const unplaced: string[] = [];
+      const place = (field: F | undefined, text: string) => {
+        if (field === undefined) unplaced.push(text);
+        else if (!byField[field]?.includes(text)) (byField[field] ??= []).push(text);
+      };
+      if (error instanceof RequestError && error.status === 400 && error.fields.length > 0) {
+        for (const item of error.fields) place(fieldOf(item.path), item.message);
+      } else if (error instanceof RequestError && error.status === 409) {
+        place(options.conflictField, message);
+      } else {
+        unplaced.push(message);
+      }
+      if (unplaced.length) notice.error(unplaced.join(', '));
+      const placed = Object.keys(byField) as F[];
+      const first = placed
+        .map((field) => document.getElementById(fieldId(field)))
+        .filter((element) => element !== null)
+        .sort((a, b) =>
+          a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+        )[0];
       if (!first) {
         // The disabled button dropped focus; give it back so keyboard users stay in the form.
         requestAnimationFrame(() => submitButton.current?.focus());
         return;
       }
       // Show each message under its input and move to the first, so it is read with the field.
-      setErrors(byField);
-      requestAnimationFrame(() => document.getElementById(fieldId(first))?.focus());
+      setErrors(
+        Object.fromEntries(placed.map((field) => [field, byField[field]?.join(', ')])) as Partial<
+          Record<F, string>
+        >,
+      );
+      requestAnimationFrame(() => first.focus());
     });
   };
 

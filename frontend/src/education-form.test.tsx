@@ -5,13 +5,14 @@ import { App } from './app';
 import { toast } from './components/ui/sonner';
 import {
   type Education,
+  educationFieldOf,
   emptyEducationForm,
-  fieldErrors,
   toEducationForm,
   toEducationInput,
 } from './education-data';
 import { findLive, queryLive } from './test/live';
 import { parseRequest, unexpectedRequest } from './test/route';
+import { type ErrorBody, validation } from './test/server-errors';
 
 // All schools here are made up for the test.
 
@@ -43,7 +44,7 @@ type Call = { method: string; url: string; body: unknown };
 function fakeApi(rows: Education[]) {
   const store = [...rows];
   const calls: Call[] = [];
-  let refuse: string | undefined;
+  let refuse: ErrorBody | undefined;
   let deleteFails: { status: number; error: string } | undefined;
   let nextId = 100;
   const json = (body: unknown, status = 200) =>
@@ -64,9 +65,9 @@ function fakeApi(rows: Education[]) {
       if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
-        const error = refuse;
+        const refused = refuse;
         refuse = undefined;
-        return json({ error }, 400);
+        return json(refused, 400);
       }
       const index = store.findIndex((row) => row.id === id);
       if (method === 'GET') return json({ educations: store });
@@ -89,8 +90,8 @@ function fakeApi(rows: Education[]) {
   return {
     store,
     calls,
-    refuseNext: (message: string) => {
-      refuse = message;
+    refuseNext: (body: string | ErrorBody) => {
+      refuse = typeof body === 'string' ? { error: body } : body;
     },
     failDeletes: (status: number, error: string) => {
       deleteFails = { status, error };
@@ -146,7 +147,9 @@ test('the server message is shown under the field it is about, and focus moves t
   type('School', '한빛대학교');
   type('Enrollment date', '2019-03-02');
   type('Graduation date', '2015-02-20');
-  api.refuseNext('Graduation date cannot be earlier than the enrollment date');
+  api.refuseNext(
+    validation(['endDate', 'Graduation date cannot be earlier than the enrollment date']),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
   await waitFor(() => expect(field('Graduation date')).toHaveAttribute('aria-invalid', 'true'));
@@ -311,7 +314,7 @@ test('text that is not a number reaches the server as typed', async () => {
   await screen.findByRole('heading', { level: 1, name: 'Add education' });
   type('GPA', '3..5');
   type('Maximum GPA', '4.5');
-  api.refuseNext('GPA must be a number');
+  api.refuseNext(validation(['gpa', 'GPA must be a number']));
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('GPA')).toHaveAccessibleDescription(/GPA must be a number/));
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
@@ -325,7 +328,7 @@ test('a GPA without its maximum shows the error under Maximum GPA', async () => 
   open('/educations/new');
   await screen.findByRole('heading', { level: 1, name: 'Add education' });
   type('GPA', '3.5');
-  api.refuseNext('Maximum GPA is required when GPA is entered');
+  api.refuseNext(validation(['gpaScale', 'Maximum GPA is required when GPA is entered']));
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() =>
     expect(field('Maximum GPA')).toHaveAccessibleDescription(
@@ -340,7 +343,9 @@ test('choosing Enrolled also clears a message about the graduation date', async 
   open('/educations/new');
   await screen.findByRole('heading', { level: 1, name: 'Add education' });
   type('Graduation date', '2015-02-20');
-  api.refuseNext('Graduation date cannot be earlier than the enrollment date');
+  api.refuseNext(
+    validation(['endDate', 'Graduation date cannot be earlier than the enrollment date']),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('Graduation date')).toHaveAttribute('aria-invalid', 'true'));
   fireEvent.change(field('Status'), { target: { value: 'enrolled' } });
@@ -350,33 +355,11 @@ test('choosing Enrolled also clears a message about the graduation date', async 
   ).not.toBeInTheDocument();
 });
 
-test('server messages map to the field they start with', () => {
-  const fieldOf = (message: string) => fieldErrors(message)[0]?.field;
-  expect(fieldOf('School is required')).toBe('school');
-  expect(fieldOf('Enrollment date must be a date in YYYY-MM-DD format')).toBe('startDate');
-  expect(fieldOf('Graduation date cannot be earlier than the enrollment date')).toBe('endDate');
-  expect(fieldOf('Graduation date must be empty while enrolled')).toBe('endDate');
-  expect(fieldOf('GPA is required when maximum GPA is entered')).toBe('gpa');
-  expect(fieldOf('Maximum GPA is required when GPA is entered')).toBe('gpaScale');
-  expect(fieldOf('Maximum GPA must be greater than 0')).toBe('gpaScale');
-  expect(fieldOf('Notes must be at most 2000 characters')).toBe('memo');
-  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
-});
-
-test('several joined messages are split per field, keeping commas inside one message', () => {
-  expect(
-    fieldErrors(
-      'Enrollment date must be a date in YYYY-MM-DD format, Degree must be one of high school, associate, bachelor, master, doctorate, other, and 2 more',
-    ),
-  ).toEqual([
-    // Screen order: Degree sits above Enrollment date.
-    {
-      field: 'degree',
-      message:
-        'Degree must be one of high school, associate, bachelor, master, doctorate, other, and 2 more',
-    },
-    { field: 'startDate', message: 'Enrollment date must be a date in YYYY-MM-DD format' },
-  ]);
+test('a validation path maps to the form field it names', () => {
+  for (const field of Object.keys(emptyEducationForm)) expect(educationFieldOf(field)).toBe(field);
+  expect(educationFieldOf('')).toBeUndefined();
+  expect(educationFieldOf('toString')).toBeUndefined();
+  expect(educationFieldOf('items.0.name')).toBeUndefined();
 });
 
 test('focus goes to the topmost field with a message, not the first one the server named', async () => {
@@ -385,7 +368,11 @@ test('focus goes to the topmost field with a message, not the first one the serv
   await screen.findByRole('heading', { level: 1, name: 'Add education' });
   // zod reports per-field issues before cross-field ones, so GPA comes before Graduation date.
   api.refuseNext(
-    'GPA must have at most two decimal places, Graduation date cannot be earlier than the enrollment date, GPA cannot be greater than the maximum GPA',
+    validation(
+      ['gpa', 'GPA must have at most two decimal places'],
+      ['endDate', 'Graduation date cannot be earlier than the enrollment date'],
+      ['gpa', 'GPA cannot be greater than the maximum GPA'],
+    ),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('Graduation date')).toHaveFocus());
@@ -404,26 +391,16 @@ test('after a message that names no field, focus returns to the submit button', 
   await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
-test('two messages about one field are kept even with another field between them', () => {
-  expect(
-    fieldErrors(
-      'GPA must have at most two decimal places, Maximum GPA must have at most two decimal places, GPA cannot be greater than the maximum GPA',
-    ),
-  ).toEqual([
-    {
-      field: 'gpa',
-      message:
-        'GPA must have at most two decimal places, GPA cannot be greater than the maximum GPA',
-    },
-    { field: 'gpaScale', message: 'Maximum GPA must have at most two decimal places' },
-  ]);
-});
-
 test('each joined server message is shown under its own field', async () => {
   const api = fakeApi([]);
   open('/educations/new');
   await screen.findByRole('heading', { level: 1, name: 'Add education' });
-  api.refuseNext('School is required, Enrollment date must be a date in YYYY-MM-DD format');
+  api.refuseNext(
+    validation(
+      ['school', 'School is required'],
+      ['startDate', 'Enrollment date must be a date in YYYY-MM-DD format'],
+    ),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('School')).toHaveFocus());
   expect(field('School')).toHaveAccessibleDescription('School is required');

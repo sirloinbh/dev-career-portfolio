@@ -5,13 +5,14 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { App } from './app';
 import {
   type Application,
-  applicationFieldErrors,
+  applicationFieldOf,
   emptyApplicationForm,
   toApplicationForm,
   toApplicationInput,
 } from './application-data';
 import { toast } from './components/ui/sonner';
 import { findLive, queryLive } from './test/live';
+import { type ErrorBody, validation } from './test/server-errors';
 
 // All companies here are made up for the test.
 
@@ -40,7 +41,7 @@ type Call = { method: string; url: string; body: unknown };
 function fakeApi(rows: Application[]) {
   const store = [...rows];
   const calls: Call[] = [];
-  let refuse: string | undefined;
+  let refuse: ErrorBody | undefined;
   let deleteFails: { status: number; error: string } | undefined;
   let nextId = 100;
   let questionCount = 0;
@@ -56,9 +57,9 @@ function fakeApi(rows: Application[]) {
       if (url === '/api/health') return json({ today: '2026-11-05' });
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
-        const error = refuse;
+        const refused = refuse;
         refuse = undefined;
-        return json({ error }, 400);
+        return json(refused, 400);
       }
       const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
@@ -94,8 +95,8 @@ function fakeApi(rows: Application[]) {
   return {
     store,
     calls,
-    refuseNext: (message: string) => {
-      refuse = message;
+    refuseNext: (body: string | ErrorBody) => {
+      refuse = typeof body === 'string' ? { error: body } : body;
     },
     failDeletes: (status: number, error: string) => {
       deleteFails = { status, error };
@@ -194,7 +195,9 @@ test('the server message is shown under the field it is about, and focus moves t
   await screen.findByRole('heading', { level: 1, name: 'Add application' });
   type('Company name', '한빛소프트');
   type('Job posting link', 'careers.example.com');
-  api.refuseNext('Job posting link must start with http:// or https://');
+  api.refuseNext(
+    validation(['postingUrl', 'Job posting link must start with http:// or https://']),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
   await waitFor(() => expect(field('Job posting link')).toHaveAttribute('aria-invalid', 'true'));
@@ -214,7 +217,11 @@ test('each joined server message is shown under its own field, topmost focused',
   await screen.findByRole('heading', { level: 1, name: 'Add application' });
   // The status message itself contains ", " between the allowed values.
   api.refuseNext(
-    'Notes must be at most 2000 characters, Application status must be one of drafting, submitted, closed, Company name is required',
+    validation(
+      ['memo', 'Notes must be at most 2000 characters'],
+      ['status', 'Application status must be one of drafting, submitted, closed'],
+      ['companyName', 'Company name is required'],
+    ),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('Company name')).toHaveFocus());
@@ -382,7 +389,7 @@ test('a half-typed deadline is sent as text the server refuses, not as no deadli
   type('Company name', '한빛소프트');
   // A browser reads an unfinished date ("2026-11-__") as '' and flags it as bad input.
   Object.defineProperty(field('Deadline'), 'validity', { value: { badInput: true } });
-  api.refuseNext('Deadline must be a date in YYYY-MM-DD format');
+  api.refuseNext(validation(['deadline', 'Deadline must be a date in YYYY-MM-DD format']));
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('Deadline')).toHaveFocus());
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
@@ -438,15 +445,12 @@ test('the form can be filled and saved with the keyboard alone', async () => {
   });
 });
 
-test('server messages map to the field they start with', () => {
-  const fieldOf = (message: string) => applicationFieldErrors(message)[0]?.field;
-  expect(fieldOf('Company name is required')).toBe('companyName');
-  expect(fieldOf('Position must be at most 100 characters')).toBe('position');
-  expect(fieldOf('Job posting link must not contain spaces')).toBe('postingUrl');
-  expect(fieldOf('Deadline must be a date in YYYY-MM-DD format')).toBe('deadline');
-  expect(fieldOf('Application status must be one of drafting, submitted, closed')).toBe('status');
-  expect(fieldOf('Notes must be at most 2000 characters')).toBe('memo');
-  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
+test('a validation path maps to the form field it names', () => {
+  for (const field of Object.keys(emptyApplicationForm))
+    expect(applicationFieldOf(field)).toBe(field);
+  expect(applicationFieldOf('')).toBeUndefined();
+  expect(applicationFieldOf('toString')).toBeUndefined();
+  expect(applicationFieldOf('items.0.name')).toBeUndefined();
 });
 
 test('form values become the API input and back', () => {

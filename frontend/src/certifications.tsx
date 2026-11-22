@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import {
   type Certification,
   certificationApi,
-  certificationFieldErrors,
+  certificationFieldOf,
   type CertificationForm,
   type CertificationPaths,
   certificationPeriodText,
@@ -140,7 +140,7 @@ function CertificationFields({
   const [form, setForm] = useState(initial);
   const expiryDateInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, submit, actions, pending } =
-    useServerForm(certificationFieldErrors);
+    useServerForm(certificationFieldOf);
   const set = (field: keyof CertificationForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 

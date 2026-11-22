@@ -16,7 +16,7 @@ import {
   coverLetterApi,
   maxQuestions,
   type QuestionDraft,
-  questionFieldErrors,
+  questionFieldOf,
   toDraft,
   toQuestionsInput,
   typedLimit,
@@ -57,8 +57,8 @@ function QuestionsForm({
   // The keys in the order the list was last sent, so the server's "Question 2" finds its question.
   const sentKeys = useRef<number[]>([]);
   const addButton = useRef<HTMLButtonElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm((message) =>
-    questionFieldErrors(sentKeys.current)(message),
+  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm((path) =>
+    questionFieldOf(sentKeys.current)(path),
   );
   const viewPath = paths.questions(applicationId);
 
