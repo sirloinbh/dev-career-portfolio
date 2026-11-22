@@ -15,6 +15,7 @@ import { deleteItem } from './delete-item';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { OutLink } from './out-link';
@@ -168,6 +169,9 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
             text: `Could not load projects. ${errorText(loaded.error)}`,
           }}
         />
+      ) : null}
+      {loaded.state === 'error' && data !== undefined ? (
+        <ReloadNotice noun="projects" error={loaded.error} onRetry={() => reload()} />
       ) : null}
       {data && projects.length === 0 ? (
         <EmptyState

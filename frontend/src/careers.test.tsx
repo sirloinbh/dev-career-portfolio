@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
@@ -171,4 +171,45 @@ test('period and role text', () => {
   expect(roleText({ department: null, position: null, employmentType: 'freelance' })).toBe(
     'Freelance',
   );
+});
+
+/** GET /api/careers answers the queued responses in turn; DELETE succeeds. */
+function serveReloads(...gets: Array<{ status: number; body: object }>) {
+  const queue = [...gets];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/api/health') {
+        return Promise.resolve(new Response(JSON.stringify({ today: '2026-11-05' })));
+      }
+      if (init?.method === 'DELETE') return Promise.resolve(new Response(null, { status: 204 }));
+      const next = queue.shift() ?? gets[gets.length - 1];
+      return Promise.resolve(new Response(JSON.stringify(next.body), { status: next.status }));
+    }),
+  );
+}
+
+async function deleteCurrentCareer() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete 한빛소프트' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Delete this career?' });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+}
+
+test('a failed reload after a delete says the list may be out of date and can be retried', async () => {
+  serveReloads(
+    { status: 200, body: { careers: [current, past] } },
+    { status: 500, body: { error: 'Server error' } },
+    { status: 200, body: { careers: [past] } },
+  );
+  openCareers();
+  await deleteCurrentCareer();
+  const alert = await findLive('alert');
+  expect(alert).toHaveTextContent('Could not refresh career. The list below may be out of date.');
+  // The delete shows at once, and the remaining row stays on screen.
+  expect(screen.queryByRole('listitem', { name: '한빛소프트' })).not.toBeInTheDocument();
+  expect(screen.getByRole('listitem', { name: '새벽랩' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull());
+  expect(screen.getByRole('listitem', { name: '새벽랩' })).toBeInTheDocument();
 });

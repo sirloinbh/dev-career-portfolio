@@ -14,6 +14,7 @@ import { deleteItem } from './delete-item';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { useServerForm } from './form-state';
+import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
@@ -154,6 +155,9 @@ export function SkillList({ paths }: { paths: SkillPaths }) {
         <Notice
           notice={{ kind: 'error', text: `Could not load skills. ${errorText(loaded.error)}` }}
         />
+      ) : null}
+      {loaded.state === 'error' && data !== undefined ? (
+        <ReloadNotice noun="skills" error={loaded.error} onRetry={() => reload()} />
       ) : null}
       {data && skills.length === 0 ? (
         <EmptyState

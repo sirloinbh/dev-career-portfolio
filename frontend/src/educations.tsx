@@ -31,6 +31,7 @@ import {
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
@@ -146,6 +147,9 @@ export function EducationList({ paths }: { paths: EducationPaths }) {
         <Notice
           notice={{ kind: 'error', text: `Could not load education. ${errorText(loaded.error)}` }}
         />
+      ) : null}
+      {loaded.state === 'error' && data !== undefined ? (
+        <ReloadNotice noun="education" error={loaded.error} onRetry={() => reload()} />
       ) : null}
       {data && educations.length === 0 ? (
         <EmptyState

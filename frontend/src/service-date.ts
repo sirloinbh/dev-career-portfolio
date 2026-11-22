@@ -20,12 +20,14 @@ export function daysUntil(date: string, today: string) {
   );
 }
 
-/** A YYYY-MM-DD date as "October 22, 2026". */
+/** A YYYY-MM-DD date as "October 22, 2026". An invalid date comes back as the raw text, so one bad row cannot break a list. */
 export function formatDate(date: string) {
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return date;
   return new Intl.DateTimeFormat('en-US', {
     timeZone: 'UTC',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(new Date(`${date}T00:00:00Z`));
+  }).format(parsed);
 }
