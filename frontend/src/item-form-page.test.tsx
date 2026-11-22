@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, expect, test, vi } from 'vitest';
 
-import { toast,Toaster } from './components/ui/sonner';
+import { toast, Toaster } from './components/ui/sonner';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { findLive, queryLive } from './test/live';
 
