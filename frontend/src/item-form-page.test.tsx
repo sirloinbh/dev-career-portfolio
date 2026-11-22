@@ -4,7 +4,10 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 import { toast, Toaster } from './components/ui/sonner';
 import { EditItemPage, NewItemPage } from './item-form-page';
+import { listQuery } from './list-query';
 import { findLive, queryLive } from './test/live';
+import { TestQueryProvider } from './test/query';
+import { serveList } from './test/serve-list';
 
 // The shell every New and Edit screen uses, tested once with a stand-in form (the entities test their own fields).
 
@@ -45,30 +48,39 @@ function Fields({
 const paths = { list: '/things' };
 const texts = { noun: 'thing', backLabel: 'Thing list' };
 const rows: Row[] = [{ id: 3, name: 'Alpha' }];
+const thingList = listQuery('/api/things', (body: { things: Row[] }) => body.things);
 
 function Where() {
   return <p data-testid="where">{useLocation().pathname}</p>;
 }
 
-function renderAt(path: string, element: React.ReactNode) {
+function renderAt(
+  path: string,
+  element: React.ReactNode,
+  load: () => Promise<Row[]> = () => Promise.resolve(rows),
+) {
+  const fetch = serveList('/api/things', 'things', load);
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/things/new" element={element} />
-        <Route path="/things/:id/edit" element={element} />
-        <Route path="/things" element={<h1>Things</h1>} />
-      </Routes>
-      <Where />
-      <Toaster />
-    </MemoryRouter>,
+    <TestQueryProvider>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/things/new" element={element} />
+          <Route path="/things/:id/edit" element={element} />
+          <Route path="/things" element={<h1>Things</h1>} />
+        </Routes>
+        <Where />
+        <Toaster />
+      </MemoryRouter>
+    </TestQueryProvider>,
   );
+  return fetch;
 }
 
 const edit = (overrides: Partial<Parameters<typeof EditItemPage<Form, Row>>[0]> = {}) => (
   <EditItemPage<Form, Row>
     paths={paths}
     texts={texts}
-    loadItems={() => Promise.resolve(rows)}
+    list={thingList}
     toForm={(row) => ({ name: row.name })}
     update={() => Promise.resolve()}
     Fields={Fields}
@@ -83,6 +95,7 @@ test('New shows the title and the back link, saves, and returns to the list', as
     <NewItemPage<Form>
       paths={paths}
       texts={texts}
+      listPath={thingList.path}
       description="Name is all you need."
       initial={{ name: '' }}
       create={create}
@@ -125,19 +138,17 @@ test('a row that is not in the list says it may be deleted', async () => {
 });
 
 test('a list that cannot be loaded says so with the reason', async () => {
-  renderAt(
-    '/things/3/edit',
-    edit({ loadItems: () => Promise.reject(new Error('Cannot connect')) }),
-  );
+  renderAt('/things/3/edit', edit(), () => Promise.reject(new Error('Cannot connect')));
   expect(await findLive('alert')).toHaveTextContent('Could not load thing. Cannot connect');
 });
 
 test('a malformed id is an invalid address, not a missing row, and loads nothing', async () => {
-  renderAt('/things/abc/edit', edit());
+  const fetch = renderAt('/things/abc/edit', edit());
   expect(await findLive('alert')).toHaveTextContent('This address is not valid');
   expect(screen.queryByText(/not found/i)).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   expect(queryLive('status')).toBeNull();
+  expect(fetch).not.toHaveBeenCalled();
 });
 
 test('the Edit page announces loading while the list is pending and clears it after', async () => {
@@ -145,7 +156,7 @@ test('the Edit page announces loading while the list is pending and clears it af
   const pending = new Promise<Row[]>((resolve) => {
     release = resolve;
   });
-  renderAt('/things/3/edit', edit({ loadItems: () => pending }));
+  renderAt('/things/3/edit', edit(), () => pending);
   expect(screen.getByRole('status')).toHaveTextContent('Loading thing');
   await act(async () => {
     release(rows);

@@ -7,6 +7,7 @@ import {
   careerApi,
   careerFieldOf,
   type CareerForm,
+  careerList,
   type CareerPaths,
   careerPeriodText,
   employmentTypeLabels,
@@ -28,9 +29,6 @@ import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { TextBlocks } from './text-blocks';
-
-const loadCareers = () => careerApi.list();
-const loadCareersRows = () => loadCareers().then((response) => response.careers);
 
 function CareerItem({
   career,
@@ -90,7 +88,7 @@ function CareerItem({
 export function CareerList({ paths }: { paths: CareerPaths }) {
   return (
     <ItemListPage<Career>
-      load={loadCareersRows}
+      list={careerList}
       title="Career"
       description="See your employers and roles, newest start first."
       noun="career"
@@ -244,6 +242,7 @@ export function NewCareer({ paths }: { paths: CareerPaths }) {
   return (
     <NewItemPage
       paths={paths}
+      listPath={careerList.path}
       texts={{ noun: 'career', backLabel: 'Career list' }}
       description="Company, employment type, and start date are all you need. The rest can stay empty."
       initial={emptyCareerForm}
@@ -258,7 +257,7 @@ export function EditCareer({ paths }: { paths: CareerPaths }) {
     <EditItemPage
       paths={paths}
       texts={{ noun: 'career', backLabel: 'Career list' }}
-      loadItems={loadCareersRows}
+      list={careerList}
       toForm={toCareerForm}
       update={(item, form) => careerApi.update(item.id, toCareerInput(form))}
       Fields={CareerFields}

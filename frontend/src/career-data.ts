@@ -1,5 +1,6 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { listQuery } from './list-query';
 import { formatDate } from './service-date';
 
 // Work history (#32 API, #40 list, #41 form): API calls and display rules. The screens are in
@@ -102,8 +103,10 @@ export const careerFieldOf = flatFieldOf(emptyCareerForm);
 
 const base = '/api/careers';
 
+/** The list (#152): the list screen and the Edit screen share its cache entry. */
+export const careerList = listQuery(base, (body: { careers: Career[] }) => body.careers);
+
 export const careerApi = {
-  list: () => requestJson<{ careers: Career[] }>(base),
   create: (input: CareerInput) =>
     requestJson<{ career: Career }>(base, { method: 'POST', body: input }),
   update: (id: number, input: CareerInput) =>

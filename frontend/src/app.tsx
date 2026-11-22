@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import {
   Award,
   Briefcase,
@@ -26,6 +26,7 @@ import { ApplicationQuestions } from './cover-letter-questions';
 import type { EducationPaths } from './education-data';
 import { EditEducation, EducationList, NewEducation } from './educations';
 import { type Health, healthText } from './health';
+import { createQueryClient } from './lib/query';
 import type { ProjectPaths } from './project-data';
 import { EditProject, NewProject, ProjectList } from './projects';
 import { AccountActions, SignInGate } from './sign-in';
@@ -242,9 +243,8 @@ function AppRoutes() {
 }
 
 export function App() {
-  // One client for the whole app, kept in state so a re-render does not make a new one. It uses React Query's defaults
-  // for now; the synced shared `createQueryClient()` replaces it when the query layer arrives (#152).
-  const [queryClient] = useState(() => new QueryClient());
+  // One client for the whole app, kept in state so a re-render does not make a new one (shared settings, #152).
+  const [queryClient] = useState(() => createQueryClient());
   return (
     <QueryClientProvider client={queryClient}>
       <AppRoutes />

@@ -26,3 +26,19 @@ CI's `knip` runs in strict mode and failed PR #211 with `Unused dependencies (1)
 
 - `npm run knip`: the unused-dependency finding is gone. Locally knip also reports `e2e/smoke.spec.ts` and `@axe-core/playwright` because `playwright.config.ts` needs a test database; that output is the same on `origin/main` and does not happen in CI.
 - `npm run check`: passed (frontend 406 passed, 3 skipped).
+
+## Move the screens onto the shared query layer — 2026-11-22
+
+Branch `feat/152-shared-query-layer`. Steps 2 and 3 are done: sirloinbh/project-standards#998 (PR #1000) turned on the `query` feature for this app, and sync PR #212 brought `frontend/src/lib/query.ts` and its test.
+
+- `list-query.ts` (new): a `ListQuery` is an entity list's GET path plus how to take its rows out of the answer. `useListQuery` loads it with `useApiQuery` under `apiKey(path)`; `useRefreshList` invalidates that key after a write.
+- Each `*-data.ts` exports its list (`careerList` and the others) instead of an `api.list()` loader; the screens pass it to the shells.
+- `ItemListPage` loads through `useListQuery`. A delete hides the row at once (a set of deleted ids, so a failed refetch cannot bring it back), then refreshes the list; Try again calls `refetch`.
+- `NewItemPage` (new `listPath` prop) and `EditItemPage` (`list` instead of `loadItems`) refresh the list after a save, before going back to it, so the list never shows the rows from before the save. The Edit screen finds its row in the list screen's cache entry, so coming from the list shows the form without a second request. A malformed id loads nothing (`enabled: false`).
+- The cover letter screens load the questions with `useQuestions` (in `cover-letter-data.ts`, keyed by the application's questions path) and the application from `applicationList`; saving the questions refreshes that key. The delete dialog's one-off question count still uses `coverLetterApi.list`.
+- `App` now uses the shared `createQueryClient()` (30 s fresh time, one retry for network errors and 5xx, refetch on window focus).
+- `use-load.ts` and `use-load.test.ts` are deleted.
+
+Tests: `test/query.tsx` (new) gives a screen rendered without `<App />` a fresh client with retries off, and `serveList` answers one list path. `item-list-page.test.tsx` and `item-form-page.test.tsx` load through it; the malformed-id test also checks that nothing is fetched. `careers.test.tsx`: the failed-refresh test now fails both tries (the shared layer retries a 5xx once), and a new test checks that opening Edit from the list sends no second `GET /api/careers`.
+
+Behaviour change to note: coming back to a list within 30 s shows the cached rows without a request; after 30 s it shows them at once and refreshes in the background.

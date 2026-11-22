@@ -7,6 +7,7 @@ import {
   applicationApi,
   applicationFieldOf,
   type ApplicationForm,
+  applicationList,
   type ApplicationPaths,
   applicationStatuses,
   applicationStatusLabels,
@@ -31,9 +32,6 @@ import { OutLink } from './out-link';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
 import { webLink } from './web-link';
-
-const loadApplications = () => applicationApi.list();
-const loadApplicationsRows = () => loadApplications().then((response) => response.applications);
 
 function ApplicationItem({
   application,
@@ -149,7 +147,7 @@ export function ApplicationList({ paths }: { paths: ApplicationPaths }) {
   const today = serviceToday();
   return (
     <ItemListPage<Application>
-      load={loadApplicationsRows}
+      list={applicationList}
       title="Cover letters"
       description="See the companies you applied to by status (drafting, submitted, closed), earliest deadline first within each status. Drafts past their deadline come after the other drafts."
       noun="applications"
@@ -308,6 +306,7 @@ export function NewApplication({ paths }: { paths: ApplicationPaths }) {
   return (
     <NewItemPage
       paths={paths}
+      listPath={applicationList.path}
       texts={{ noun: 'application', backLabel: 'Application list' }}
       description="Company name and status are all you need. The rest can stay empty."
       initial={emptyApplicationForm}
@@ -324,7 +323,7 @@ export function EditApplication({ paths }: { paths: ApplicationPaths }) {
     <EditItemPage
       paths={paths}
       texts={{ noun: 'application', backLabel: 'Application list' }}
-      loadItems={loadApplicationsRows}
+      list={applicationList}
       toForm={toApplicationForm}
       update={(item, form) => applicationApi.update(item.id, toApplicationInput(form))}
       Fields={ApplicationFields}

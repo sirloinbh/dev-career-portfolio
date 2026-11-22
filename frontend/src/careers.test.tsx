@@ -198,6 +198,8 @@ async function deleteCurrentCareer() {
 test('a failed reload after a delete says the list may be out of date and can be retried', async () => {
   serveReloads(
     { status: 200, body: { careers: [current, past] } },
+    // The shared query layer retries a 5xx once (#152), so the refresh fails only when both tries do.
+    { status: 500, body: { error: 'Server error' } },
     { status: 500, body: { error: 'Server error' } },
     { status: 200, body: { careers: [past] } },
   );
@@ -212,4 +214,18 @@ test('a failed reload after a delete says the list may be out of date and can be
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull());
   expect(screen.getByRole('listitem', { name: '새벽랩' })).toBeInTheDocument();
+});
+
+test('the Edit screen reuses the list it came from instead of loading it again (#152)', async () => {
+  serveReloads({ status: 200, body: { careers: [current, past] } });
+  openCareers();
+  fireEvent.click(await screen.findByRole('link', { name: 'Edit 한빛소프트' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Edit career' })).toBeInTheDocument();
+  expect(await screen.findByDisplayValue('한빛소프트')).toBeInTheDocument();
+  const listGets = vi
+    .mocked(fetch)
+    .mock.calls.filter(
+      ([input, init]) => String(input) === '/api/careers' && (init?.method ?? 'GET') === 'GET',
+    );
+  expect(listGets).toHaveLength(1);
 });

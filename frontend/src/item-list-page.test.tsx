@@ -4,38 +4,46 @@ import { expect, test, vi } from 'vitest';
 
 import { toast } from './components/ui/sonner';
 import { ItemListPage, ItemUl } from './item-list-page';
+import { listQuery } from './list-query';
 import { findLive } from './test/live';
+import { TestQueryProvider } from './test/query';
+import { serveList } from './test/serve-list';
 
 type Row = { id: number; name: string };
 
+const thingList = listQuery('/api/things', (body: { things: Row[] }) => body.things);
+
 function setup(load: () => Promise<Row[]>, removeRow = vi.fn(() => Promise.resolve())) {
+  serveList('/api/things', 'things', load);
   render(
-    <MemoryRouter>
-      <ItemListPage<Row>
-        load={load}
-        title="Things"
-        description="Your things."
-        noun="things"
-        addLabel="Add thing"
-        addTo="/things/new"
-        empty={{ icon: null, title: 'No things yet', description: 'Add one.' }}
-        deleteNoun="thing"
-        deleteName={(row) => row.name}
-        removeRow={removeRow}
-        renderRows={(rows, onDelete) => (
-          <ItemUl label="Thing list">
-            {rows.map((row) => (
-              <li key={row.id} aria-label={row.name}>
-                {row.name}
-                <button type="button" onClick={() => void onDelete(row)}>
-                  Delete {row.name}
-                </button>
-              </li>
-            ))}
-          </ItemUl>
-        )}
-      />
-    </MemoryRouter>,
+    <TestQueryProvider>
+      <MemoryRouter>
+        <ItemListPage<Row>
+          list={thingList}
+          title="Things"
+          description="Your things."
+          noun="things"
+          addLabel="Add thing"
+          addTo="/things/new"
+          empty={{ icon: null, title: 'No things yet', description: 'Add one.' }}
+          deleteNoun="thing"
+          deleteName={(row) => row.name}
+          removeRow={removeRow}
+          renderRows={(rows, onDelete) => (
+            <ItemUl label="Thing list">
+              {rows.map((row) => (
+                <li key={row.id} aria-label={row.name}>
+                  {row.name}
+                  <button type="button" onClick={() => void onDelete(row)}>
+                    Delete {row.name}
+                  </button>
+                </li>
+              ))}
+            </ItemUl>
+          )}
+        />
+      </MemoryRouter>
+    </TestQueryProvider>,
   );
   return removeRow;
 }

@@ -1,5 +1,6 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { listQuery } from './list-query';
 import { formatDate } from './service-date';
 
 // Certifications (#35 API, #46 list, #47 form): API calls and display rules. The screens are in
@@ -90,8 +91,13 @@ export const certificationFieldOf = flatFieldOf(emptyCertificationForm);
 
 const base = '/api/certifications';
 
+/** The list (#152): the list screen and the Edit screen share its cache entry. */
+export const certificationList = listQuery(
+  base,
+  (body: { certifications: Certification[] }) => body.certifications,
+);
+
 export const certificationApi = {
-  list: () => requestJson<{ certifications: Certification[] }>(base),
   create: (input: CertificationInput) =>
     requestJson<{ certification: Certification }>(base, { method: 'POST', body: input }),
   update: (id: number, input: CertificationInput) =>

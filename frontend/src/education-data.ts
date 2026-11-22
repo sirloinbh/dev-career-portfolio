@@ -1,6 +1,7 @@
 import { toNumber } from './form-fields';
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { listQuery } from './list-query';
 import { formatDate } from './service-date';
 
 // Education history (#31 API, #38 list, #39 form): API calls and display rules. The screens are in
@@ -138,8 +139,13 @@ export const educationFieldOf = flatFieldOf(emptyEducationForm);
 
 const base = '/api/educations';
 
+/** The list (#152): the list screen and the Edit screen share its cache entry. */
+export const educationList = listQuery(
+  base,
+  (body: { educations: Education[] }) => body.educations,
+);
+
 export const educationApi = {
-  list: () => requestJson<{ educations: Education[] }>(base),
   create: (input: EducationInput) =>
     requestJson<{ education: Education }>(base, { method: 'POST', body: input }),
   update: (id: number, input: EducationInput) =>
