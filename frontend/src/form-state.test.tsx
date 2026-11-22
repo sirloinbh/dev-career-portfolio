@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router';
 import { expect, test, vi } from 'vitest';
 
 import { flatFieldOf, typedDate, useServerForm } from './form-state';
@@ -11,6 +11,10 @@ import { findLive, queryLive } from './test/live';
 
 const empty = { name: '', memo: '', tags: '' };
 const fieldOf = flatFieldOf(empty);
+
+function Where() {
+  return <p data-testid="where">{useLocation().pathname}</p>;
+}
 
 function Stand({ save, conflictField }: { save: () => Promise<unknown>; conflictField?: 'name' }) {
   const form = useServerForm(fieldOf, { conflictField });
@@ -25,6 +29,9 @@ function Stand({ save, conflictField }: { save: () => Promise<unknown>; conflict
       <label htmlFor={form.fieldId('tags')}>Tags</label>
       <input id={form.fieldId('tags')} {...form.describe('tags')} />
       {form.errorFor('tags')}
+      <button type="button" onClick={form.markDirty}>
+        Add item
+      </button>
       {form.actions({ submitLabel: 'Save', cancelTo: '/' })}
     </form>
   );
@@ -36,8 +43,9 @@ const invalid = (...fields: { path: string; message: string }[]) =>
 
 function submitStand(save: () => Promise<unknown>, conflictField?: 'name') {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={['/form']}>
       <Stand save={save} conflictField={conflictField} />
+      <Where />
     </MemoryRouter>,
   );
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -206,4 +214,68 @@ test('typedDate sends text the server refuses for a half-typed date, but not for
   expect(typedDate(input(false), '')).toBe('');
   expect(typedDate(input(true, true), '2023-12-01')).toBe('2023-12-01');
   expect(typedDate(null, '2023-12-01')).toBe('2023-12-01');
+});
+
+function renderStand(save: () => Promise<unknown>) {
+  render(
+    <MemoryRouter initialEntries={['/form']}>
+      <Stand save={save} />
+      <Where />
+    </MemoryRouter>,
+  );
+}
+
+const reloadAsksFirst = () => {
+  const event = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(event);
+  return event.defaultPrevented;
+};
+
+test('an untouched form lets Cancel and a reload go straight through', () => {
+  renderStand(vi.fn(() => Promise.resolve()));
+  expect(reloadAsksFirst()).toBe(false);
+  expect(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/');
+});
+
+test('a changed form asks before a reload, and Cancel asks before the input is thrown away', async () => {
+  renderStand(vi.fn(() => Promise.resolve()));
+  fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'x' } });
+  expect(reloadAsksFirst()).toBe(true);
+  expect(screen.queryByRole('link', { name: 'Cancel' })).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Discard what you typed?' });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(screen.getByLabelText('Name')).toHaveValue('x');
+  expect(screen.getByTestId('where')).toHaveTextContent('/form');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  fireEvent.click(
+    within(await screen.findByRole('dialog')).getByRole('button', { name: 'Discard' }),
+  );
+  await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(/^\/$/));
+});
+
+test('a change that raises no change event counts through markDirty', () => {
+  renderStand(vi.fn(() => Promise.resolve()));
+  fireEvent.click(screen.getByRole('button', { name: 'Add item' }));
+  expect(reloadAsksFirst()).toBe(true);
+});
+
+test('a saved form no longer asks before a reload', async () => {
+  const save = vi.fn(() => Promise.resolve());
+  renderStand(save);
+  fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'x' } });
+  expect(reloadAsksFirst()).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(reloadAsksFirst()).toBe(false));
+});
+
+test('a failed save keeps the form changed, so a reload still asks', async () => {
+  renderStand(fail(new TypeError('Failed to fetch')));
+  fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'x' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  await findLive('alert');
+  expect(reloadAsksFirst()).toBe(true);
 });
