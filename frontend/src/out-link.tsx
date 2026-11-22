@@ -1,12 +1,19 @@
 import { ExternalLink } from 'lucide-react';
 
+import { webLink } from './web-link';
+
 // A list item's outside link (project #42, application #48).
 
-/** A link that opens in a new tab; its name says whose link it is and that a tab opens. */
+/**
+ * A link that opens in a new tab; its name says whose link it is and that a tab opens. A URL that is
+ * not http(s) renders nothing, so no caller can put a javascript: link in the page.
+ */
 export function OutLink({ href, label, owner }: { href: string; label: string; owner: string }) {
+  const safeHref = webLink(href);
+  if (!safeHref) return null;
   return (
     <a
-      href={href}
+      href={safeHref}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${label} of ${owner} (opens in a new tab)`}
