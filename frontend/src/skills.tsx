@@ -1,21 +1,19 @@
-import { Pencil, Plus, Trash2, Wrench } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { Pencil, Trash2, Wrench } from 'lucide-react';
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
-import { EmptyState } from './components/ui/empty-state';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
-import { deleteItem } from './delete-item';
 import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { useServerForm } from './form-state';
-import { ReloadNotice } from './item-list-page-notice';
+import { ItemListPage, ItemUl } from './item-list-page';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
@@ -37,9 +35,10 @@ import {
   toSkillInput,
 } from './skill-data';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useLoad } from './use-load';
 
 const loadSkills = () => skillApi.list();
+const loadSkillRows = () => loadSkills().then((response) => response.skills);
 
 /**
  * Five dots, the first `value` filled, then "4/5 · Advanced". The dots and the short text are hidden
@@ -118,75 +117,43 @@ function SkillItem({
 }
 
 export function SkillList({ paths }: { paths: SkillPaths }) {
-  const { loaded, data, reload } = useReloading('all', loadSkills);
-  const skills = data?.skills ?? [];
-  const heading = useRef<HTMLHeadingElement>(null);
-  // Only the first load shows the placeholder; a reload keeps the rows on screen.
-  const firstLoad = loaded.state === 'loading' && data === undefined;
-
-  const remove = async (skill: Skill) => {
-    await deleteItem({ remove: () => skillApi.remove(skill.id), noun: 'skill', name: skill.name });
-    reload((current) => ({ skills: current.skills.filter((item) => item.id !== skill.id) }));
-    // The row and its delete button are gone, so focus would fall to the page body.
-    requestAnimationFrame(() => heading.current?.focus());
-  };
-
   return (
-    <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
-      <PageHeader
-        title="Skills"
-        description="See the technologies you can work with, by category."
-        headingRef={heading}
-      >
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading skills' : ''}
-          {data ? entryCount(skills.length) : ''}
-        </p>
-      </PageHeader>
-      <Button asChild className="w-fit">
-        <Link to={paths.create}>
-          <Plus aria-hidden />
-          Add skill
-        </Link>
-      </Button>
-      {firstLoad ? <SkeletonList rows={3} /> : null}
-      {loaded.state === 'error' && data === undefined ? (
-        // Say what failed first: a proxy error without a server message only carries the generic text.
-        <Notice
-          notice={{ kind: 'error', text: `Could not load skills. ${errorText(loaded.error)}` }}
-        />
-      ) : null}
-      {loaded.state === 'error' && data !== undefined ? (
-        <ReloadNotice noun="skills" error={loaded.error} onRetry={() => reload()} />
-      ) : null}
-      {data && skills.length === 0 ? (
-        <EmptyState
-          className="break-keep"
-          icon={<Wrench />}
-          title="No skills added yet"
-          description="Add a skill and it will appear here by category, strongest first."
-        />
-      ) : null}
-      {groupSkills(skills).map((group) => (
-        // A plain group, not a landmark: six category regions would crowd the landmark list, and
-        // the heading already lets a screen reader jump between categories.
-        <div key={group.category} className="flex flex-col gap-3">
-          <h2 className="flex items-baseline gap-2">
-            {skillCategoryLabels[group.category]}{' '}
-            <span className="text-body-sm font-normal text-muted-foreground">
-              {entryCount(group.skills.length)}
-            </span>
-          </h2>
-          {/* Unnamed: the heading just above names it, and the list itself says how many items. */}
-          <ul className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm">
-            {group.skills.map((skill) => (
-              <SkillItem key={skill.id} skill={skill} paths={paths} onDelete={remove} />
-            ))}
-          </ul>
-        </div>
-      ))}
-    </section>
+    <ItemListPage<Skill>
+      load={loadSkillRows}
+      title="Skills"
+      description="See the technologies you can work with, by category."
+      noun="skills"
+      addLabel="Add skill"
+      addTo={paths.create}
+      empty={{
+        icon: <Wrench />,
+        title: 'No skills added yet',
+        description: 'Add a skill and it will appear here by category, strongest first.',
+      }}
+      deleteNoun="skill"
+      deleteName={(row) => row.name}
+      removeRow={(row) => skillApi.remove(row.id)}
+      renderRows={(rows, onDelete) =>
+        groupSkills(rows).map((group) => (
+          // A plain group, not a landmark: six category regions would crowd the landmark list, and
+          // the heading already lets a screen reader jump between categories.
+          <div key={group.category} className="flex flex-col gap-3">
+            <h2 className="flex items-baseline gap-2">
+              {skillCategoryLabels[group.category]}{' '}
+              <span className="text-body-sm font-normal text-muted-foreground">
+                {entryCount(group.skills.length)}
+              </span>
+            </h2>
+            {/* Unnamed: the heading just above names it, and the list itself says how many items. */}
+            <ItemUl>
+              {group.skills.map((skill) => (
+                <SkillItem key={skill.id} skill={skill} paths={paths} onDelete={onDelete} />
+              ))}
+            </ItemUl>
+          </div>
+        ))
+      }
+    />
   );
 }
 
