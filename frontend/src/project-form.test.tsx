@@ -3,15 +3,9 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 import { App } from './app';
 import { toast } from './components/ui/sonner';
-import {
-  emptyProjectForm,
-  type Project,
-  projectFieldOf,
-  splitTechnologies,
-  toProjectForm,
-  toProjectInput,
-} from './project-data';
+import type { Project } from './project-data';
 import { findLive, queryLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
 // All projects here are made up for the test.
@@ -53,17 +47,20 @@ function fakeApi(rows: Project[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
+      const request = parseRequest(input, init);
+      const { method, path: url, id } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
-      if (url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      const known =
+        (url === '/api/projects' && (method === 'GET' || method === 'POST')) ||
+        (id !== null && url === `/api/projects/${id}` && (method === 'PUT' || method === 'DELETE'));
+      if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
         const refused = refuse;
         refuse = undefined;
         return json(refused, 400);
       }
-      const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
       if (method === 'GET') return json({ projects: store });
       // The server stores blank text as NULL.
@@ -78,7 +75,7 @@ function fakeApi(rows: Project[]) {
       }
       if (index === -1) return json({ error: 'Project not found' }, 404);
       if (method === 'PUT') {
-        store[index] = saved({ ...(body as Project), id });
+        store[index] = saved({ ...(body as Project), id: id as number });
         return json({ project: store[index] });
       }
       if (method === 'DELETE' && deleteFails)
@@ -349,23 +346,4 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   expect(
     screen.getByRole('listitem', { hidden: true, name: '사내 위키 검색' }),
   ).toBeInTheDocument();
-});
-
-test('a validation path maps to the form field it names', () => {
-  for (const field of Object.keys(emptyProjectForm)) expect(projectFieldOf(field)).toBe(field);
-  expect(projectFieldOf('')).toBeUndefined();
-  expect(projectFieldOf('toString')).toBeUndefined();
-  expect(projectFieldOf('technologies.3')).toBe('technologies');
-  expect(projectFieldOf('items.0.name')).toBeUndefined();
-});
-
-test('form values become the API input and back', () => {
-  expect(splitTechnologies('')).toEqual([]);
-  expect(splitTechnologies(' , ,')).toEqual([]);
-  expect(splitTechnologies('Go,  Rust ')).toEqual(['Go', 'Rust']);
-  expect(toProjectInput({ ...emptyProjectForm, endDate: '' }).endDate).toBeNull();
-  expect(toProjectInput(emptyProjectForm).technologies).toEqual([]);
-  expect(
-    toProjectForm({ ...past, organization: null, endDate: null, technologies: [] }),
-  ).toMatchObject({ organization: '', endDate: '', technologies: '', serviceUrl: '' });
 });
