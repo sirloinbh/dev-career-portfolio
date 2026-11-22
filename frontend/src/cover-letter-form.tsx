@@ -57,8 +57,8 @@ function QuestionsForm({
   // The keys in the order the list was last sent, so the server's "Question 2" finds its question.
   const sentKeys = useRef<number[]>([]);
   const addButton = useRef<HTMLButtonElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm((path) =>
-    questionFieldOf(sentKeys.current)(path),
+  const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } = useServerForm(
+    (path) => questionFieldOf(sentKeys.current)(path),
   );
   const viewPath = paths.questions(applicationId);
 
@@ -111,6 +111,7 @@ function QuestionsForm({
     <form
       noValidate
       onSubmit={submit(save)}
+      onChange={clearOnEdit}
       className="flex max-w-3xl flex-col gap-5"
       aria-busy={pending || undefined}
     >

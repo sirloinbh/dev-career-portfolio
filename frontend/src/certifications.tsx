@@ -133,7 +133,7 @@ function CertificationFields({
 }) {
   const [form, setForm] = useState(initial);
   const expiryDateInput = useRef<HTMLInputElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } =
+  const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } =
     useServerForm(certificationFieldOf);
   const set = (field: keyof CertificationForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
@@ -164,6 +164,7 @@ function CertificationFields({
     // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
+      onChange={clearOnEdit}
       onSubmit={submit(() =>
         onSubmit({ ...form, expiryDate: typedDate(expiryDateInput.current, form.expiryDate) }),
       )}

@@ -306,6 +306,29 @@ test('a server message is shown under the field of the question it names', async
   ).toBe('만');
 });
 
+test('editing a question field removes its server message and keeps the other question’s', async () => {
+  const api = fakeApi(saved);
+  await openForm();
+  type(fieldIn(2, 'Question'), '');
+  type(fieldIn(1, 'Character limit'), '만');
+  api.refuseNext(
+    400,
+    validation(
+      [
+        'questions.0.charLimit',
+        'Question 1: Character limit must be a whole number from 1 to 5000',
+      ],
+      ['questions.1.question', 'Question 2: Question is required'],
+    ),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(fieldIn(1, 'Character limit')).toHaveFocus());
+  type(fieldIn(1, 'Character limit'), '500');
+  expect(fieldIn(1, 'Character limit')).not.toHaveAttribute('aria-invalid');
+  expect(fieldIn(2, 'Question')).toHaveAttribute('aria-invalid', 'true');
+  expect(fieldIn(2, 'Question')).toHaveAccessibleDescription('Question 2: Question is required');
+});
+
 test('a failed save keeps everything typed on screen and says why', async () => {
   const api = fakeApi(saved);
   await openForm();

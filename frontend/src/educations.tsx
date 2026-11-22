@@ -136,7 +136,7 @@ function EducationFields({
 }) {
   const [form, setForm] = useState(initial);
   const endDateInput = useRef<HTMLInputElement>(null);
-  const { fieldId, describe, errorFor, clearError, submit, actions, pending } =
+  const { fieldId, describe, errorFor, clearError, clearOnEdit, submit, actions, pending } =
     useServerForm(educationFieldOf);
   const set = (field: keyof EducationForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
@@ -146,6 +146,7 @@ function EducationFields({
     // The server checks every rule and answers in English, so the browser's own checks are off.
     <form
       noValidate
+      onChange={clearOnEdit}
       onSubmit={submit(() =>
         onSubmit({ ...form, endDate: typedDate(endDateInput.current, form.endDate) }),
       )}

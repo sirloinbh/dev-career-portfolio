@@ -67,6 +67,20 @@ export function useServerForm<F extends string>(
 
   const clearError = (field: F) => setErrors((current) => ({ ...current, [field]: undefined }));
 
+  /**
+   * For the form's `onChange` (change events bubble up to it): the message under a field goes as soon as that field
+   * is edited, so a message about text that is already fixed never stays on screen. A group of inputs (radios in a
+   * fieldset) counts as one field when the group has the field's id.
+   */
+  const clearOnEdit = (event: FormEvent<HTMLFormElement>) => {
+    const target = event.target as Node;
+    for (const field of Object.keys(errors) as F[]) {
+      const element = document.getElementById(fieldId(field));
+      const inGroup = target instanceof HTMLElement && target.id.startsWith(`${fieldId(field)}-`);
+      if (errors[field] !== undefined && (element?.contains(target) || inGroup)) clearError(field);
+    }
+  };
+
   const submit = (save: () => Promise<unknown>) => (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPending(true);
@@ -131,5 +145,5 @@ export function useServerForm<F extends string>(
     </>
   );
 
-  return { pending, fieldId, describe, errorFor, clearError, submit, actions };
+  return { pending, fieldId, describe, errorFor, clearError, clearOnEdit, submit, actions };
 }
