@@ -104,6 +104,14 @@ async function openForm() {
   await screen.findByRole('list', { name: 'Questions to save' });
 }
 
+test('a malformed application id in the form address shows the invalid-address notice', async () => {
+  const api = fakeApi(saved);
+  open('/applications/abc/questions/edit');
+  expect(await findLive('alert')).toHaveTextContent('This address is not valid');
+  expect(screen.queryByRole('list', { name: 'Questions to save' })).not.toBeInTheDocument();
+  expect(api.calls.some((call) => call.url.includes('/questions'))).toBe(false);
+});
+
 test('Edit questions opens the form with the saved questions, and Save keeps the order', async () => {
   const api = fakeApi(saved);
   open('/applications/1');

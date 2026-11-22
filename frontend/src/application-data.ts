@@ -52,9 +52,9 @@ export type ApplicationPaths = {
   create: string;
   edit: (id: number) => string;
   /** One application's cover letter questions (#50). */
-  questions: (id: number) => string;
+  questions: (id: number | string) => string;
   /** The form for them (#51). */
-  editQuestions: (id: number) => string;
+  editQuestions: (id: number | string) => string;
 };
 
 type ApplicationInput = Omit<Application, 'id'>;

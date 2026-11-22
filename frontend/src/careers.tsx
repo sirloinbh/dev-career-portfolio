@@ -27,6 +27,7 @@ import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
+import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
@@ -313,13 +314,15 @@ export function NewCareer({ paths }: { paths: CareerPaths }) {
 
 export function EditCareer({ paths }: { paths: CareerPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // There is no single-item API (#32): the list is small, so the form finds its row there.
   const loaded = useLoad('all', loadCareers);
   const navigate = useNavigate();
   const career =
     loaded.state === 'ok' ? loaded.data.careers.find((item) => String(item.id) === id) : undefined;
   const update = async (form: CareerForm) => {
-    await careerApi.update(Number(id), toCareerInput(form));
+    if (!career) return;
+    await careerApi.update(career.id, toCareerInput(form));
     toast.success('Saved');
     void navigate(paths.list);
   };
@@ -331,13 +334,14 @@ export function EditCareer({ paths }: { paths: CareerPaths }) {
     >
       <BackLink to={paths.list} label="Career list" />
       <PageHeader title="Edit career" description="Change what you need, then save." />
-      {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {loaded.state === 'error' ? (
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
+      {valid && loaded.state === 'error' ? (
         <Notice
           notice={{ kind: 'error', text: `Could not load career. ${errorText(loaded.error)}` }}
         />
       ) : null}
-      {loaded.state === 'ok' && !career ? (
+      {valid && loaded.state === 'ok' && !career ? (
         <Notice notice={{ kind: 'error', text: 'Career not found. It may already be deleted.' }} />
       ) : null}
       {career ? (
