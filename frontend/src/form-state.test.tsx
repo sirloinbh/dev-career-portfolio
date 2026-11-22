@@ -146,8 +146,10 @@ test('while saving the button is busy and disabled; a new submit clears the old 
   let reject: (error: unknown) => void = () => undefined;
   const save = vi
     .fn<() => Promise<unknown>>()
-    .mockReturnValueOnce(Promise.reject(invalid({ path: 'name', message: 'Name is required' })))
-    .mockReturnValueOnce(new Promise((_, rejectSave) => (reject = rejectSave)));
+    .mockImplementationOnce(() =>
+      Promise.reject(invalid({ path: 'name', message: 'Name is required' })),
+    )
+    .mockImplementationOnce(() => new Promise((_, rejectSave) => (reject = rejectSave)));
   submitStand(save);
   await screen.findByText('Name is required');
   const button = screen.getByRole('button', { name: 'Save' });
