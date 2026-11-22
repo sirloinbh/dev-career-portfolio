@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // useLoad and useReloading from cert-manager frontend/src/use-load.ts, so the sibling apps share one
 // loading pattern.
@@ -6,18 +6,23 @@ type Loaded<T> =
   { state: 'loading' } | { state: 'ok'; data: T } | { state: 'error'; error: unknown };
 
 // Loads once per key. The result remembers its key, so a new key shows loading without resetting state in the effect.
+// Only `key` drives the fetch: the latest `load` is kept in a ref, so an inline loader cannot refetch on every render.
 export function useLoad<T>(key: string, load: (key: string) => Promise<T>): Loaded<T> {
   const [result, setResult] = useState<{ key: string; value: Loaded<T> }>();
+  const latestLoad = useRef(load);
+  useEffect(() => {
+    latestLoad.current = load;
+  });
   useEffect(() => {
     let active = true;
-    load(key).then(
+    latestLoad.current(key).then(
       (data) => active && setResult({ key, value: { state: 'ok', data } }),
       (error: unknown) => active && setResult({ key, value: { state: 'error', error } }),
     );
     return () => {
       active = false;
     };
-  }, [key, load]);
+  }, [key]);
   return result?.key === key ? result.value : { state: 'loading' };
 }
 
