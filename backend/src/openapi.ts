@@ -134,27 +134,8 @@ export const document = buildOpenApi({
   description:
     'Dates are YYYY-MM-DD. Every error response is { error: English message }; a validation 400 also lists the invalid fields as fields: [{ path, message }].',
   errorDescription: 'English error message',
+  // app.ts registers createErrorHandler({ fields: true }), so a validation 400 also lists the invalid fields (#200, #214).
+  errorFields: true,
   operations,
   statusText,
 });
-
-// The shared Error schema (standard/openapi.ts) knows only `error`. app.ts turns on createErrorHandler({ fields: true }), so a
-// validation 400 also carries `fields`; it is added here because the managed builder has no option for it (#200).
-const errorSchema = (
-  document.components as { schemas: Record<string, { properties: Record<string, unknown> }> }
-).schemas.Error;
-errorSchema.properties.fields = {
-  type: 'array',
-  description: 'Only on a validation 400: each invalid field with its message',
-  items: {
-    type: 'object',
-    properties: {
-      path: {
-        type: 'string',
-        description: 'Where the field is in the request body, joined by dots (items.0.name)',
-      },
-      message: { type: 'string', description: 'English error message of this field' },
-    },
-    required: ['path', 'message'],
-  },
-};

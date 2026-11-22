@@ -1703,11 +1703,11 @@
               "properties": {
                 "path": {
                   "type": "string",
-                  "description": "Where the field is in the request body, joined by dots (items.0.name)"
+                  "description": "Where the field is in the input, joined by dots (items.0.name)"
                 },
                 "message": {
                   "type": "string",
-                  "description": "English error message of this field"
+                  "description": "The message for this field"
                 }
               },
               "required": [
