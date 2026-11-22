@@ -1,0 +1,7 @@
+# Direct tests for useServerForm, flatFieldOf, toNumber and typedDate (#198)
+
+- New `frontend/src/form-state.test.tsx` with a small stand-in form (page order memo, name, tags; the server lists name first): a message under its field with aria links; a path below a field (`tags.3`); an unplaced path goes to the notice while the others stay under their fields; focus goes to the first field in page order; duplicate messages show once and different ones are joined; a 409 under `conflictField` or, without one, in the notice; a 400 without `fields`; a non-request error and a non-Error value; focus returns to Save after a notice-only failure; the busy/disabled state and clearing old messages on a new submit; `clearOnEdit` (#195) clears only the edited field's message; `flatFieldOf` (including inherited names such as `toString`); `typedDate`.
+- New `frontend/src/form-fields.test.ts`: `toNumber` for empty, plain decimals, `Infinity`, `0x4`, `1e1`, `+5.` and a too-large decimal.
+- Mutation check (temporary edits, reverted): removing or changing each rule above (dedupe, 409 branch, 400 without fields, page-order sort, `Object.hasOwn`, notice for unplaced paths, fallback text, focus return, clearing on submit, `clearOnEdit`, `typedDate` disabled rule, the decimal check, the empty check) made at least one of the new tests fail.
+- Not done: the task "drop entity tests that only repeat one of these rules" touches lane-3's entity test files, so it is left for a follow-up after #197. No source file was changed.
+- Verification: `npm run check`.
