@@ -1,4 +1,4 @@
-import { Award, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Award, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -18,26 +18,25 @@ import {
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
-import { EmptyState } from './components/ui/empty-state';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
-import { deleteItem } from './delete-item';
 import { invalidAddressText, isValidId } from './entity-id';
-import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
-import { ReloadNotice } from './item-list-page-notice';
+import { ItemListPage, ItemUl } from './item-list-page';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useLoad } from './use-load';
 
 const loadCertifications = () => certificationApi.list();
+const loadCertificationsRows = () =>
+  loadCertifications().then((response) => response.certifications);
 
 function CertificationItem({
   certification,
@@ -92,84 +91,38 @@ function CertificationItem({
 }
 
 export function CertificationList({ paths }: { paths: CertificationPaths }) {
-  const { loaded, data, reload } = useReloading('all', loadCertifications);
-  const certifications = data?.certifications ?? [];
-  const heading = useRef<HTMLHeadingElement>(null);
-  // Only the first load shows the placeholder; a reload keeps the rows on screen.
-  const firstLoad = loaded.state === 'loading' && data === undefined;
   // Read once per render: the badge follows the service date, not the device's time zone.
   const today = serviceToday();
-
-  const remove = async (certification: Certification) => {
-    await deleteItem({
-      remove: () => certificationApi.remove(certification.id),
-      noun: 'certification',
-      name: certification.name,
-    });
-    reload((current) => ({
-      certifications: current.certifications.filter((item) => item.id !== certification.id),
-    }));
-    // The row and its delete button are gone, so focus would fall to the page body.
-    requestAnimationFrame(() => heading.current?.focus());
-  };
-
   return (
-    <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
-      <PageHeader
-        title="Certifications"
-        description="See your certifications and exam results, newest first."
-        headingRef={heading}
-      >
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading certifications' : ''}
-          {data ? entryCount(certifications.length) : ''}
-        </p>
-      </PageHeader>
-      <Button asChild className="w-fit">
-        <Link to={paths.create}>
-          <Plus aria-hidden />
-          Add certification
-        </Link>
-      </Button>
-      {firstLoad ? <SkeletonList rows={3} /> : null}
-      {loaded.state === 'error' && data === undefined ? (
-        // Say what failed first: a proxy error without a server message only carries the generic text.
-        <Notice
-          notice={{
-            kind: 'error',
-            text: `Could not load certifications. ${errorText(loaded.error)}`,
-          }}
-        />
-      ) : null}
-      {loaded.state === 'error' && data !== undefined ? (
-        <ReloadNotice noun="certifications" error={loaded.error} onRetry={() => reload()} />
-      ) : null}
-      {data && certifications.length === 0 ? (
-        <EmptyState
-          className="break-keep"
-          icon={<Award />}
-          title="No certifications added yet"
-          description="Choose Add certification and it will appear here, newest first."
-        />
-      ) : null}
-      {certifications.length > 0 ? (
-        <ul
-          aria-label="Certification list"
-          className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
-        >
-          {certifications.map((certification) => (
+    <ItemListPage<Certification>
+      load={loadCertificationsRows}
+      title="Certifications"
+      description="See your certifications and exam results, newest first."
+      noun="certifications"
+      addLabel="Add certification"
+      addTo={paths.create}
+      empty={{
+        icon: <Award />,
+        title: 'No certifications added yet',
+        description: 'Choose Add certification and it will appear here, newest first.',
+      }}
+      deleteNoun="certification"
+      deleteName={(row) => row.name}
+      removeRow={(row) => certificationApi.remove(row.id)}
+      renderRows={(rows, onDelete) => (
+        <ItemUl label="Certification list">
+          {rows.map((row) => (
             <CertificationItem
-              key={certification.id}
-              certification={certification}
+              key={row.id}
+              certification={row}
               today={today}
               paths={paths}
-              onDelete={remove}
+              onDelete={onDelete}
             />
           ))}
-        </ul>
-      ) : null}
-    </section>
+        </ItemUl>
+      )}
+    />
   );
 }
 

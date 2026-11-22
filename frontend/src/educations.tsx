@@ -1,17 +1,15 @@
-import { GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react';
+import { GraduationCap, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
-import { EmptyState } from './components/ui/empty-state';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
-import { deleteItem } from './delete-item';
 import {
   degreeLabels,
   degrees,
@@ -29,16 +27,16 @@ import {
   toEducationInput,
 } from './education-data';
 import { invalidAddressText, isValidId } from './entity-id';
-import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
-import { ReloadNotice } from './item-list-page-notice';
+import { ItemListPage, ItemUl } from './item-list-page';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
-import { useLoad, useReloading } from './use-load';
+import { useLoad } from './use-load';
 
 const loadEducations = () => educationApi.list();
+const loadEducationsRows = () => loadEducations().then((response) => response.educations);
 
 function EducationItem({
   education,
@@ -104,78 +102,30 @@ function EducationItem({
 }
 
 export function EducationList({ paths }: { paths: EducationPaths }) {
-  const { loaded, data, reload } = useReloading('all', loadEducations);
-  const educations = data?.educations ?? [];
-  const heading = useRef<HTMLHeadingElement>(null);
-  // Only the first load shows the placeholder; a reload keeps the rows on screen.
-  const firstLoad = loaded.state === 'loading' && data === undefined;
-
-  const remove = async (education: Education) => {
-    await deleteItem({
-      remove: () => educationApi.remove(education.id),
-      noun: 'education',
-      name: education.school,
-    });
-    reload((current) => ({
-      educations: current.educations.filter((item) => item.id !== education.id),
-    }));
-    // The row and its delete button are gone, so focus would fall to the page body.
-    requestAnimationFrame(() => heading.current?.focus());
-  };
-
   return (
-    <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
-      <PageHeader
-        title="Education"
-        description="See your schools, majors, and study periods, newest enrollment first."
-        headingRef={heading}
-      >
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading education' : ''}
-          {data ? entryCount(educations.length) : ''}
-        </p>
-      </PageHeader>
-      <Button asChild className="w-fit">
-        <Link to={paths.create}>
-          <Plus aria-hidden />
-          Add education
-        </Link>
-      </Button>
-      {firstLoad ? <SkeletonList rows={3} /> : null}
-      {loaded.state === 'error' && data === undefined ? (
-        // Say what failed first: a proxy error without a server message only carries the generic text.
-        <Notice
-          notice={{ kind: 'error', text: `Could not load education. ${errorText(loaded.error)}` }}
-        />
-      ) : null}
-      {loaded.state === 'error' && data !== undefined ? (
-        <ReloadNotice noun="education" error={loaded.error} onRetry={() => reload()} />
-      ) : null}
-      {data && educations.length === 0 ? (
-        <EmptyState
-          className="break-keep"
-          icon={<GraduationCap />}
-          title="No education added yet"
-          description="Choose Add education and it will appear here, newest enrollment first."
-        />
-      ) : null}
-      {educations.length > 0 ? (
-        <ul
-          aria-label="Education list"
-          className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
-        >
-          {educations.map((education) => (
-            <EducationItem
-              key={education.id}
-              education={education}
-              paths={paths}
-              onDelete={remove}
-            />
+    <ItemListPage<Education>
+      load={loadEducationsRows}
+      title="Education"
+      description="See your schools, majors, and study periods, newest enrollment first."
+      noun="education"
+      addLabel="Add education"
+      addTo={paths.create}
+      empty={{
+        icon: <GraduationCap />,
+        title: 'No education added yet',
+        description: 'Choose Add education and it will appear here, newest enrollment first.',
+      }}
+      deleteNoun="education"
+      deleteName={(row) => row.school}
+      removeRow={(row) => educationApi.remove(row.id)}
+      renderRows={(rows, onDelete) => (
+        <ItemUl label="Education list">
+          {rows.map((row) => (
+            <EducationItem key={row.id} education={row} paths={paths} onDelete={onDelete} />
           ))}
-        </ul>
-      ) : null}
-    </section>
+        </ItemUl>
+      )}
+    />
   );
 }
 

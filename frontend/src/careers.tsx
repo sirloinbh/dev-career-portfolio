@@ -1,4 +1,4 @@
-import { Briefcase, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Briefcase, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -20,25 +20,23 @@ import {
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
-import { EmptyState } from './components/ui/empty-state';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
-import { deleteItem } from './delete-item';
 import { invalidAddressText, isValidId } from './entity-id';
-import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
-import { ReloadNotice } from './item-list-page-notice';
+import { ItemListPage, ItemUl } from './item-list-page';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useLoad } from './use-load';
 
 const loadCareers = () => careerApi.list();
+const loadCareersRows = () => loadCareers().then((response) => response.careers);
 
 function CareerItem({
   career,
@@ -96,71 +94,30 @@ function CareerItem({
 }
 
 export function CareerList({ paths }: { paths: CareerPaths }) {
-  const { loaded, data, reload } = useReloading('all', loadCareers);
-  const careers = data?.careers ?? [];
-  const heading = useRef<HTMLHeadingElement>(null);
-  // Only the first load shows the placeholder; a reload keeps the rows on screen.
-  const firstLoad = loaded.state === 'loading' && data === undefined;
-
-  const remove = async (career: Career) => {
-    await deleteItem({
-      remove: () => careerApi.remove(career.id),
-      noun: 'career',
-      name: career.company,
-    });
-    reload((current) => ({ careers: current.careers.filter((item) => item.id !== career.id) }));
-    // The row and its delete button are gone, so focus would fall to the page body.
-    requestAnimationFrame(() => heading.current?.focus());
-  };
-
   return (
-    <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
-      <PageHeader
-        title="Career"
-        description="See your employers and roles, newest start first."
-        headingRef={heading}
-      >
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading career' : ''}
-          {data ? entryCount(careers.length) : ''}
-        </p>
-      </PageHeader>
-      <Button asChild className="w-fit">
-        <Link to={paths.create}>
-          <Plus aria-hidden />
-          Add career
-        </Link>
-      </Button>
-      {firstLoad ? <SkeletonList rows={3} /> : null}
-      {loaded.state === 'error' && data === undefined ? (
-        // Say what failed first: a proxy error without a server message only carries the generic text.
-        <Notice
-          notice={{ kind: 'error', text: `Could not load career. ${errorText(loaded.error)}` }}
-        />
-      ) : null}
-      {loaded.state === 'error' && data !== undefined ? (
-        <ReloadNotice noun="career" error={loaded.error} onRetry={() => reload()} />
-      ) : null}
-      {data && careers.length === 0 ? (
-        <EmptyState
-          className="break-keep"
-          icon={<Briefcase />}
-          title="No career added yet"
-          description="Choose Add career and it will appear here, newest start first."
-        />
-      ) : null}
-      {careers.length > 0 ? (
-        <ul
-          aria-label="Career list"
-          className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
-        >
-          {careers.map((career) => (
-            <CareerItem key={career.id} career={career} paths={paths} onDelete={remove} />
+    <ItemListPage<Career>
+      load={loadCareersRows}
+      title="Career"
+      description="See your employers and roles, newest start first."
+      noun="career"
+      addLabel="Add career"
+      addTo={paths.create}
+      empty={{
+        icon: <Briefcase />,
+        title: 'No career added yet',
+        description: 'Choose Add career and it will appear here, newest start first.',
+      }}
+      deleteNoun="career"
+      deleteName={(row) => row.company}
+      removeRow={(row) => careerApi.remove(row.id)}
+      renderRows={(rows, onDelete) => (
+        <ItemUl label="Career list">
+          {rows.map((row) => (
+            <CareerItem key={row.id} career={row} paths={paths} onDelete={onDelete} />
           ))}
-        </ul>
-      ) : null}
-    </section>
+        </ItemUl>
+      )}
+    />
   );
 }
 
