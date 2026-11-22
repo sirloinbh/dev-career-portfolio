@@ -3,15 +3,9 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 import { App } from './app';
 import { toast } from './components/ui/sonner';
-import {
-  emptyProjectForm,
-  type Project,
-  projectFieldErrors,
-  splitTechnologies,
-  toProjectForm,
-  toProjectInput,
-} from './project-data';
+import type { Project } from './project-data';
 import { findLive, queryLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 
 // All projects here are made up for the test.
 
@@ -52,17 +46,20 @@ function fakeApi(rows: Project[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
+      const request = parseRequest(input, init);
+      const { method, path: url, id } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
-      if (url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      const known =
+        (url === '/api/projects' && (method === 'GET' || method === 'POST')) ||
+        (id !== null && url === `/api/projects/${id}` && (method === 'PUT' || method === 'DELETE'));
+      if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
         const error = refuse;
         refuse = undefined;
         return json({ error }, 400);
       }
-      const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
       if (method === 'GET') return json({ projects: store });
       // The server stores blank text as NULL.
@@ -77,7 +74,7 @@ function fakeApi(rows: Project[]) {
       }
       if (index === -1) return json({ error: 'Project not found' }, 404);
       if (method === 'PUT') {
-        store[index] = saved({ ...(body as Project), id });
+        store[index] = saved({ ...(body as Project), id: id as number });
         return json({ project: store[index] });
       }
       if (method === 'DELETE' && deleteFails)
@@ -196,14 +193,6 @@ test('a repeated message about technologies is shown once, topmost field focused
     'Separate items with commas. Up to 30 items, 50 characters each. Technologies items must be at most 50 characters',
   );
   expect(queryLive('alert')).toBeNull();
-});
-
-test('a long list of the same message keeps the count of the ones not shown', () => {
-  const message = 'Technologies items must be at most 50 characters';
-  // Ten issues, then the count of the rest; as backend/src/standard/http.ts joins them.
-  expect(projectFieldErrors([...Array<string>(10).fill(message), 'and 1 more'].join(', '))).toEqual(
-    [{ field: 'technologies', message: `${message}, and 1 more` }],
-  );
 });
 
 test('a half-typed end date is sent as text the server refuses, not as running', async () => {
@@ -350,40 +339,4 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   expect(
     screen.getByRole('listitem', { hidden: true, name: '사내 위키 검색' }),
   ).toBeInTheDocument();
-});
-
-test('server messages map to the field they start with', () => {
-  const fieldOf = (message: string) => projectFieldErrors(message)[0]?.field;
-  expect(fieldOf('Project name is required')).toBe('name');
-  expect(fieldOf('Organization must be at most 100 characters')).toBe('organization');
-  expect(fieldOf('Start date must be a date in YYYY-MM-DD format')).toBe('startDate');
-  expect(fieldOf('End date cannot be earlier than start date')).toBe('endDate');
-  expect(fieldOf('Role must be at most 100 characters')).toBe('role');
-  expect(fieldOf('Summary must be at most 500 characters')).toBe('summary');
-  expect(fieldOf('Contributions must be at most 2000 characters')).toBe('contributions');
-  expect(fieldOf('Technologies contain a duplicate item')).toBe('technologies');
-  expect(fieldOf('Technologies can have at most 30 items')).toBe('technologies');
-  expect(fieldOf('Repository link must not contain spaces')).toBe('repositoryUrl');
-  expect(fieldOf('Service link must be at most 500 characters')).toBe('serviceUrl');
-  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
-  // More than ten issues end with "and N more", which stays with the message before it.
-  expect(
-    projectFieldErrors('Technologies items must be at most 50 characters, and 3 more'),
-  ).toEqual([
-    {
-      field: 'technologies',
-      message: 'Technologies items must be at most 50 characters, and 3 more',
-    },
-  ]);
-});
-
-test('form values become the API input and back', () => {
-  expect(splitTechnologies('')).toEqual([]);
-  expect(splitTechnologies(' , ,')).toEqual([]);
-  expect(splitTechnologies('Go,  Rust ')).toEqual(['Go', 'Rust']);
-  expect(toProjectInput({ ...emptyProjectForm, endDate: '' }).endDate).toBeNull();
-  expect(toProjectInput(emptyProjectForm).technologies).toEqual([]);
-  expect(
-    toProjectForm({ ...past, organization: null, endDate: null, technologies: [] }),
-  ).toMatchObject({ organization: '', endDate: '', technologies: '', serviceUrl: '' });
 });

@@ -5,6 +5,7 @@ import { App } from './app';
 import { type Application, deadlineText } from './application-data';
 import { daysUntil } from './service-date';
 import { findLive, getLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 
 // All companies here are made up for the test.
 
@@ -38,10 +39,13 @@ const done = application(5, '숲게임즈', 'closed', '2025-01-10');
 function serve(result: { status: number; body: object } | 'offline') {
   vi.stubGlobal(
     'fetch',
-    vi.fn((input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url === '/api/health') {
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const request = parseRequest(input, init);
+      if (request.method === 'GET' && request.path === '/api/health') {
         return Promise.resolve(new Response(JSON.stringify({ today: '2026-11-05' })));
+      }
+      if (request.method !== 'GET' || request.path !== '/api/applications') {
+        return unexpectedRequest(request);
       }
       if (result === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
       return Promise.resolve(new Response(JSON.stringify(result.body), { status: result.status }));

@@ -11,6 +11,7 @@ import {
   toEducationInput,
 } from './education-data';
 import { findLive, queryLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 
 // All schools here are made up for the test.
 
@@ -50,17 +51,23 @@ function fakeApi(rows: Education[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
+      const request = parseRequest(input, init);
+      const { method, path, id } = request;
+      const url = path;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
-      if (url === '/api/health') return json({ today: '2026-11-04' });
+      if (method === 'GET' && path === '/api/health') return json({ today: '2026-11-04' });
+      const known =
+        (path === '/api/educations' && (method === 'GET' || method === 'POST')) ||
+        (id !== null &&
+          path === `/api/educations/${id}` &&
+          (method === 'PUT' || method === 'DELETE'));
+      if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
         const error = refuse;
         refuse = undefined;
         return json({ error }, 400);
       }
-      const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
       if (method === 'GET') return json({ educations: store });
       if (method === 'POST') {
@@ -70,7 +77,7 @@ function fakeApi(rows: Education[]) {
       }
       if (index === -1) return json({ error: 'Education not found' }, 404);
       if (method === 'PUT') {
-        store[index] = { ...(body as Education), id };
+        store[index] = { ...(body as Education), id: id as number };
         return json({ education: store[index] });
       }
       if (method === 'DELETE' && deleteFails)
