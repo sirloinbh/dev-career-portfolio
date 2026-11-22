@@ -11,6 +11,7 @@ import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
+import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { useServerForm } from './form-state';
@@ -340,13 +341,15 @@ export function NewSkill({ paths }: { paths: SkillPaths }) {
 
 export function EditSkill({ paths }: { paths: SkillPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // There is no single-item API (#34): the list is small, so the form finds its row there.
   const loaded = useLoad('all', loadSkills);
   const navigate = useNavigate();
   const skill =
     loaded.state === 'ok' ? loaded.data.skills.find((item) => String(item.id) === id) : undefined;
   const update = async (form: SkillForm) => {
-    await skillApi.update(Number(id), toSkillInput(form));
+    if (!skill) return;
+    await skillApi.update(skill.id, toSkillInput(form));
     toast.success('Saved');
     void navigate(paths.list);
   };
@@ -358,13 +361,14 @@ export function EditSkill({ paths }: { paths: SkillPaths }) {
     >
       <BackLink to={paths.list} label="Skill list" />
       <PageHeader title="Edit skill" description="Change what you need, then save." />
-      {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {loaded.state === 'error' ? (
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
+      {valid && loaded.state === 'error' ? (
         <Notice
           notice={{ kind: 'error', text: `Could not load skills. ${errorText(loaded.error)}` }}
         />
       ) : null}
-      {loaded.state === 'ok' && !skill ? (
+      {valid && loaded.state === 'ok' && !skill ? (
         <Notice notice={{ kind: 'error', text: 'Skill not found. It may already be deleted.' }} />
       ) : null}
       {skill ? (

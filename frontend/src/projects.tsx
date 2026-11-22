@@ -12,6 +12,7 @@ import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
+import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
@@ -371,13 +372,15 @@ export function NewProject({ paths }: { paths: ProjectPaths }) {
 
 export function EditProject({ paths }: { paths: ProjectPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // There is no single-item API (#33): the list is small, so the form finds its row there.
   const loaded = useLoad('all', loadProjects);
   const navigate = useNavigate();
   const project =
     loaded.state === 'ok' ? loaded.data.projects.find((item) => String(item.id) === id) : undefined;
   const update = async (form: ProjectForm) => {
-    await projectApi.update(Number(id), toProjectInput(form));
+    if (!project) return;
+    await projectApi.update(project.id, toProjectInput(form));
     toast.success('Saved');
     void navigate(paths.list);
   };
@@ -389,8 +392,9 @@ export function EditProject({ paths }: { paths: ProjectPaths }) {
     >
       <BackLink to={paths.list} label="Project list" />
       <PageHeader title="Edit project" description="Change what you need, then save." />
-      {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {loaded.state === 'error' ? (
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
+      {valid && loaded.state === 'error' ? (
         <Notice
           notice={{
             kind: 'error',
@@ -398,7 +402,7 @@ export function EditProject({ paths }: { paths: ProjectPaths }) {
           }}
         />
       ) : null}
-      {loaded.state === 'ok' && !project ? (
+      {valid && loaded.state === 'ok' && !project ? (
         <Notice notice={{ kind: 'error', text: 'Project not found. It may already be deleted.' }} />
       ) : null}
       {project ? (

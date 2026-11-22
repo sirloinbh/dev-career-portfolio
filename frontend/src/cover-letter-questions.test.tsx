@@ -143,6 +143,14 @@ test('another application shows only its own questions', async () => {
   ]);
 });
 
+test('a malformed application id shows the invalid-address notice and no Edit questions link', async () => {
+  const urls = serve();
+  open('/applications/abc');
+  expect(await findLive('alert')).toHaveTextContent('This address is not valid');
+  expect(screen.queryByRole('link', { name: /Edit questions/ })).not.toBeInTheDocument();
+  expect(urls.some((url) => url.includes('/questions'))).toBe(false);
+});
+
 test('changing the address on the open page never leaves the previous questions on screen', async () => {
   serve(undefined, '2');
   open('/applications/1');

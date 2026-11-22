@@ -25,6 +25,7 @@ import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { deleteItem } from './delete-item';
+import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
@@ -301,6 +302,7 @@ export function NewCertification({ paths }: { paths: CertificationPaths }) {
 
 export function EditCertification({ paths }: { paths: CertificationPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // There is no single-item API (#35): the list is small, so the form finds its row there.
   const loaded = useLoad('all', loadCertifications);
   const navigate = useNavigate();
@@ -309,7 +311,8 @@ export function EditCertification({ paths }: { paths: CertificationPaths }) {
       ? loaded.data.certifications.find((item) => String(item.id) === id)
       : undefined;
   const update = async (form: CertificationForm) => {
-    await certificationApi.update(Number(id), toCertificationInput(form));
+    if (!certification) return;
+    await certificationApi.update(certification.id, toCertificationInput(form));
     toast.success('Saved');
     void navigate(paths.list);
   };
@@ -321,8 +324,9 @@ export function EditCertification({ paths }: { paths: CertificationPaths }) {
     >
       <BackLink to={paths.list} label="Certification list" />
       <PageHeader title="Edit certification" description="Change what you need, then save." />
-      {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {loaded.state === 'error' ? (
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
+      {valid && loaded.state === 'error' ? (
         <Notice
           notice={{
             kind: 'error',
@@ -330,7 +334,7 @@ export function EditCertification({ paths }: { paths: CertificationPaths }) {
           }}
         />
       ) : null}
-      {loaded.state === 'ok' && !certification ? (
+      {valid && loaded.state === 'ok' && !certification ? (
         <Notice
           notice={{ kind: 'error', text: 'Certification not found. It may already be deleted.' }}
         />
