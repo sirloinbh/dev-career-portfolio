@@ -28,6 +28,7 @@ import { deleteItem } from './delete-item';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { ReloadNotice } from './item-list-page-notice';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
@@ -139,6 +140,9 @@ export function CertificationList({ paths }: { paths: CertificationPaths }) {
             text: `Could not load certifications. ${errorText(loaded.error)}`,
           }}
         />
+      ) : null}
+      {loaded.state === 'error' && data !== undefined ? (
+        <ReloadNotice noun="certifications" error={loaded.error} onRetry={() => reload()} />
       ) : null}
       {data && certifications.length === 0 ? (
         <EmptyState
