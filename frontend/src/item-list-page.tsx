@@ -4,12 +4,10 @@ import { Link } from 'react-router';
 
 import { Button } from './components/ui/button';
 import { EmptyState } from './components/ui/empty-state';
-import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { deleteItem } from './delete-item';
 import { entryCount } from './entry-count';
-import { ReloadNotice } from './item-list-page-notice';
-import { errorText } from './lib/use-notice';
+import { LoadErrorNotice } from './item-list-page-notice';
 import { PageHeader } from './page-header';
 import { useReloading } from './use-load';
 
@@ -85,15 +83,12 @@ export function ItemListPage<Row extends { id: number | string }>({
         </Link>
       </Button>
       {firstLoad ? <SkeletonList rows={3} /> : null}
-      {loaded.state === 'error' && data === undefined ? (
-        // Say what failed first: a proxy error without a server message only carries the generic text.
-        <Notice
-          notice={{ kind: 'error', text: `Could not load ${noun}. ${errorText(loaded.error)}` }}
-        />
-      ) : null}
-      {loaded.state === 'error' && data !== undefined ? (
-        <ReloadNotice noun={noun} error={loaded.error} onRetry={() => reload()} />
-      ) : null}
+      <LoadErrorNotice
+        failed={loaded.state === 'error' ? { error: loaded.error } : undefined}
+        noun={noun}
+        hasRows={data !== undefined}
+        onRetry={() => reload()}
+      />
       {data && rows.length === 0 ? (
         <EmptyState
           className="break-keep"

@@ -59,9 +59,17 @@ test('an empty list explains what will appear', async () => {
   expect(screen.queryByRole('list')).not.toBeInTheDocument();
 });
 
-test('a failed first load says what failed', async () => {
-  setup(() => Promise.reject(new Error('Server error')));
+test('a failed first load says what failed and can be retried', async () => {
+  const load = vi
+    .fn<() => Promise<Row[]>>()
+    .mockRejectedValueOnce(new Error('Server error'))
+    .mockResolvedValueOnce(rows);
+  setup(load);
+  // The live region is in the page before the error, so screen readers announce the text (#684).
+  expect(screen.getByRole('alert')).toBeEmptyDOMElement();
   expect(await findLive('alert')).toHaveTextContent('Could not load things.');
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  expect(await screen.findByRole('list', { name: 'Thing list' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
 });
 
