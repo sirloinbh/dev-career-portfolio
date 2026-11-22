@@ -6,8 +6,8 @@ import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { invalidAddressText, isValidId } from './entity-id';
 import { errorText } from './lib/use-notice';
+import { type ListQuery, useListQuery, useRefreshList } from './list-query';
 import { BackLink, PageHeader } from './page-header';
-import { useLoad } from './use-load';
 
 // The New and Edit screens of every portfolio item share this shell (#144): the back link, the title, the
 // loading, error, not-found and invalid-address states of the Edit screen, and the save-then-go-to-the-list step.
@@ -32,6 +32,7 @@ const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(
 export function NewItemPage<Form>({
   paths,
   texts,
+  listPath,
   description,
   initial,
   create,
@@ -39,6 +40,8 @@ export function NewItemPage<Form>({
 }: {
   paths: { list: string };
   texts: Texts;
+  /** The list's API path, refreshed after the save so the list shows the new row. */
+  listPath: string;
   /** What the person must fill in. */
   description: string;
   initial: Form;
@@ -47,8 +50,11 @@ export function NewItemPage<Form>({
   Fields: ComponentType<FormProps<Form>>;
 }) {
   const navigate = useNavigate();
+  const refresh = useRefreshList(listPath);
   const onSubmit = async (form: Form) => {
-    toast.success(`Added '${await create(form)}'`);
+    const name = await create(form);
+    toast.success(`Added '${name}'`);
+    await refresh();
     void navigate(paths.list);
   };
   return (
@@ -63,54 +69,54 @@ export function NewItemPage<Form>({
 export function EditItemPage<Form, Item extends { id: number }>({
   paths,
   texts,
-  loadItems,
+  list,
   toForm,
   update,
   Fields,
 }: {
   paths: { list: string };
   texts: Texts;
-  /** The whole list, in a function that never changes between renders. */
-  loadItems: () => Promise<Item[]>;
+  /** The list the row is found in (a module-level constant from the entity's `*-data.ts`). */
+  list: ListQuery<Item>;
   toForm: (item: Item) => Form;
   update: (item: Item, form: Form) => Promise<unknown>;
   Fields: ComponentType<FormProps<Form>>;
 }) {
   const { id = '' } = useParams();
   const valid = isValidId(id);
-  // There is no single-item API: the list is small, so the form finds its row there.
-  const loaded = useLoad('all', loadItems);
+  // There is no single-item API: the list is small, so the form finds its row there. It is the list screen's cache
+  // entry, so coming from the list shows the form at once.
+  const { query, rows } = useListQuery(list, { enabled: valid });
+  const refresh = useRefreshList(list.path);
   const navigate = useNavigate();
-  const item = loaded.state === 'ok' ? loaded.data.find((row) => String(row.id) === id) : undefined;
+  const loading = valid && query.isPending;
+  const item = rows?.find((row) => String(row.id) === id);
   const onSubmit = async (form: Form) => {
     if (!item) return;
     await update(item, form);
     toast.success('Saved');
+    await refresh();
     void navigate(paths.list);
   };
   return (
-    <section
-      aria-labelledby="page-title"
-      aria-busy={loaded.state === 'loading'}
-      className="flex flex-col gap-6"
-    >
+    <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
       <BackLink to={paths.list} label={texts.backLabel} />
       <PageHeader title={`Edit ${texts.noun}`} description="Change what you need, then save." />
       {/* Always mounted, so screen readers hear the text appear and go. */}
       <p role="status" className="sr-only">
-        {valid && loaded.state === 'loading' ? `Loading ${texts.noun}` : ''}
+        {loading ? `Loading ${texts.noun}` : ''}
       </p>
       {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
-      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {valid && loaded.state === 'error' ? (
+      {loading ? <SkeletonList rows={4} /> : null}
+      {valid && query.isError && !item ? (
         <Notice
           notice={{
             kind: 'error',
-            text: `Could not load ${texts.noun}. ${errorText(loaded.error)}`,
+            text: `Could not load ${texts.noun}. ${errorText(query.error)}`,
           }}
         />
       ) : null}
-      {valid && loaded.state === 'ok' && !item ? (
+      {valid && query.isSuccess && !item ? (
         <Notice
           notice={{
             kind: 'error',

@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router';
 
 import {
   type Application,
-  applicationApi,
+  applicationList,
   type ApplicationPaths,
   applicationStatusLabels,
   applicationStatusVariant,
@@ -14,18 +14,12 @@ import { Button } from './components/ui/button';
 import { EmptyState } from './components/ui/empty-state';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
-import { answerLengthText, coverLetterApi, type CoverLetterQuestion } from './cover-letter-data';
+import { answerLengthText, type CoverLetterQuestion, useQuestions } from './cover-letter-data';
 import { invalidAddressText, isValidId } from './entity-id';
-import { RequestError } from './lib/api';
 import { errorText } from './lib/use-notice';
+import { useListQuery } from './list-query';
 import { BackLink, PageHeader } from './page-header';
 import { serviceToday } from './service-date';
-import { useLoad } from './use-load';
-
-const loadApplications = () => applicationApi.list();
-// A malformed id in the address is reported on screen; it never reaches the API.
-const loadQuestions = (id: string) =>
-  isValidId(id) ? coverLetterApi.list(id) : Promise.resolve({ questions: [] });
 
 /** Status, position, and deadline of the application the questions belong to. */
 function ApplicationSummary({ application }: { application: Application }) {
@@ -73,19 +67,14 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
   const { id = '' } = useParams();
   const valid = isValidId(id);
   // Keyed by the id in the address, so another application's questions are never kept on screen.
-  const questions = useLoad(id, loadQuestions);
-  // There is no single-item API (#36): the list is small, so the page finds its row there.
-  const applications = useLoad('all', loadApplications);
-  const application =
-    applications.state === 'ok'
-      ? applications.data.applications.find((item) => String(item.id) === id)
-      : undefined;
-  const loading = valid && questions.state === 'loading';
-  const missing =
-    valid && questions.state === 'error' && questions.error instanceof RequestError
-      ? questions.error.status === 404
-      : false;
-  const list = valid && questions.state === 'ok' ? questions.data.questions : [];
+  const questions = useQuestions(id, valid);
+  // There is no single-item API (#36): the list is small, so the page finds its row there (the list screen's cache).
+  const { rows: applications } = useListQuery(applicationList);
+  const application = applications?.find((item) => String(item.id) === id);
+  const loading = valid && questions.isPending;
+  const missing = valid && questions.isError && questions.error.status === 404;
+  const loaded = valid && questions.data !== undefined;
+  const list = loaded ? (questions.data?.questions ?? []) : [];
 
   return (
     <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
@@ -98,9 +87,7 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
           {loading ? 'Loading questions' : ''}
-          {valid && questions.state === 'ok'
-            ? `${String(list.length)} ${list.length === 1 ? 'question' : 'questions'}`
-            : ''}
+          {loaded ? `${String(list.length)} ${list.length === 1 ? 'question' : 'questions'}` : ''}
         </p>
       </PageHeader>
       {missing || !valid ? null : (
@@ -118,7 +105,7 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
           notice={{ kind: 'error', text: 'Application not found. It may already be deleted.' }}
         />
       ) : null}
-      {questions.state === 'error' && !missing ? (
+      {valid && questions.isError && !missing ? (
         // Say what failed first: a proxy error without a server message only carries the generic text.
         <Notice
           notice={{
@@ -127,7 +114,7 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
           }}
         />
       ) : null}
-      {questions.state === 'ok' && list.length === 0 ? (
+      {loaded && list.length === 0 ? (
         <EmptyState
           className="break-keep"
           icon={<ListOrdered />}

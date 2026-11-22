@@ -1,5 +1,6 @@
 import { toNumber } from './form-fields';
 import { requestJson } from './lib/api';
+import { apiKey, useApiQuery } from './lib/query';
 
 // Cover letter questions of one application (#37 API, #50 view, #51 form): API calls and display
 // rules. The view is in cover-letter-questions.tsx and the form in cover-letter-form.tsx.
@@ -95,17 +96,30 @@ export const questionFieldOf =
     return match && key !== undefined ? (`${String(key)}:${match[2]}` as QuestionField) : undefined;
   };
 
-const base = (applicationId: string) =>
+/** The questions of one application: GET-ed through the shared query layer (#152), saved whole with PUT. */
+export const questionsPath = (applicationId: string) =>
   `/api/applications/${encodeURIComponent(applicationId)}/questions`;
 
 export const coverLetterApi = {
-  /** The questions in their saved order. A missing application is a 404. */
+  /** The questions in their saved order, fetched once (the delete dialog counts them). A missing application is a 404. */
   list: (applicationId: string) =>
-    requestJson<{ questions: CoverLetterQuestion[] }>(base(applicationId)),
+    requestJson<{ questions: CoverLetterQuestion[] }>(questionsPath(applicationId)),
   /** Saves the whole list at once (#37): questions left out are deleted. */
   save: (applicationId: string, input: ReturnType<typeof toQuestionsInput>) =>
-    requestJson<{ questions: CoverLetterQuestion[] }>(base(applicationId), {
+    requestJson<{ questions: CoverLetterQuestion[] }>(questionsPath(applicationId), {
       method: 'PUT',
       body: input,
     }),
 };
+
+/**
+ * The questions of one application in their saved order, through the shared query layer (#152); a missing application
+ * is a 404. A malformed id in the address (`valid` false) is reported on screen and never reaches the API.
+ */
+export function useQuestions(applicationId: string, valid: boolean) {
+  return useApiQuery<{ questions: CoverLetterQuestion[] }>(
+    apiKey(questionsPath(applicationId)),
+    questionsPath(applicationId),
+    { enabled: valid },
+  );
+}

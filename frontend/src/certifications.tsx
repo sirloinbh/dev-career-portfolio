@@ -7,6 +7,7 @@ import {
   certificationApi,
   certificationFieldOf,
   type CertificationForm,
+  certificationList,
   type CertificationPaths,
   certificationPeriodText,
   emptyCertificationForm,
@@ -27,10 +28,6 @@ import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
-
-const loadCertifications = () => certificationApi.list();
-const loadCertificationsRows = () =>
-  loadCertifications().then((response) => response.certifications);
 
 function CertificationItem({
   certification,
@@ -89,7 +86,7 @@ export function CertificationList({ paths }: { paths: CertificationPaths }) {
   const today = serviceToday();
   return (
     <ItemListPage<Certification>
-      load={loadCertificationsRows}
+      list={certificationList}
       title="Certifications"
       description="See your certifications and exam results, newest first."
       noun="certifications"
@@ -232,6 +229,7 @@ export function NewCertification({ paths }: { paths: CertificationPaths }) {
   return (
     <NewItemPage
       paths={paths}
+      listPath={certificationList.path}
       texts={{ noun: 'certification', backLabel: 'Certification list' }}
       description="Certification name, issuer, and date earned are all you need. The rest can stay empty."
       initial={emptyCertificationForm}
@@ -248,7 +246,7 @@ export function EditCertification({ paths }: { paths: CertificationPaths }) {
     <EditItemPage
       paths={paths}
       texts={{ noun: 'certification', backLabel: 'Certification list' }}
-      loadItems={loadCertificationsRows}
+      list={certificationList}
       toForm={toCertificationForm}
       update={(item, form) => certificationApi.update(item.id, toCertificationInput(form))}
       Fields={CertificationFields}

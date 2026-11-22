@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
-import { applicationApi, type ApplicationPaths } from './application-data';
+import { applicationList, type ApplicationPaths } from './application-data';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
@@ -17,23 +17,19 @@ import {
   maxQuestions,
   type QuestionDraft,
   questionFieldOf,
+  questionsPath,
   toDraft,
   toQuestionsInput,
   typedLimit,
+  useQuestions,
 } from './cover-letter-data';
 import { invalidAddressText, isValidId } from './entity-id';
 import { controlClass } from './form-fields';
 import { useServerForm } from './form-state';
-import { RequestError } from './lib/api';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
+import { useListQuery, useRefreshList } from './list-query';
 import { BackLink, PageHeader } from './page-header';
-import { useLoad } from './use-load';
-
-const loadApplications = () => applicationApi.list();
-// A malformed id in the address is reported on screen; it never reaches the API.
-const loadQuestions = (id: string) =>
-  isValidId(id) ? coverLetterApi.list(id) : Promise.resolve({ questions: [] });
 
 const emptyDraft = (key: number): QuestionDraft => ({
   key,
@@ -52,6 +48,7 @@ function QuestionsForm({
   paths: ApplicationPaths;
 }) {
   const navigate = useNavigate();
+  const refresh = useRefreshList(questionsPath(applicationId));
   const [drafts, setDrafts] = useState(initial);
   const nextKey = useRef(initial.length);
   // The keys in the order the list was last sent, so the server's "Question 2" finds its question.
@@ -99,6 +96,8 @@ function QuestionsForm({
     sentKeys.current = drafts.map((draft) => draft.key);
     await coverLetterApi.save(applicationId, toQuestionsInput(drafts));
     toast.success('Saved the questions');
+    // The questions page shows the cached list: refetch it so it shows what was just saved.
+    await refresh();
     void navigate(viewPath);
   };
 
@@ -291,24 +290,14 @@ function QuestionsForm({
 export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
   const { id = '' } = useParams();
   const valid = isValidId(id);
-  const questions = useLoad(id, loadQuestions);
-  // There is no single-item API (#36): the list is small, so the page finds its row there.
-  const applications = useLoad('all', loadApplications);
-  const application =
-    applications.state === 'ok'
-      ? applications.data.applications.find((item) => String(item.id) === id)
-      : undefined;
-  const missing =
-    valid &&
-    questions.state === 'error' &&
-    questions.error instanceof RequestError &&
-    questions.error.status === 404;
+  const questions = useQuestions(id, valid);
+  // There is no single-item API (#36): the list is small, so the page finds its row there (the list screen's cache).
+  const { rows: applications } = useListQuery(applicationList);
+  const application = applications?.find((item) => String(item.id) === id);
+  const loading = valid && questions.isPending;
+  const missing = valid && questions.isError && questions.error.status === 404;
   return (
-    <section
-      aria-labelledby="page-title"
-      aria-busy={questions.state === 'loading'}
-      className="flex flex-col gap-6"
-    >
+    <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
       <BackLink to={paths.questions(id)} label="Questions" />
       <PageHeader
         title={application ? `Edit questions: ${application.companyName}` : 'Edit questions'}
@@ -317,15 +306,15 @@ export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
       {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
       {/* Always mounted, so screen readers hear the text appear and go. */}
       <p role="status" className="sr-only">
-        {valid && questions.state === 'loading' ? 'Loading questions' : ''}
+        {loading ? 'Loading questions' : ''}
       </p>
-      {valid && questions.state === 'loading' ? <SkeletonList rows={3} /> : null}
+      {loading ? <SkeletonList rows={3} /> : null}
       {missing ? (
         <Notice
           notice={{ kind: 'error', text: 'Application not found. It may already be deleted.' }}
         />
       ) : null}
-      {valid && questions.state === 'error' && !missing ? (
+      {valid && questions.isError && !missing && !questions.data ? (
         <Notice
           notice={{
             kind: 'error',
@@ -333,7 +322,7 @@ export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
           }}
         />
       ) : null}
-      {valid && questions.state === 'ok' ? (
+      {valid && questions.data ? (
         <QuestionsForm
           // A new id starts a fresh form instead of keeping the previous application's typing.
           key={id}

@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { Link } from 'react-router';
 
 import { Button } from './components/ui/button';
@@ -8,8 +8,8 @@ import { SkeletonList } from './components/ui/skeleton';
 import { deleteItem } from './delete-item';
 import { entryCount } from './entry-count';
 import { LoadErrorNotice } from './item-list-page-notice';
+import { type ListQuery, useListQuery, useRefreshList } from './list-query';
 import { PageHeader } from './page-header';
-import { useReloading } from './use-load';
 
 // One list screen for every entity (#145): load, skeleton, error notices, empty state, and delete then focus.
 
@@ -26,7 +26,7 @@ export function ItemUl({ label, children }: { label?: string; children: ReactNod
 }
 
 export function ItemListPage<Row extends { id: number | string }>({
-  load,
+  list,
   title,
   description,
   noun,
@@ -38,8 +38,8 @@ export function ItemListPage<Row extends { id: number | string }>({
   removeRow,
   renderRows,
 }: {
-  /** Must not change between renders (a module-level function). */
-  load: () => Promise<Row[]>;
+  /** The list's path and rows (a module-level constant from the entity's `*-data.ts`). */
+  list: ListQuery<Row>;
   title: string;
   description: string;
   /** The word in "Loading <noun>" and "Could not load <noun>.": "career", "skills". */
@@ -54,15 +54,20 @@ export function ItemListPage<Row extends { id: number | string }>({
   /** The rows (at least one) with the delete handler for each row's dialog. */
   renderRows: (rows: Row[], onDelete: (row: Row) => Promise<void>) => ReactNode;
 }) {
-  const { loaded, data, reload } = useReloading('all', load);
-  const rows = data ?? [];
+  const { query, rows: loadedRows } = useListQuery(list);
+  const refresh = useRefreshList(list.path);
+  // Rows deleted on this screen stay hidden, so a failed refetch cannot bring a deleted row back.
+  const [deleted, setDeleted] = useState<ReadonlySet<Row['id']>>(() => new Set());
+  const rows = (loadedRows ?? []).filter((row) => !deleted.has(row.id));
+  const hasRows = loadedRows !== undefined;
   const heading = useRef<HTMLHeadingElement>(null);
-  // Only the first load shows the placeholder; a reload keeps the rows on screen.
-  const firstLoad = loaded.state === 'loading' && data === undefined;
+  // Only the first load shows the placeholder; a refetch keeps the rows on screen.
+  const firstLoad = query.isPending;
 
   const remove = async (row: Row) => {
     await deleteItem({ remove: () => removeRow(row), noun: deleteNoun, name: deleteName(row) });
-    reload((current) => current.filter((item) => item.id !== row.id));
+    setDeleted((current) => new Set(current).add(row.id));
+    void refresh();
     // The row and its delete button are gone, so focus would fall to the page body.
     requestAnimationFrame(() => heading.current?.focus());
   };
@@ -73,7 +78,7 @@ export function ItemListPage<Row extends { id: number | string }>({
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
           {firstLoad ? `Loading ${noun}` : ''}
-          {data ? entryCount(rows.length) : ''}
+          {hasRows ? entryCount(rows.length) : ''}
         </p>
       </PageHeader>
       <Button asChild className="w-fit">
@@ -84,12 +89,12 @@ export function ItemListPage<Row extends { id: number | string }>({
       </Button>
       {firstLoad ? <SkeletonList rows={3} /> : null}
       <LoadErrorNotice
-        failed={loaded.state === 'error' ? { error: loaded.error } : undefined}
+        failed={query.isError ? { error: query.error } : undefined}
         noun={noun}
-        hasRows={data !== undefined}
-        onRetry={() => reload()}
+        hasRows={hasRows}
+        onRetry={() => void query.refetch()}
       />
-      {data && rows.length === 0 ? (
+      {hasRows && rows.length === 0 ? (
         <EmptyState
           className="break-keep"
           icon={empty.icon}

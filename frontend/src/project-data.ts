@@ -1,5 +1,6 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { listQuery } from './list-query';
 import { formatDate } from './service-date';
 
 // Projects (#33 API, #42 list, #43 form): API calls and display rules. The screens are in
@@ -111,8 +112,10 @@ export const projectFieldOf = flatFieldOf(emptyProjectForm);
 
 const base = '/api/projects';
 
+/** The list (#152): the list screen and the Edit screen share its cache entry. */
+export const projectList = listQuery(base, (body: { projects: Project[] }) => body.projects);
+
 export const projectApi = {
-  list: () => requestJson<{ projects: Project[] }>(base),
   create: (input: ProjectInput) =>
     requestJson<{ project: Project }>(base, { method: 'POST', body: input }),
   update: (id: number, input: ProjectInput) =>

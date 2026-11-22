@@ -1,5 +1,6 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { listQuery } from './list-query';
 import { daysUntil, formatDate } from './service-date';
 
 // Applications, shown as "Application" under the Cover letters menu (#36 API, #48 list, #49 form): API
@@ -103,8 +104,13 @@ export const applicationFieldOf = flatFieldOf(emptyApplicationForm);
 
 const base = '/api/applications';
 
+/** The list (#152): the list screen and the Edit screen share its cache entry. */
+export const applicationList = listQuery(
+  base,
+  (body: { applications: Application[] }) => body.applications,
+);
+
 export const applicationApi = {
-  list: () => requestJson<{ applications: Application[] }>(base),
   create: (input: ApplicationInput) =>
     requestJson<{ application: Application }>(base, { method: 'POST', body: input }),
   update: (id: number, input: ApplicationInput) =>

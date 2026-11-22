@@ -25,14 +25,12 @@ import {
   skillCategoryLabels,
   skillFieldOf,
   type SkillForm,
+  skillList,
   type SkillPaths,
   toSkillForm,
   toSkillInput,
 } from './skill-data';
 import { TextBlocks } from './text-blocks';
-
-const loadSkills = () => skillApi.list();
-const loadSkillRows = () => loadSkills().then((response) => response.skills);
 
 /**
  * Five dots, the first `value` filled, then "4/5 · Advanced". The dots and the short text are hidden
@@ -113,7 +111,7 @@ function SkillItem({
 export function SkillList({ paths }: { paths: SkillPaths }) {
   return (
     <ItemListPage<Skill>
-      load={loadSkillRows}
+      list={skillList}
       title="Skills"
       description="See the technologies you can work with, by category."
       noun="skills"
@@ -290,6 +288,7 @@ export function NewSkill({ paths }: { paths: SkillPaths }) {
   return (
     <NewItemPage
       paths={paths}
+      listPath={skillList.path}
       texts={{ noun: 'skill', backLabel: 'Skill list' }}
       description="Choose a skill name, category, and proficiency. Notes can stay empty."
       initial={emptySkillForm}
@@ -304,7 +303,7 @@ export function EditSkill({ paths }: { paths: SkillPaths }) {
     <EditItemPage
       paths={paths}
       texts={{ noun: 'skill', backLabel: 'Skill list' }}
-      loadItems={loadSkillRows}
+      list={skillList}
       toForm={toSkillForm}
       update={(item, form) => skillApi.update(item.id, toSkillInput(form))}
       Fields={SkillFields}

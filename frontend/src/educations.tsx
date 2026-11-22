@@ -14,6 +14,7 @@ import {
   educationApi,
   educationFieldOf,
   type EducationForm,
+  educationList,
   type EducationPaths,
   emptyEducationForm,
   gpaText,
@@ -28,9 +29,6 @@ import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
-
-const loadEducations = () => educationApi.list();
-const loadEducationsRows = () => loadEducations().then((response) => response.educations);
 
 function EducationItem({
   education,
@@ -98,7 +96,7 @@ function EducationItem({
 export function EducationList({ paths }: { paths: EducationPaths }) {
   return (
     <ItemListPage<Education>
-      load={loadEducationsRows}
+      list={educationList}
       title="Education"
       description="See your schools, majors, and study periods, newest enrollment first."
       noun="education"
@@ -322,6 +320,7 @@ export function NewEducation({ paths }: { paths: EducationPaths }) {
   return (
     <NewItemPage
       paths={paths}
+      listPath={educationList.path}
       texts={{ noun: 'education', backLabel: 'Education list' }}
       description="School, degree, status, and enrollment date are all you need. The rest can stay empty."
       initial={emptyEducationForm}
@@ -336,7 +335,7 @@ export function EditEducation({ paths }: { paths: EducationPaths }) {
     <EditItemPage
       paths={paths}
       texts={{ noun: 'education', backLabel: 'Education list' }}
-      loadItems={loadEducationsRows}
+      list={educationList}
       toForm={toEducationForm}
       update={(item, form) => educationApi.update(item.id, toEducationInput(form))}
       Fields={EducationFields}

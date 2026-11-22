@@ -1,5 +1,6 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { listQuery } from './list-query';
 
 // Skills (#34 API, #44 list, #45 form): API calls and display rules. The screens are in skills.tsx.
 
@@ -118,8 +119,10 @@ export const skillFieldOf = flatFieldOf(emptySkillForm);
 
 const base = '/api/skills';
 
+/** The list (#152): the list screen and the Edit screen share its cache entry. */
+export const skillList = listQuery(base, (body: { skills: Skill[] }) => body.skills);
+
 export const skillApi = {
-  list: () => requestJson<{ skills: Skill[] }>(base),
   create: (input: SkillInput) =>
     requestJson<{ skill: Skill }>(base, { method: 'POST', body: input }),
   update: (id: number, input: SkillInput) =>

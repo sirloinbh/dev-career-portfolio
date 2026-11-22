@@ -20,6 +20,7 @@ import {
   projectApi,
   projectFieldOf,
   type ProjectForm,
+  projectList,
   type ProjectPaths,
   projectPeriodText,
   projectRoleText,
@@ -28,9 +29,6 @@ import {
 } from './project-data';
 import { TextBlocks } from './text-blocks';
 import { webLink } from './web-link';
-
-const loadProjects = () => projectApi.list();
-const loadProjectsRows = () => loadProjects().then((response) => response.projects);
 
 /** Technology names as tags. A long unspaced name wraps instead of widening the page at 390px. */
 function Technologies({ names }: { names: string[] }) {
@@ -119,7 +117,7 @@ function ProjectItem({
 export function ProjectList({ paths }: { paths: ProjectPaths }) {
   return (
     <ItemListPage<Project>
-      load={loadProjectsRows}
+      list={projectList}
       title="Projects"
       description="See the projects you worked on, newest start first."
       noun="projects"
@@ -303,6 +301,7 @@ export function NewProject({ paths }: { paths: ProjectPaths }) {
   return (
     <NewItemPage
       paths={paths}
+      listPath={projectList.path}
       texts={{ noun: 'project', backLabel: 'Project list' }}
       description="Project name and start date are all you need. The rest can stay empty."
       initial={emptyProjectForm}
@@ -317,7 +316,7 @@ export function EditProject({ paths }: { paths: ProjectPaths }) {
     <EditItemPage
       paths={paths}
       texts={{ noun: 'project', backLabel: 'Project list' }}
-      loadItems={loadProjectsRows}
+      list={projectList}
       toForm={toProjectForm}
       update={(item, form) => projectApi.update(item.id, toProjectInput(form))}
       Fields={ProjectFields}
