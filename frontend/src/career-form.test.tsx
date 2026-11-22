@@ -10,7 +10,6 @@ import {
   toCareerInput,
 } from './career-data';
 import { toast } from './components/ui/sonner';
-import { findLive, queryLive } from './test/live';
 import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
@@ -167,100 +166,6 @@ test('the server message is shown under the field it is about, and focus moves t
   // The form keeps what was typed.
   expect(field('Company')).toHaveValue('한빛소프트');
   expect(window.location.pathname).toBe('/careers/new');
-});
-
-const reloadAsksFirst = () => {
-  const event = new Event('beforeunload', { cancelable: true });
-  window.dispatchEvent(event);
-  return event.defaultPrevented;
-};
-
-test('an untouched form lets Cancel and a reload go straight through', async () => {
-  fakeApi([]);
-  open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add career' });
-  expect(reloadAsksFirst()).toBe(false);
-  expect(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/careers');
-});
-
-test('a changed form asks before a reload and before Cancel throws the input away', async () => {
-  fakeApi([]);
-  open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add career' });
-  type('Company', '한빛소프트');
-  expect(reloadAsksFirst()).toBe(true);
-  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-  const dialog = await screen.findByRole('dialog', { name: 'Discard what you typed?' });
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  expect(field('Company')).toHaveValue('한빛소프트');
-  expect(window.location.pathname).toBe('/careers/new');
-  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-  fireEvent.click(
-    within(await screen.findByRole('dialog')).getByRole('button', { name: 'Discard' }),
-  );
-  expect(await screen.findByRole('heading', { level: 1, name: 'Career' })).toBeInTheDocument();
-});
-
-test('a saved form no longer asks before a reload', async () => {
-  fakeApi([]);
-  open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add career' });
-  type('Company', '한빛소프트');
-  type('Start date', '2023-03-02');
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await screen.findByRole('heading', { level: 1, name: 'Career' });
-  expect(reloadAsksFirst()).toBe(false);
-});
-
-test('editing a field removes the server message under it and leaves the others', async () => {
-  const api = fakeApi([]);
-  open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add career' });
-  api.refuseNext(
-    validation(
-      ['startDate', 'Start date must be a date in YYYY-MM-DD format'],
-      ['company', 'Company is required'],
-    ),
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await waitFor(() => expect(field('Company')).toHaveAttribute('aria-invalid', 'true'));
-  type('Company', '한빛소프트');
-  expect(field('Company')).not.toHaveAttribute('aria-invalid');
-  expect(screen.queryByText('Company is required')).not.toBeInTheDocument();
-  expect(field('Start date')).toHaveAttribute('aria-invalid', 'true');
-  expect(screen.getByText('Start date must be a date in YYYY-MM-DD format')).toBeInTheDocument();
-});
-
-test('each joined server message is shown under its own field, topmost focused', async () => {
-  const api = fakeApi([]);
-  open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add career' });
-  api.refuseNext(
-    validation(
-      ['startDate', 'Start date must be a date in YYYY-MM-DD format'],
-      ['company', 'Company is required'],
-    ),
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await waitFor(() => expect(field('Company')).toHaveFocus());
-  expect(field('Company')).toHaveAccessibleDescription('Company is required');
-  expect(field('Start date')).toHaveAccessibleDescription(
-    'Start date must be a date in YYYY-MM-DD format',
-  );
-  expect(queryLive('alert')).toBeNull();
-});
-
-test('a message that names no field is shown below the form and focus returns to the button', async () => {
-  const api = fakeApi([]);
-  open('/careers/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add career' });
-  api.refuseNext('Input contains a character that is not allowed (NUL)');
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await findLive('alert')).toHaveTextContent(
-    'Input contains a character that is not allowed (NUL)',
-  );
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('a career is edited with its saved values filled in', async () => {

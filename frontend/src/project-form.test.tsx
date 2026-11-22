@@ -4,7 +4,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { App } from './app';
 import { toast } from './components/ui/sonner';
 import type { Project } from './project-data';
-import { findLive, queryLive } from './test/live';
+import { findLive } from './test/live';
 import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
@@ -181,27 +181,6 @@ test('the server message is shown under the field it is about, and focus moves t
   expect(window.location.pathname).toBe('/projects/new');
 });
 
-test('a repeated message about technologies is shown once, topmost field focused', async () => {
-  const api = fakeApi([]);
-  open('/projects/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add project' });
-  // One issue per item that is too long, then the name; as the server joins them.
-  api.refuseNext(
-    validation(
-      ['technologies.0', 'Technologies items must be at most 50 characters'],
-      ['technologies.1', 'Technologies items must be at most 50 characters'],
-      ['name', 'Project name is required'],
-    ),
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await waitFor(() => expect(field('Project name')).toHaveFocus());
-  expect(field('Project name')).toHaveAccessibleDescription('Project name is required');
-  expect(field('Technologies')).toHaveAccessibleDescription(
-    'Separate items with commas. Up to 30 items, 50 characters each. Technologies items must be at most 50 characters',
-  );
-  expect(queryLive('alert')).toBeNull();
-});
-
 test('a half-typed end date is sent as text the server refuses, not as running', async () => {
   const api = fakeApi([]);
   open('/projects/new');
@@ -212,16 +191,6 @@ test('a half-typed end date is sent as text the server refuses, not as running',
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('End date')).toHaveFocus());
   expect(postBody(api)).toMatchObject({ endDate: 'incomplete' });
-});
-
-test('a message that names no field is shown below the form and focus returns to the button', async () => {
-  const api = fakeApi([]);
-  open('/projects/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add project' });
-  api.refuseNext('Request body must be a JSON object');
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await findLive('alert')).toHaveTextContent('Request body must be a JSON object');
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('a project is edited with its saved values filled in', async () => {

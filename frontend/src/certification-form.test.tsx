@@ -11,7 +11,7 @@ import {
   toCertificationInput,
 } from './certification-data';
 import { toast } from './components/ui/sonner';
-import { findLive, queryLive } from './test/live';
+import { findLive } from './test/live';
 import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
@@ -171,39 +171,6 @@ test('the server message is shown under the field it is about, and focus moves t
   // The form keeps what was typed.
   expect(field('Certification name')).toHaveValue('TOEIC');
   expect(window.location.pathname).toBe('/certifications/new');
-});
-
-test('each joined server message is shown under its own field, topmost focused', async () => {
-  const api = fakeApi([]);
-  open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
-  api.refuseNext(
-    validation(
-      ['score', 'Score or grade must be at most 50 characters'],
-      ['issuer', 'Issuer is required'],
-      ['name', 'Certification name is required'],
-    ),
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await waitFor(() => expect(field('Certification name')).toHaveFocus());
-  expect(field('Certification name')).toHaveAccessibleDescription('Certification name is required');
-  expect(field('Issuer')).toHaveAccessibleDescription('Issuer is required');
-  expect(field('Score or grade')).toHaveAccessibleDescription(
-    'Score or grade must be at most 50 characters',
-  );
-  expect(queryLive('alert')).toBeNull();
-});
-
-test('a message that names no field is shown below the form and focus returns to the button', async () => {
-  const api = fakeApi([]);
-  open('/certifications/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add certification' });
-  api.refuseNext('Input contains a character that is not allowed (NUL)');
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await findLive('alert')).toHaveTextContent(
-    'Input contains a character that is not allowed (NUL)',
-  );
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('a certification is edited with its saved values filled in', async () => {

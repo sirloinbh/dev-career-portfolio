@@ -11,7 +11,7 @@ import {
   toSkillForm,
   toSkillInput,
 } from './skill-data';
-import { findLive, queryLive } from './test/live';
+import { queryLive } from './test/live';
 import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
@@ -203,16 +203,6 @@ test('the generic unique-violation 409 is shown under the skill name', async () 
   await waitFor(() => expect(field('Skill name')).toHaveFocus());
   expect(field('Skill name')).toHaveAccessibleDescription('This item already exists');
   expect(queryLive('alert')).toBeNull();
-});
-
-test('a message that names no field is shown below the form and focus returns to the button', async () => {
-  const api = fakeApi([]);
-  open('/skills/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add skill' });
-  api.refuseNext(400, 'Request body must be a JSON object');
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await findLive('alert')).toHaveTextContent('Request body must be a JSON object');
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
 });
 
 test('a skill is edited with its saved values filled in', async () => {

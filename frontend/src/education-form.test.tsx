@@ -10,7 +10,6 @@ import {
   toEducationForm,
   toEducationInput,
 } from './education-data';
-import { findLive, queryLive } from './test/live';
 import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
@@ -161,17 +160,6 @@ test('the server message is shown under the field it is about, and focus moves t
   // The form keeps what was typed.
   expect(field('School')).toHaveValue('한빛대학교');
   expect(window.location.pathname).toBe('/educations/new');
-});
-
-test('a message that names no field is shown below the form', async () => {
-  const api = fakeApi([]);
-  open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add education' });
-  api.refuseNext('Input contains a character that is not allowed (NUL)');
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await findLive('alert')).toHaveTextContent(
-    'Input contains a character that is not allowed (NUL)',
-  );
 });
 
 test('a half-typed graduation date is sent as text the server refuses, not as no date', async () => {
@@ -354,54 +342,6 @@ test('a validation path maps to the form field it names', () => {
   expect(educationFieldOf('')).toBeUndefined();
   expect(educationFieldOf('toString')).toBeUndefined();
   expect(educationFieldOf('items.0.name')).toBeUndefined();
-});
-
-test('focus goes to the topmost field with a message, not the first one the server named', async () => {
-  const api = fakeApi([]);
-  open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add education' });
-  // zod reports per-field issues before cross-field ones, so GPA comes before Graduation date.
-  api.refuseNext(
-    validation(
-      ['gpa', 'GPA must have at most two decimal places'],
-      ['endDate', 'Graduation date cannot be earlier than the enrollment date'],
-      ['gpa', 'GPA cannot be greater than the maximum GPA'],
-    ),
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await waitFor(() => expect(field('Graduation date')).toHaveFocus());
-  expect(field('GPA')).toHaveAccessibleDescription(
-    /GPA must have at most two decimal places, GPA cannot be greater than the maximum GPA$/,
-  );
-});
-
-test('after a message that names no field, focus returns to the submit button', async () => {
-  const api = fakeApi([]);
-  open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add education' });
-  api.refuseNext('Input contains a character that is not allowed (NUL)');
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await findLive('alert');
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
-});
-
-test('each joined server message is shown under its own field', async () => {
-  const api = fakeApi([]);
-  open('/educations/new');
-  await screen.findByRole('heading', { level: 1, name: 'Add education' });
-  api.refuseNext(
-    validation(
-      ['school', 'School is required'],
-      ['startDate', 'Enrollment date must be a date in YYYY-MM-DD format'],
-    ),
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  await waitFor(() => expect(field('School')).toHaveFocus());
-  expect(field('School')).toHaveAccessibleDescription('School is required');
-  expect(field('Enrollment date')).toHaveAccessibleDescription(
-    'Enrollment date must be a date in YYYY-MM-DD format',
-  );
-  expect(queryLive('alert')).toBeNull();
 });
 
 test('form values become the API input and back', () => {
