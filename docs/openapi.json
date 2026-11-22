@@ -1436,8 +1436,8 @@
           "200": {
             "description": "Success"
           },
-          "500": {
-            "description": "Server error",
+          "503": {
+            "description": "The shared sign-in service is unavailable or not configured",
             "content": {
               "application/json": {
                 "schema": {

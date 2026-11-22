@@ -243,6 +243,15 @@ test('editing a certification that no longer exists says so', async () => {
   expect(await findLive('alert')).toHaveTextContent('Certification not found');
 });
 
+test('editing a certification at a malformed address says the address is not valid', async () => {
+  const api = fakeApi([toeic]);
+  open('/certifications/abc/edit');
+  expect(await findLive('alert')).toHaveTextContent('This address is not valid');
+  expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  expect(screen.queryByText(/not found/i)).not.toBeInTheDocument();
+  expect(api.calls.some((call) => call.method === 'PUT')).toBe(false);
+});
+
 test('cancelling the delete dialog keeps the certification', async () => {
   const api = fakeApi([toeic]);
   open('/certifications');

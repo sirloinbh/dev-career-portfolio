@@ -50,11 +50,11 @@ test('a blank company name is refused', async () => {
 test('a missing or unknown employment type is refused', async () => {
   await expectRefused(
     { ...valid, employmentType: undefined },
-    'Employment type must be one of full-time, contract, intern, freelance, other',
+    'Employment type must be one of full_time, contract, intern, freelance, other',
   );
   await expectRefused(
     { ...valid, employmentType: 'part_time' },
-    'Employment type must be one of full-time, contract, intern, freelance, other',
+    'Employment type must be one of full_time, contract, intern, freelance, other',
   );
 });
 

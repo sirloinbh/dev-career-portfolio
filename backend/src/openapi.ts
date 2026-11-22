@@ -15,7 +15,7 @@ import { buildOpenApi, type Operation } from './standard/openapi.js';
 export const operations: Record<string, Operation> = {
   'GET /api/health': {
     summary: 'Check the server and database connection',
-    status: [200, 500],
+    status: [200, 503],
     public: true,
   },
   'GET /api/me': { summary: 'Get the signed-in user', status: [200, 401, 503] },

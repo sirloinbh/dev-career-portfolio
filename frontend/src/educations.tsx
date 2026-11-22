@@ -28,6 +28,7 @@ import {
   toEducationForm,
   toEducationInput,
 } from './education-data';
+import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
@@ -398,6 +399,7 @@ export function NewEducation({ paths }: { paths: EducationPaths }) {
 
 export function EditEducation({ paths }: { paths: EducationPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // There is no single-item API (#31): the list is small, so the form finds its row there.
   const loaded = useLoad('all', loadEducations);
   const navigate = useNavigate();
@@ -406,7 +408,8 @@ export function EditEducation({ paths }: { paths: EducationPaths }) {
       ? loaded.data.educations.find((item) => String(item.id) === id)
       : undefined;
   const update = async (form: EducationForm) => {
-    await educationApi.update(Number(id), toEducationInput(form));
+    if (!education) return;
+    await educationApi.update(education.id, toEducationInput(form));
     toast.success('Saved');
     void navigate(paths.list);
   };
@@ -418,13 +421,14 @@ export function EditEducation({ paths }: { paths: EducationPaths }) {
     >
       <BackLink to={paths.list} label="Education list" />
       <PageHeader title="Edit education" description="Change what you need, then save." />
-      {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {loaded.state === 'error' ? (
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
+      {valid && loaded.state === 'error' ? (
         <Notice
           notice={{ kind: 'error', text: `Could not load education. ${errorText(loaded.error)}` }}
         />
       ) : null}
-      {loaded.state === 'ok' && !education ? (
+      {valid && loaded.state === 'ok' && !education ? (
         <Notice
           notice={{ kind: 'error', text: 'Education not found. It may already be deleted.' }}
         />

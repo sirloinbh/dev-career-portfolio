@@ -27,6 +27,7 @@ import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { coverLetterApi } from './cover-letter-data';
 import { deleteItem } from './delete-item';
+import { invalidAddressText, isValidId } from './entity-id';
 import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
@@ -382,6 +383,7 @@ export function NewApplication({ paths }: { paths: ApplicationPaths }) {
 
 export function EditApplication({ paths }: { paths: ApplicationPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // There is no single-item API (#36): the list is small, so the form finds its row there.
   const loaded = useLoad('all', loadApplications);
   const navigate = useNavigate();
@@ -390,7 +392,8 @@ export function EditApplication({ paths }: { paths: ApplicationPaths }) {
       ? loaded.data.applications.find((item) => String(item.id) === id)
       : undefined;
   const update = async (form: ApplicationForm) => {
-    await applicationApi.update(Number(id), toApplicationInput(form));
+    if (!application) return;
+    await applicationApi.update(application.id, toApplicationInput(form));
     toast.success('Saved');
     void navigate(paths.list);
   };
@@ -402,8 +405,9 @@ export function EditApplication({ paths }: { paths: ApplicationPaths }) {
     >
       <BackLink to={paths.list} label="Application list" />
       <PageHeader title="Edit application" description="Change what you need, then save." />
-      {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {loaded.state === 'error' ? (
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
+      {valid && loaded.state === 'error' ? (
         <Notice
           notice={{
             kind: 'error',
@@ -411,7 +415,7 @@ export function EditApplication({ paths }: { paths: ApplicationPaths }) {
           }}
         />
       ) : null}
-      {loaded.state === 'ok' && !application ? (
+      {valid && loaded.state === 'ok' && !application ? (
         <Notice
           notice={{ kind: 'error', text: 'Application not found. It may already be deleted.' }}
         />

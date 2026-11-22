@@ -21,6 +21,7 @@ import {
   toQuestionsInput,
   typedLimit,
 } from './cover-letter-data';
+import { invalidAddressText, isValidId } from './entity-id';
 import { controlClass } from './form-fields';
 import { useServerForm } from './form-state';
 import { RequestError } from './lib/api';
@@ -30,7 +31,9 @@ import { BackLink, PageHeader } from './page-header';
 import { useLoad } from './use-load';
 
 const loadApplications = () => applicationApi.list();
-const loadQuestions = (id: string) => coverLetterApi.list(id);
+// A malformed id in the address is reported on screen; it never reaches the API.
+const loadQuestions = (id: string) =>
+  isValidId(id) ? coverLetterApi.list(id) : Promise.resolve({ questions: [] });
 
 const emptyDraft = (key: number): QuestionDraft => ({
   key,
@@ -57,7 +60,7 @@ function QuestionsForm({
   const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm((message) =>
     questionFieldErrors(sentKeys.current)(message),
   );
-  const viewPath = paths.questions(Number(applicationId));
+  const viewPath = paths.questions(applicationId);
 
   const update = (key: number, field: 'question' | 'answer' | 'charLimit', value: string) =>
     setDrafts((current) =>
@@ -283,6 +286,7 @@ function QuestionsForm({
 
 export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   const questions = useLoad(id, loadQuestions);
   // There is no single-item API (#36): the list is small, so the page finds its row there.
   const applications = useLoad('all', loadApplications);
@@ -291,6 +295,7 @@ export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
       ? applications.data.applications.find((item) => String(item.id) === id)
       : undefined;
   const missing =
+    valid &&
     questions.state === 'error' &&
     questions.error instanceof RequestError &&
     questions.error.status === 404;
@@ -300,18 +305,19 @@ export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
       aria-busy={questions.state === 'loading'}
       className="flex flex-col gap-6"
     >
-      <BackLink to={paths.questions(Number(id))} label="Questions" />
+      <BackLink to={paths.questions(id)} label="Questions" />
       <PageHeader
         title={application ? `Edit questions: ${application.companyName}` : 'Edit questions'}
         description="Write the questions and answers, put them in order, then save them all at once."
       />
-      {questions.state === 'loading' ? <SkeletonList rows={3} /> : null}
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && questions.state === 'loading' ? <SkeletonList rows={3} /> : null}
       {missing ? (
         <Notice
           notice={{ kind: 'error', text: 'Application not found. It may already be deleted.' }}
         />
       ) : null}
-      {questions.state === 'error' && !missing ? (
+      {valid && questions.state === 'error' && !missing ? (
         <Notice
           notice={{
             kind: 'error',
@@ -319,7 +325,7 @@ export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
           }}
         />
       ) : null}
-      {questions.state === 'ok' ? (
+      {valid && questions.state === 'ok' ? (
         <QuestionsForm
           // A new id starts a fresh form instead of keeping the previous application's typing.
           key={id}

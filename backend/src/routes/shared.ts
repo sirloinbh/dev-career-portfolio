@@ -69,3 +69,7 @@ export const optionalLink = (label: string) =>
 
 /** The body must be a JSON object; express.json() also accepts arrays and bare values. */
 export const objectBodyError = { error: 'Request body must be a JSON object' };
+
+/** "Label must be one of a, b, c" built from the enum's own values, so the message never drifts from what the API accepts. */
+export const oneOfError = (label: string, values: readonly string[]) =>
+  `${label} must be one of ${values.join(', ')}`;

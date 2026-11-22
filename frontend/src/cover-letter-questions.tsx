@@ -15,6 +15,7 @@ import { EmptyState } from './components/ui/empty-state';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { answerLengthText, coverLetterApi, type CoverLetterQuestion } from './cover-letter-data';
+import { invalidAddressText, isValidId } from './entity-id';
 import { RequestError } from './lib/api';
 import { errorText } from './lib/use-notice';
 import { BackLink, PageHeader } from './page-header';
@@ -22,7 +23,9 @@ import { serviceToday } from './service-date';
 import { useLoad } from './use-load';
 
 const loadApplications = () => applicationApi.list();
-const loadQuestions = (id: string) => coverLetterApi.list(id);
+// A malformed id in the address is reported on screen; it never reaches the API.
+const loadQuestions = (id: string) =>
+  isValidId(id) ? coverLetterApi.list(id) : Promise.resolve({ questions: [] });
 
 /** Status, position, and deadline of the application the questions belong to. */
 function ApplicationSummary({ application }: { application: Application }) {
@@ -68,6 +71,7 @@ function QuestionItem({ question, number }: { question: CoverLetterQuestion; num
 
 export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // Keyed by the id in the address, so another application's questions are never kept on screen.
   const questions = useLoad(id, loadQuestions);
   // There is no single-item API (#36): the list is small, so the page finds its row there.
@@ -76,12 +80,12 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
     applications.state === 'ok'
       ? applications.data.applications.find((item) => String(item.id) === id)
       : undefined;
-  const loading = questions.state === 'loading';
+  const loading = valid && questions.state === 'loading';
   const missing =
-    questions.state === 'error' && questions.error instanceof RequestError
+    valid && questions.state === 'error' && questions.error instanceof RequestError
       ? questions.error.status === 404
       : false;
-  const list = questions.state === 'ok' ? questions.data.questions : [];
+  const list = valid && questions.state === 'ok' ? questions.data.questions : [];
 
   return (
     <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
@@ -94,19 +98,20 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
         {/* Always mounted, so screen readers hear the text change from loading to the count. */}
         <p role="status" className="sr-only">
           {loading ? 'Loading questions' : ''}
-          {questions.state === 'ok'
+          {valid && questions.state === 'ok'
             ? `${String(list.length)} ${list.length === 1 ? 'question' : 'questions'}`
             : ''}
         </p>
       </PageHeader>
-      {missing ? null : (
+      {missing || !valid ? null : (
         <Button asChild className="w-fit">
-          <Link to={paths.editQuestions(Number(id))}>
+          <Link to={paths.editQuestions(id)}>
             <Pencil aria-hidden />
             Edit questions
           </Link>
         </Button>
       )}
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
       {loading ? <SkeletonList rows={3} /> : null}
       {missing ? (
         <Notice

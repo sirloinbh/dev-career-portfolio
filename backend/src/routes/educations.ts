@@ -3,7 +3,7 @@ import type { Pool } from 'pg';
 import { z } from 'zod/v4';
 
 import { HttpError, parseId } from '../standard/http.js';
-import { calendarDate, objectBodyError, optionalText, requiredText } from './shared.js';
+import { calendarDate, objectBodyError, oneOfError, optionalText, requiredText } from './shared.js';
 
 const degrees = ['high_school', 'associate', 'bachelor', 'master', 'doctorate', 'other'] as const;
 const statuses = ['graduated', 'enrolled', 'on_leave', 'dropped_out'] as const;
@@ -25,10 +25,10 @@ export const educationInput = z
       school: requiredText('School', 100),
       major: optionalText('Major', 100),
       degree: z.enum(degrees, {
-        error: 'Degree must be one of high school, associate, bachelor, master, doctorate, other',
+        error: oneOfError('Degree', degrees),
       }),
       status: z.enum(statuses, {
-        error: 'Status must be one of graduated, enrolled, on leave, dropped out',
+        error: oneOfError('Status', statuses),
       }),
       startDate: calendarDate('Enrollment date'),
       endDate: calendarDate('Graduation date').nullable().default(null),
@@ -53,11 +53,19 @@ export const educationInput = z
         message: 'Graduation date must be empty while enrolled',
       });
     }
-    if ((input.gpa === null) !== (input.gpaScale === null)) {
+    // Report on the field that is empty, so the form shows the message under the right input.
+    if (input.gpa !== null && input.gpaScale === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['gpaScale'],
+        message: 'Maximum GPA is required when GPA is entered',
+      });
+    }
+    if (input.gpa === null && input.gpaScale !== null) {
       ctx.addIssue({
         code: 'custom',
         path: ['gpa'],
-        message: 'GPA and maximum GPA must be entered together',
+        message: 'GPA is required when maximum GPA is entered',
       });
     }
     if (input.gpa !== null && input.gpaScale !== null) {

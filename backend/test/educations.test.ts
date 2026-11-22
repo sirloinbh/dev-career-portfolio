@@ -87,16 +87,17 @@ test('a blank school name is refused', async () => {
 test('an unknown degree or status is refused', async () => {
   await expectRefused(
     { ...valid, degree: 'phd' },
-    'Degree must be one of high school, associate, bachelor, master, doctorate, other',
+    'Degree must be one of high_school, associate, bachelor, master, doctorate, other',
   );
   await expectRefused(
     { ...valid, status: 'done' },
-    'Status must be one of graduated, enrolled, on leave, dropped out',
+    'Status must be one of graduated, enrolled, on_leave, dropped_out',
   );
 });
 
 test('gpa needs its scale, must not exceed it, and the scale must be positive', async () => {
-  await expectRefused({ ...valid, gpa: 3.5 }, 'GPA and maximum GPA must be entered together');
+  await expectRefused({ ...valid, gpa: 3.5 }, 'Maximum GPA is required when GPA is entered');
+  await expectRefused({ ...valid, gpaScale: 4.5 }, 'GPA is required when maximum GPA is entered');
   await expectRefused(
     { ...valid, gpa: 4.6, gpaScale: 4.5 },
     'GPA cannot be greater than the maximum GPA',
