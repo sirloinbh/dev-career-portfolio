@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   Award,
   Briefcase,
@@ -160,7 +161,7 @@ function Page({
   );
 }
 
-export function App() {
+function AppRoutes() {
   const health = useHealth();
   return (
     <BrowserRouter>
@@ -237,5 +238,16 @@ export function App() {
         <Toaster />
       </SignInGate>
     </BrowserRouter>
+  );
+}
+
+export function App() {
+  // One client for the whole app, kept in state so a re-render does not make a new one. It uses React Query's defaults
+  // for now; the synced shared `createQueryClient()` replaces it when the query layer arrives (#152).
+  const [queryClient] = useState(() => new QueryClient());
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppRoutes />
+    </QueryClientProvider>
   );
 }
