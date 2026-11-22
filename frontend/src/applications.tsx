@@ -1,4 +1,4 @@
-import { FileText, ListOrdered, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FileText, ListOrdered, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -19,29 +19,27 @@ import {
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
-import { EmptyState } from './components/ui/empty-state';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { coverLetterApi } from './cover-letter-data';
-import { deleteItem } from './delete-item';
 import { invalidAddressText, isValidId } from './entity-id';
-import { entryCount } from './entry-count';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
-import { ReloadNotice } from './item-list-page-notice';
+import { ItemListPage, ItemUl } from './item-list-page';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { OutLink } from './out-link';
 import { BackLink, PageHeader } from './page-header';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useLoad } from './use-load';
 import { webLink } from './web-link';
 
 const loadApplications = () => applicationApi.list();
+const loadApplicationsRows = () => loadApplications().then((response) => response.applications);
 
 function ApplicationItem({
   application,
@@ -153,84 +151,38 @@ function DeleteApplication({
 }
 
 export function ApplicationList({ paths }: { paths: ApplicationPaths }) {
-  const { loaded, data, reload } = useReloading('all', loadApplications);
-  const applications = data?.applications ?? [];
-  const heading = useRef<HTMLHeadingElement>(null);
-  // Only the first load shows the placeholder; a reload keeps the rows on screen.
-  const firstLoad = loaded.state === 'loading' && data === undefined;
   // Read once per render: the countdown follows the service date, not the device's time zone.
   const today = serviceToday();
-
-  const remove = async (application: Application) => {
-    await deleteItem({
-      remove: () => applicationApi.remove(application.id),
-      noun: 'application',
-      name: application.companyName,
-    });
-    reload((current) => ({
-      applications: current.applications.filter((item) => item.id !== application.id),
-    }));
-    // The row and its delete button are gone, so focus would fall to the page body.
-    requestAnimationFrame(() => heading.current?.focus());
-  };
-
   return (
-    <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
-      <PageHeader
-        title="Cover letters"
-        description="See the companies you applied to by status (drafting, submitted, closed), earliest deadline first within each status. Drafts past their deadline come after the other drafts."
-        headingRef={heading}
-      >
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading applications' : ''}
-          {data ? entryCount(applications.length) : ''}
-        </p>
-      </PageHeader>
-      <Button asChild className="w-fit">
-        <Link to={paths.create}>
-          <Plus aria-hidden />
-          Add application
-        </Link>
-      </Button>
-      {firstLoad ? <SkeletonList rows={3} /> : null}
-      {loaded.state === 'error' && data === undefined ? (
-        // Say what failed first: a proxy error without a server message only carries the generic text.
-        <Notice
-          notice={{
-            kind: 'error',
-            text: `Could not load applications. ${errorText(loaded.error)}`,
-          }}
-        />
-      ) : null}
-      {loaded.state === 'error' && data !== undefined ? (
-        <ReloadNotice noun="applications" error={loaded.error} onRetry={() => reload()} />
-      ) : null}
-      {data && applications.length === 0 ? (
-        <EmptyState
-          className="break-keep"
-          icon={<FileText />}
-          title="No applications added yet"
-          description="Choose Add application and it will appear here by status and deadline."
-        />
-      ) : null}
-      {applications.length > 0 ? (
-        <ul
-          aria-label="Application list"
-          className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
-        >
-          {applications.map((application) => (
+    <ItemListPage<Application>
+      load={loadApplicationsRows}
+      title="Cover letters"
+      description="See the companies you applied to by status (drafting, submitted, closed), earliest deadline first within each status. Drafts past their deadline come after the other drafts."
+      noun="applications"
+      addLabel="Add application"
+      addTo={paths.create}
+      empty={{
+        icon: <FileText />,
+        title: 'No applications added yet',
+        description: 'Choose Add application and it will appear here by status and deadline.',
+      }}
+      deleteNoun="application"
+      deleteName={(row) => row.companyName}
+      removeRow={(row) => applicationApi.remove(row.id)}
+      renderRows={(rows, onDelete) => (
+        <ItemUl label="Application list">
+          {rows.map((row) => (
             <ApplicationItem
-              key={application.id}
-              application={application}
+              key={row.id}
+              application={row}
               today={today}
               paths={paths}
-              onDelete={remove}
+              onDelete={onDelete}
             />
           ))}
-        </ul>
-      ) : null}
-    </section>
+        </ItemUl>
+      )}
+    />
   );
 }
 
