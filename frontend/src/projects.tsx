@@ -26,7 +26,7 @@ import {
   isRunning,
   type Project,
   projectApi,
-  projectFieldErrors,
+  projectFieldOf,
   type ProjectForm,
   type ProjectPaths,
   projectPeriodText,
@@ -209,8 +209,7 @@ function ProjectFields({
 }) {
   const [form, setForm] = useState(initial);
   const endDateInput = useRef<HTMLInputElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } =
-    useServerForm(projectFieldErrors);
+  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm(projectFieldOf);
   const set = (field: keyof ProjectForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 

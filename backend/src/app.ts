@@ -12,7 +12,7 @@ import { registerEducationRoutes } from './routes/educations.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerSkillRoutes } from './routes/skills.js';
 import { setInt8Parser } from './standard/db.js';
-import { errorHandler, notFound, requestLog, serviceDate } from './standard/http.js';
+import { createErrorHandler, notFound, requestLog, serviceDate } from './standard/http.js';
 import { apiRateLimit } from './standard/rate-limit.js';
 import { registerToolRoutes } from './standard/tools.js';
 
@@ -67,6 +67,6 @@ export function createApp(
     requireBinding: true,
   });
   app.use('/api', notFound);
-  app.use(errorHandler);
+  app.use(createErrorHandler({ fields: true }));
   return app;
 }

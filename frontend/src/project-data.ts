@@ -1,4 +1,4 @@
-import { splitFieldErrors } from './field-errors';
+import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
 import { formatDate } from './service-date';
 
@@ -106,37 +106,8 @@ export function toProjectInput(form: ProjectForm): ProjectInput {
   };
 }
 
-// The server's messages start with these labels (backend/src/routes/projects.ts, shared.ts).
-const fieldLabels: [string, keyof ProjectForm][] = [
-  ['Project name', 'name'],
-  ['Organization', 'organization'],
-  ['Start date', 'startDate'],
-  ['End date', 'endDate'],
-  ['Role', 'role'],
-  ['Summary', 'summary'],
-  ['Contributions', 'contributions'],
-  ['Technologies', 'technologies'],
-  ['Repository link', 'repositoryUrl'],
-  ['Service link', 'serviceUrl'],
-];
-
-// The order the inputs appear on screen (projects.tsx ProjectFields).
-const formOrder: (keyof ProjectForm)[] = [
-  'name',
-  'organization',
-  'role',
-  'startDate',
-  'endDate',
-  'summary',
-  'contributions',
-  'technologies',
-  'repositoryUrl',
-  'serviceUrl',
-];
-
-/** The server's message split per field, topmost field first (see field-errors.ts). */
-export const projectFieldErrors = (message: string) =>
-  splitFieldErrors(message, fieldLabels, formOrder);
+/** The form field a server validation path names (see form-state.tsx). */
+export const projectFieldOf = flatFieldOf(emptyProjectForm);
 
 const base = '/api/projects';
 

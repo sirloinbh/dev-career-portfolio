@@ -1,4 +1,4 @@
-import { splitFieldErrors } from './field-errors';
+import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
 import { formatDate } from './service-date';
 
@@ -85,29 +85,8 @@ export function toCertificationInput(form: CertificationForm): CertificationInpu
   return { ...form, expiryDate: form.expiryDate === '' ? null : form.expiryDate };
 }
 
-// The server's messages start with these labels (backend/src/routes/certifications.ts).
-const fieldLabels: [string, keyof CertificationForm][] = [
-  ['Certification name', 'name'],
-  ['Issuer', 'issuer'],
-  ['Date earned', 'acquiredDate'],
-  ['Expiry date', 'expiryDate'],
-  ['Score or grade', 'score'],
-  ['Notes', 'memo'],
-];
-
-// The order the inputs appear on screen (certifications.tsx CertificationFields).
-const formOrder: (keyof CertificationForm)[] = [
-  'name',
-  'issuer',
-  'acquiredDate',
-  'expiryDate',
-  'score',
-  'memo',
-];
-
-/** The server's message split per field, topmost field first (see field-errors.ts). */
-export const certificationFieldErrors = (message: string) =>
-  splitFieldErrors(message, fieldLabels, formOrder);
+/** The form field a server validation path names (see form-state.tsx). */
+export const certificationFieldOf = flatFieldOf(emptyCertificationForm);
 
 const base = '/api/certifications';
 

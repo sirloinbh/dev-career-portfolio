@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import {
   type Application,
   applicationApi,
-  applicationFieldErrors,
+  applicationFieldOf,
   type ApplicationForm,
   type ApplicationPaths,
   applicationStatuses,
@@ -248,7 +248,7 @@ function ApplicationFields({
   const [form, setForm] = useState(initial);
   const deadlineInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, submit, actions, pending } =
-    useServerForm(applicationFieldErrors);
+    useServerForm(applicationFieldOf);
   const set = (field: Exclude<keyof ApplicationForm, 'status'>) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
   // Only one of the three values is kept, so the status stays typed instead of any string.
