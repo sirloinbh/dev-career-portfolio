@@ -6,6 +6,7 @@ import { HttpError, parseId } from '../standard/http.js';
 import {
   calendarDate,
   objectBodyError,
+  oneOfError,
   optionalLink,
   optionalText,
   requiredText,
@@ -22,7 +23,7 @@ export const applicationInput = z.object(
     // No deadline stays NULL. A deadline already past is still stored: it is a past application.
     deadline: calendarDate('Deadline').nullable().default(null),
     status: z.enum(statuses, {
-      error: 'Application status must be one of drafting, submitted, closed',
+      error: oneOfError('Application status', statuses),
     }),
     memo: optionalText('Notes', 2000),
   },

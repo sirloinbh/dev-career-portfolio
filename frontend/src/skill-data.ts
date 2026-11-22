@@ -1,4 +1,4 @@
-import { splitFieldErrors } from './field-errors';
+import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
 
 // Skills (#34 API, #44 list, #45 form): API calls and display rules. The screens are in skills.tsx.
@@ -113,22 +113,8 @@ export function toSkillInput(form: SkillForm): SkillInput {
   return { ...form, proficiency: form.proficiency === '' ? null : Number(form.proficiency) };
 }
 
-// The server's messages start with these labels (backend/src/routes/skills.ts, shared.ts). The 409
-// for a taken name names no label, so its own start ties it to the name field.
-const fieldLabels: [string, keyof SkillForm][] = [
-  ['Skill name', 'name'],
-  ['This skill is already registered', 'name'],
-  ['Category', 'category'],
-  ['Proficiency', 'proficiency'],
-  ['Notes', 'memo'],
-];
-
-// The order the inputs appear on screen (skills.tsx SkillFields).
-const formOrder: (keyof SkillForm)[] = ['name', 'category', 'proficiency', 'memo'];
-
-/** The server's message split per field, topmost field first (see field-errors.ts). */
-export const skillFieldErrors = (message: string) =>
-  splitFieldErrors(message, fieldLabels, formOrder);
+/** The form field a server validation path names (see form-state.tsx). */
+export const skillFieldOf = flatFieldOf(emptySkillForm);
 
 const base = '/api/skills';
 

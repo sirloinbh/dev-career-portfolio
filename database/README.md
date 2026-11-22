@@ -13,4 +13,4 @@ npm run db:migrate
 
 Do not pipe the file through PowerShell, as in `Get-Content … | docker compose exec … psql`. Windows PowerShell 5.1 sends ASCII to external programs, so Korean text turns into `?`.
 
-Rules: write every migration so it is safe to run again. Parallel branches reserve a number when they start. Preserve the meaning of existing data, and leave values you could not confirm as NULL. For Korean literals in SQL, use `U&'\\XXXX'` escapes when possible.
+Rules: an applied file is never edited; the runner stores a checksum for each file and refuses to run when one changed. Put a change into a new numbered file. Write every migration so it is safe to run again. Parallel branches reserve a number when they start. Preserve the meaning of existing data, and leave values you could not confirm as NULL. For Korean literals in SQL, use `U&'\\XXXX'` escapes when possible.

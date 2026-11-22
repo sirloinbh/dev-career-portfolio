@@ -22,6 +22,8 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-career}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-career}
       PORT: 3108
+      # Bind every interface inside the container; the host publishes the port on 127.0.0.1 only.
+      HOST: 0.0.0.0
       TZ: Asia/Seoul
       # #106: the shared sign-in (sirloinbh/shared-auth) checks each /api session on its network.
       AUTH_INTERNAL_URL: ${AUTH_INTERNAL_URL:-http://shared-auth-api:3110}

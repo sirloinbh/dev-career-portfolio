@@ -1,11 +1,11 @@
-import { Briefcase, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Briefcase, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import {
   type Career,
   careerApi,
-  careerFieldErrors,
+  careerFieldOf,
   type CareerForm,
   type CareerPaths,
   careerPeriodText,
@@ -20,23 +20,23 @@ import {
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
-import { EmptyState } from './components/ui/empty-state';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
-import { deleteItem } from './delete-item';
-import { entryCount } from './entry-count';
+import { invalidAddressText, isValidId } from './entity-id';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { ItemListPage, ItemUl } from './item-list-page';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { BackLink, PageHeader } from './page-header';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useLoad } from './use-load';
 
 const loadCareers = () => careerApi.list();
+const loadCareersRows = () => loadCareers().then((response) => response.careers);
 
 function CareerItem({
   career,
@@ -94,68 +94,30 @@ function CareerItem({
 }
 
 export function CareerList({ paths }: { paths: CareerPaths }) {
-  const { loaded, data, reload } = useReloading('all', loadCareers);
-  const careers = data?.careers ?? [];
-  const heading = useRef<HTMLHeadingElement>(null);
-  // Only the first load shows the placeholder; a reload keeps the rows on screen.
-  const firstLoad = loaded.state === 'loading' && data === undefined;
-
-  const remove = async (career: Career) => {
-    await deleteItem({
-      remove: () => careerApi.remove(career.id),
-      noun: 'career',
-      name: career.company,
-    });
-    reload((current) => ({ careers: current.careers.filter((item) => item.id !== career.id) }));
-    // The row and its delete button are gone, so focus would fall to the page body.
-    requestAnimationFrame(() => heading.current?.focus());
-  };
-
   return (
-    <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
-      <PageHeader
-        title="Career"
-        description="See your employers and roles, newest start first."
-        headingRef={heading}
-      >
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading career' : ''}
-          {data ? entryCount(careers.length) : ''}
-        </p>
-      </PageHeader>
-      <Button asChild className="w-fit">
-        <Link to={paths.create}>
-          <Plus aria-hidden />
-          Add career
-        </Link>
-      </Button>
-      {firstLoad ? <SkeletonList rows={3} /> : null}
-      {loaded.state === 'error' && data === undefined ? (
-        // Say what failed first: a proxy error without a server message only carries the generic text.
-        <Notice
-          notice={{ kind: 'error', text: `Could not load career. ${errorText(loaded.error)}` }}
-        />
-      ) : null}
-      {data && careers.length === 0 ? (
-        <EmptyState
-          className="break-keep"
-          icon={<Briefcase />}
-          title="No career added yet"
-          description="Choose Add career and it will appear here, newest start first."
-        />
-      ) : null}
-      {careers.length > 0 ? (
-        <ul
-          aria-label="Career list"
-          className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
-        >
-          {careers.map((career) => (
-            <CareerItem key={career.id} career={career} paths={paths} onDelete={remove} />
+    <ItemListPage<Career>
+      load={loadCareersRows}
+      title="Career"
+      description="See your employers and roles, newest start first."
+      noun="career"
+      addLabel="Add career"
+      addTo={paths.create}
+      empty={{
+        icon: <Briefcase />,
+        title: 'No career added yet',
+        description: 'Choose Add career and it will appear here, newest start first.',
+      }}
+      deleteNoun="career"
+      deleteName={(row) => row.company}
+      removeRow={(row) => careerApi.remove(row.id)}
+      renderRows={(rows, onDelete) => (
+        <ItemUl label="Career list">
+          {rows.map((row) => (
+            <CareerItem key={row.id} career={row} paths={paths} onDelete={onDelete} />
           ))}
-        </ul>
-      ) : null}
-    </section>
+        </ItemUl>
+      )}
+    />
   );
 }
 
@@ -172,8 +134,7 @@ function CareerFields({
 }) {
   const [form, setForm] = useState(initial);
   const endDateInput = useRef<HTMLInputElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } =
-    useServerForm(careerFieldErrors);
+  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm(careerFieldOf);
   const set = (field: keyof CareerForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -309,13 +270,15 @@ export function NewCareer({ paths }: { paths: CareerPaths }) {
 
 export function EditCareer({ paths }: { paths: CareerPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // There is no single-item API (#32): the list is small, so the form finds its row there.
   const loaded = useLoad('all', loadCareers);
   const navigate = useNavigate();
   const career =
     loaded.state === 'ok' ? loaded.data.careers.find((item) => String(item.id) === id) : undefined;
   const update = async (form: CareerForm) => {
-    await careerApi.update(Number(id), toCareerInput(form));
+    if (!career) return;
+    await careerApi.update(career.id, toCareerInput(form));
     toast.success('Saved');
     void navigate(paths.list);
   };
@@ -327,13 +290,14 @@ export function EditCareer({ paths }: { paths: CareerPaths }) {
     >
       <BackLink to={paths.list} label="Career list" />
       <PageHeader title="Edit career" description="Change what you need, then save." />
-      {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {loaded.state === 'error' ? (
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
+      {valid && loaded.state === 'error' ? (
         <Notice
           notice={{ kind: 'error', text: `Could not load career. ${errorText(loaded.error)}` }}
         />
       ) : null}
-      {loaded.state === 'ok' && !career ? (
+      {valid && loaded.state === 'ok' && !career ? (
         <Notice notice={{ kind: 'error', text: 'Career not found. It may already be deleted.' }} />
       ) : null}
       {career ? (

@@ -12,7 +12,7 @@ import { registerEducationRoutes } from './routes/educations.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerSkillRoutes } from './routes/skills.js';
 import { setInt8Parser } from './standard/db.js';
-import { errorHandler, notFound, requestLog, serviceDate } from './standard/http.js';
+import { createErrorHandler, notFound, requestLog, serviceDate } from './standard/http.js';
 import { apiRateLimit } from './standard/rate-limit.js';
 import { registerToolRoutes } from './standard/tools.js';
 
@@ -42,7 +42,13 @@ export function createApp(
   if (options.auth) app.use('/api', options.auth);
   app.get('/api/me', meHandler);
   app.get('/api/health', async (_req, res) => {
-    await pool.query('SELECT 1');
+    try {
+      await pool.query('SELECT 1');
+    } catch {
+      // #138: a database outage is a 503 the probe can read, not the generic 500.
+      res.status(503).json({ ok: false });
+      return;
+    }
     res.json({ ok: true, service: 'dev-career-portfolio', today: today() });
   });
   registerEducationRoutes(app, pool);
@@ -61,6 +67,6 @@ export function createApp(
     requireBinding: true,
   });
   app.use('/api', notFound);
-  app.use(errorHandler);
+  app.use(createErrorHandler({ fields: true }));
   return app;
 }

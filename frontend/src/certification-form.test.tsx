@@ -5,13 +5,14 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { App } from './app';
 import {
   type Certification,
-  certificationFieldErrors,
+  certificationFieldOf,
   emptyCertificationForm,
   toCertificationForm,
   toCertificationInput,
 } from './certification-data';
 import { toast } from './components/ui/sonner';
 import { findLive, queryLive } from './test/live';
+import { type ErrorBody, validation } from './test/server-errors';
 
 // All certifications here are made up for the test.
 
@@ -40,7 +41,7 @@ type Call = { method: string; url: string; body: unknown };
 function fakeApi(rows: Certification[]) {
   const store = [...rows];
   const calls: Call[] = [];
-  let refuse: string | undefined;
+  let refuse: ErrorBody | undefined;
   let deleteFails: { status: number; error: string } | undefined;
   let nextId = 100;
   const json = (body: unknown, status = 200) =>
@@ -54,9 +55,9 @@ function fakeApi(rows: Certification[]) {
       if (url === '/api/health') return json({ today: '2026-11-05' });
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
-        const error = refuse;
+        const refused = refuse;
         refuse = undefined;
-        return json({ error }, 400);
+        return json(refused, 400);
       }
       const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
@@ -85,8 +86,8 @@ function fakeApi(rows: Certification[]) {
   return {
     store,
     calls,
-    refuseNext: (message: string) => {
-      refuse = message;
+    refuseNext: (body: string | ErrorBody) => {
+      refuse = typeof body === 'string' ? { error: body } : body;
     },
     failDeletes: (status: number, error: string) => {
       deleteFails = { status, error };
@@ -152,7 +153,7 @@ test('the server message is shown under the field it is about, and focus moves t
   type('Issuer', 'ETS');
   type('Date earned', '2025-03-09');
   type('Expiry date', '2024-03-08');
-  api.refuseNext('Expiry date cannot be earlier than the date earned');
+  api.refuseNext(validation(['expiryDate', 'Expiry date cannot be earlier than the date earned']));
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
   await waitFor(() => expect(field('Expiry date')).toHaveAttribute('aria-invalid', 'true'));
@@ -171,7 +172,11 @@ test('each joined server message is shown under its own field, topmost focused',
   open('/certifications/new');
   await screen.findByRole('heading', { level: 1, name: 'Add certification' });
   api.refuseNext(
-    'Score or grade must be at most 50 characters, Issuer is required, Certification name is required',
+    validation(
+      ['score', 'Score or grade must be at most 50 characters'],
+      ['issuer', 'Issuer is required'],
+      ['name', 'Certification name is required'],
+    ),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('Certification name')).toHaveFocus());
@@ -243,6 +248,15 @@ test('editing a certification that no longer exists says so', async () => {
   expect(await findLive('alert')).toHaveTextContent('Certification not found');
 });
 
+test('editing a certification at a malformed address says the address is not valid', async () => {
+  const api = fakeApi([toeic]);
+  open('/certifications/abc/edit');
+  expect(await findLive('alert')).toHaveTextContent('This address is not valid');
+  expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  expect(screen.queryByText(/not found/i)).not.toBeInTheDocument();
+  expect(api.calls.some((call) => call.method === 'PUT')).toBe(false);
+});
+
 test('cancelling the delete dialog keeps the certification', async () => {
   const api = fakeApi([toeic]);
   open('/certifications');
@@ -295,7 +309,7 @@ test('a half-typed expiry date is sent as text the server refuses, not as never 
   type('Date earned', '2025-03-09');
   // A browser reads an unfinished date ("2027-03-__") as '' and flags it as bad input.
   Object.defineProperty(field('Expiry date'), 'validity', { value: { badInput: true } });
-  api.refuseNext('Expiry date must be a date in YYYY-MM-DD format');
+  api.refuseNext(validation(['expiryDate', 'Expiry date must be a date in YYYY-MM-DD format']));
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('Expiry date')).toHaveFocus());
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
@@ -394,15 +408,12 @@ test('the form is built for keyboard use: native controls in order and a submit 
   ).toBeTruthy();
 });
 
-test('server messages map to the field they start with', () => {
-  const fieldOf = (message: string) => certificationFieldErrors(message)[0]?.field;
-  expect(fieldOf('Certification name is required')).toBe('name');
-  expect(fieldOf('Issuer must be at most 100 characters')).toBe('issuer');
-  expect(fieldOf('Date earned must be a date in YYYY-MM-DD format')).toBe('acquiredDate');
-  expect(fieldOf('Expiry date cannot be earlier than the date earned')).toBe('expiryDate');
-  expect(fieldOf('Score or grade must be text')).toBe('score');
-  expect(fieldOf('Notes must be at most 2000 characters')).toBe('memo');
-  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
+test('a validation path maps to the form field it names', () => {
+  for (const field of Object.keys(emptyCertificationForm))
+    expect(certificationFieldOf(field)).toBe(field);
+  expect(certificationFieldOf('')).toBeUndefined();
+  expect(certificationFieldOf('toString')).toBeUndefined();
+  expect(certificationFieldOf('items.0.name')).toBeUndefined();
 });
 
 test('form values become the API input and back', () => {

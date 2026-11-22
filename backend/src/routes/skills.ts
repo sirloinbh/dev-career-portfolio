@@ -3,7 +3,7 @@ import type { Pool } from 'pg';
 import { z } from 'zod/v4';
 
 import { HttpError, parseId } from '../standard/http.js';
-import { objectBodyError, optionalText, requiredText } from './shared.js';
+import { objectBodyError, oneOfError, optionalText, requiredText } from './shared.js';
 
 // The list shows the categories in this order (issue #34).
 const categories = [
@@ -21,7 +21,7 @@ export const skillInput = z.object(
   {
     name: requiredText('Skill name', 50),
     category: z.enum(categories, {
-      error: 'Category must be one of language, framework, database, infrastructure, tool, other',
+      error: oneOfError('Category', categories),
     }),
     // A JSON number only: "3" is refused rather than converted, like every other field. One check,
     // not .int().min().max(): past the safe integer range those each fail and repeat the message.

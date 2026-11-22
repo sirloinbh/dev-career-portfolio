@@ -6,11 +6,12 @@ import type { Application } from './application-data';
 import { toast } from './components/ui/sonner';
 import {
   type CoverLetterQuestion,
-  questionFieldErrors,
+  questionFieldOf,
   toQuestionsInput,
   typedLimit,
 } from './cover-letter-data';
 import { findLive } from './test/live';
+import { type ErrorBody, validation } from './test/server-errors';
 
 // All companies, questions, and answers here are made up for the test.
 
@@ -44,7 +45,7 @@ type Call = { method: string; url: string; body: unknown };
 function fakeApi(rows: CoverLetterQuestion[]) {
   let store = [...rows];
   const calls: Call[] = [];
-  let refuse: { status: number; error: string } | undefined;
+  let refuse: { status: number; body: ErrorBody } | undefined;
   let nextId = 100;
   const json = (body: unknown, status = 200) =>
     Promise.resolve(new Response(JSON.stringify(body), { status }));
@@ -62,9 +63,9 @@ function fakeApi(rows: CoverLetterQuestion[]) {
       }
       if (method === 'GET') return json({ questions: store });
       if (refuse) {
-        const { status, error } = refuse;
+        const { status, body: refused } = refuse;
         refuse = undefined;
-        return json({ error }, status);
+        return json(refused, status);
       }
       const sent = (
         body as { questions: (Partial<CoverLetterQuestion> & { charLimit: unknown })[] }
@@ -82,8 +83,8 @@ function fakeApi(rows: CoverLetterQuestion[]) {
     calls,
     store: () => store,
     puts: () => calls.filter((call) => call.method === 'PUT'),
-    refuseNext: (status: number, error: string) => {
-      refuse = { status, error };
+    refuseNext: (status: number, body: string | ErrorBody) => {
+      refuse = { status, body: typeof body === 'string' ? { error: body } : body };
     },
   };
 }
@@ -103,6 +104,14 @@ async function openForm() {
   open('/applications/1/questions/edit');
   await screen.findByRole('list', { name: 'Questions to save' });
 }
+
+test('a malformed application id in the form address shows the invalid-address notice', async () => {
+  const api = fakeApi(saved);
+  open('/applications/abc/questions/edit');
+  expect(await findLive('alert')).toHaveTextContent('This address is not valid');
+  expect(screen.queryByRole('list', { name: 'Questions to save' })).not.toBeInTheDocument();
+  expect(api.calls.some((call) => call.url.includes('/questions'))).toBe(false);
+});
 
 test('Edit questions opens the form with the saved questions, and Save keeps the order', async () => {
   const api = fakeApi(saved);
@@ -269,7 +278,13 @@ test('a server message is shown under the field of the question it names', async
   type(fieldIn(1, 'Character limit'), '만');
   api.refuseNext(
     400,
-    'Question 1: Character limit must be a whole number from 1 to 5000, Question 2: Question is required',
+    validation(
+      [
+        'questions.0.charLimit',
+        'Question 1: Character limit must be a whole number from 1 to 5000',
+      ],
+      ['questions.1.question', 'Question 2: Question is required'],
+    ),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() => expect(fieldIn(1, 'Character limit')).toHaveFocus());
@@ -372,12 +387,11 @@ test('form rules: the list as the API takes it, typed limits, and message fields
   expect(typedLimit('1.5')).toBeNull();
 
   // Positions in the message are positions in the list that was sent, whatever their keys.
-  const split = questionFieldErrors([4, 0, 9, 1, 2, 3, 5, 6, 7, 8]);
-  expect(split('Question 1: Question is required')[0].field).toBe('4:question');
-  expect(split('Question 2: Answer must be at most 5000 characters')[0].field).toBe('0:answer');
-  expect(split('Question 10: Character limit must be a whole number from 1 to 5000')[0].field).toBe(
-    '8:charLimit',
-  );
-  expect(split('Question 1: Invalid question ID')[0].field).toBeUndefined();
-  expect(split('Questions can have at most 10 items')[0].field).toBeUndefined();
+  const fieldOf = questionFieldOf([4, 0, 9, 1, 2, 3, 5, 6, 7, 8]);
+  expect(fieldOf('questions.0.question')).toBe('4:question');
+  expect(fieldOf('questions.1.answer')).toBe('0:answer');
+  expect(fieldOf('questions.9.charLimit')).toBe('8:charLimit');
+  expect(fieldOf('questions.0.id')).toBeUndefined();
+  expect(fieldOf('questions.12.answer')).toBeUndefined();
+  expect(fieldOf('questions')).toBeUndefined();
 });

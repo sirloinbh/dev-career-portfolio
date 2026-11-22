@@ -1,5 +1,5 @@
-import { splitFieldErrors } from './field-errors';
 import { toNumber } from './form-fields';
+import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
 import { formatDate } from './service-date';
 
@@ -133,35 +133,8 @@ export function toEducationInput(form: EducationForm): EducationInput {
   };
 }
 
-// The server answers one message that starts with the field's label (backend/src/routes/
-// educations.ts). Longer labels come first so "Graduation date" is not read as another field.
-const fieldLabels: [string, keyof EducationForm][] = [
-  ['School', 'school'],
-  ['Major', 'major'],
-  ['Degree', 'degree'],
-  ['Status', 'status'],
-  ['Enrollment date', 'startDate'],
-  ['Graduation date', 'endDate'],
-  ['GPA', 'gpa'],
-  ['Maximum GPA', 'gpaScale'],
-  ['Notes', 'memo'],
-];
-
-// The order the inputs appear on screen (educations.tsx EducationFields).
-const formOrder: (keyof EducationForm)[] = [
-  'school',
-  'major',
-  'degree',
-  'status',
-  'startDate',
-  'endDate',
-  'gpa',
-  'gpaScale',
-  'memo',
-];
-
-/** The server's message split per field, topmost field first (see field-errors.ts). */
-export const fieldErrors = (message: string) => splitFieldErrors(message, fieldLabels, formOrder);
+/** The form field a server validation path names (see form-state.tsx). */
+export const educationFieldOf = flatFieldOf(emptyEducationForm);
 
 const base = '/api/educations';
 

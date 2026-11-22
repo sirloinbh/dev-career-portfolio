@@ -1,4 +1,4 @@
-import { splitFieldErrors } from './field-errors';
+import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
 import { daysUntil, formatDate } from './service-date';
 
@@ -52,9 +52,9 @@ export type ApplicationPaths = {
   create: string;
   edit: (id: number) => string;
   /** One application's cover letter questions (#50). */
-  questions: (id: number) => string;
+  questions: (id: number | string) => string;
   /** The form for them (#51). */
-  editQuestions: (id: number) => string;
+  editQuestions: (id: number | string) => string;
 };
 
 type ApplicationInput = Omit<Application, 'id'>;
@@ -98,29 +98,8 @@ export function toApplicationInput(form: ApplicationForm): ApplicationInput {
   return { ...form, deadline: form.deadline === '' ? null : form.deadline };
 }
 
-// The server's messages start with these labels (backend/src/routes/applications.ts).
-const fieldLabels: [string, keyof ApplicationForm][] = [
-  ['Company name', 'companyName'],
-  ['Position', 'position'],
-  ['Job posting link', 'postingUrl'],
-  ['Deadline', 'deadline'],
-  ['Application status', 'status'],
-  ['Notes', 'memo'],
-];
-
-// The order the inputs appear on screen (applications.tsx ApplicationFields).
-const formOrder: (keyof ApplicationForm)[] = [
-  'companyName',
-  'position',
-  'postingUrl',
-  'deadline',
-  'status',
-  'memo',
-];
-
-/** The server's message split per field, topmost field first (see field-errors.ts). */
-export const applicationFieldErrors = (message: string) =>
-  splitFieldErrors(message, fieldLabels, formOrder);
+/** The form field a server validation path names (see form-state.tsx). */
+export const applicationFieldOf = flatFieldOf(emptyApplicationForm);
 
 const base = '/api/applications';
 

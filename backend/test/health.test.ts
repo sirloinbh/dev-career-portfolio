@@ -39,7 +39,7 @@ test('every API response carries an X-Request-Id and keeps a valid incoming one'
   }
 });
 
-test('a DB failure becomes a Korean 500 without leaking the error', async () => {
+test('health answers 503 { ok: false } without leaking the error when the database is down', async () => {
   const original = console.error;
   console.error = () => {};
   try {
@@ -49,8 +49,8 @@ test('a DB failure becomes a Korean 500 without leaking the error', async () => 
       }),
       async (call) => {
         const { status, data } = await call('/api/health');
-        assert.equal(status, 500);
-        assert.deepEqual(data, { error: 'Server error' });
+        assert.equal(status, 503);
+        assert.deepEqual(data, { ok: false });
       },
     );
   } finally {
@@ -58,13 +58,16 @@ test('a DB failure becomes a Korean 500 without leaking the error', async () => 
   }
 });
 
-test('a zod 4 validation error becomes a 400 with its own message', async () => {
+test('a zod 4 validation error becomes a 400 with its own message and the invalid field by path', async () => {
   await withApi(
     pool(async () => z.string({ error: 'Enter text' }).parse(1)),
     async (call) => {
-      const { status, data } = await call('/api/health');
+      const { status, data } = await call('/api/educations');
       assert.equal(status, 400);
-      assert.deepEqual(data, { error: 'Enter text' });
+      assert.deepEqual(data, {
+        error: 'Enter text',
+        fields: [{ path: '', message: 'Enter text' }],
+      });
     },
   );
 });
@@ -83,4 +86,23 @@ test('unknown API paths return a Korean 404 JSON body', async () => {
 test('service date follows Asia/Seoul across the UTC day boundary', () => {
   assert.equal(serviceDate(new Date('2026-10-18T14:59:59Z')), '2026-10-18');
   assert.equal(serviceDate(new Date('2026-10-18T15:00:00Z')), '2026-10-19');
+});
+
+test('a DB failure on a data route still becomes a generic 500 without leaking the error', async () => {
+  const original = console.error;
+  console.error = () => {};
+  try {
+    await withApi(
+      pool(async () => {
+        throw new Error('password authentication failed for user secret');
+      }),
+      async (call) => {
+        const { status, data } = await call('/api/educations');
+        assert.equal(status, 500);
+        assert.deepEqual(data, { error: 'Server error' });
+      },
+    );
+  } finally {
+    console.error = original;
+  }
 });

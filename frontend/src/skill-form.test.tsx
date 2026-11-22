@@ -7,11 +7,12 @@ import {
   emptySkillForm,
   proficiencyLevels,
   type Skill,
-  skillFieldErrors,
+  skillFieldOf,
   toSkillForm,
   toSkillInput,
 } from './skill-data';
 import { findLive, queryLive } from './test/live';
+import { type ErrorBody, validation } from './test/server-errors';
 
 // All skills here are made up for the test.
 
@@ -32,7 +33,7 @@ type Call = { method: string; url: string; body: unknown };
 function fakeApi(rows: Skill[]) {
   const store = [...rows];
   const calls: Call[] = [];
-  let refuse: { status: number; error: string } | undefined;
+  let refuse: { status: number; body: ErrorBody } | undefined;
   let deleteFails: { status: number; error: string } | undefined;
   let nextId = 100;
   const json = (body: unknown, status = 200) =>
@@ -46,9 +47,9 @@ function fakeApi(rows: Skill[]) {
       if (url === '/api/health') return json({ today: '2026-11-05' });
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
-        const { status, error } = refuse;
+        const { status, body: refused } = refuse;
         refuse = undefined;
-        return json({ error }, status);
+        return json(refused, status);
       }
       const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
@@ -73,8 +74,8 @@ function fakeApi(rows: Skill[]) {
   return {
     store,
     calls,
-    refuseNext: (status: number, error: string) => {
-      refuse = { status, error };
+    refuseNext: (status: number, body: string | ErrorBody) => {
+      refuse = { status, body: typeof body === 'string' ? { error: body } : body };
     },
     failDeletes: (status: number, error: string) => {
       deleteFails = { status, error };
@@ -138,7 +139,10 @@ test('no proficiency chosen: the server message is tied to the steps and focus g
   open('/skills/new');
   await screen.findByRole('heading', { level: 1, name: 'Add skill' });
   fireEvent.change(field('Skill name'), { target: { value: 'Rust' } });
-  api.refuseNext(400, 'Proficiency must be a whole number from 1 to 5');
+  api.refuseNext(
+    400,
+    validation(['proficiency', 'Proficiency must be a whole number from 1 to 5']),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(level(/^1 · /)).toHaveFocus());
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
@@ -168,16 +172,16 @@ test('a taken name (409) is shown under the name field, not as a general error',
   expect(queryLive('alert')).toBeNull();
 });
 
-test('a 409 that names no field still goes below the form', async () => {
+test('the generic unique-violation 409 is shown under the skill name', async () => {
   const api = fakeApi([]);
   open('/skills/new');
   await screen.findByRole('heading', { level: 1, name: 'Add skill' });
-  // The generic unique-violation answer (backend/src/standard/http.ts).
+  // The only unique value of a skill is its name (backend/src/standard/http.ts answers this for 23505).
   api.refuseNext(409, 'This item already exists');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-  expect(await findLive('alert')).toHaveTextContent('This item already exists');
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus());
-  expect(field('Skill name')).not.toHaveAttribute('aria-invalid');
+  await waitFor(() => expect(field('Skill name')).toHaveFocus());
+  expect(field('Skill name')).toHaveAccessibleDescription('This item already exists');
+  expect(queryLive('alert')).toBeNull();
 });
 
 test('a message that names no field is shown below the form and focus returns to the button', async () => {
@@ -265,20 +269,12 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   expect(screen.getByRole('dialog', { name: 'Delete this skill?' })).toBeInTheDocument();
 });
 
-test('server messages map to the field they start with', () => {
-  const fieldOf = (message: string) => skillFieldErrors(message)[0]?.field;
-  expect(fieldOf('Skill name is required')).toBe('name');
-  expect(fieldOf('Skill name must be at most 50 characters')).toBe('name');
-  expect(fieldOf('This skill is already registered')).toBe('name');
-  expect(fieldOf('Proficiency must be a whole number from 1 to 5')).toBe('proficiency');
-  expect(fieldOf('Notes must be at most 2000 characters')).toBe('memo');
-  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
-  // The category message holds commas of its own; it stays one message.
-  expect(
-    skillFieldErrors(
-      'Category must be one of language, framework, database, infrastructure, tool, other',
-    ),
-  ).toHaveLength(1);
+test('a validation path maps to the form field it names', () => {
+  expect(skillFieldOf('name')).toBe('name');
+  expect(skillFieldOf('proficiency')).toBe('proficiency');
+  expect(skillFieldOf('memo')).toBe('memo');
+  expect(skillFieldOf('')).toBeUndefined();
+  expect(skillFieldOf('toString')).toBeUndefined();
 });
 
 test('form values become the API input and back', () => {

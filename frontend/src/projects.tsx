@@ -1,20 +1,19 @@
-import { FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FolderKanban, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
-import { EmptyState } from './components/ui/empty-state';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
-import { deleteItem } from './delete-item';
-import { entryCount } from './entry-count';
+import { invalidAddressText, isValidId } from './entity-id';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { ItemListPage, ItemUl } from './item-list-page';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { OutLink } from './out-link';
@@ -24,7 +23,7 @@ import {
   isRunning,
   type Project,
   projectApi,
-  projectFieldErrors,
+  projectFieldOf,
   type ProjectForm,
   type ProjectPaths,
   projectPeriodText,
@@ -33,10 +32,11 @@ import {
   toProjectInput,
 } from './project-data';
 import { TextBlocks } from './text-blocks';
-import { useLoad, useReloading } from './use-load';
+import { useLoad } from './use-load';
 import { webLink } from './web-link';
 
 const loadProjects = () => projectApi.list();
+const loadProjectsRows = () => loadProjects().then((response) => response.projects);
 
 /** Technology names as tags. A long unspaced name wraps instead of widening the page at 390px. */
 function Technologies({ names }: { names: string[] }) {
@@ -123,71 +123,30 @@ function ProjectItem({
 }
 
 export function ProjectList({ paths }: { paths: ProjectPaths }) {
-  const { loaded, data, reload } = useReloading('all', loadProjects);
-  const projects = data?.projects ?? [];
-  const heading = useRef<HTMLHeadingElement>(null);
-  // Only the first load shows the placeholder; a reload keeps the rows on screen.
-  const firstLoad = loaded.state === 'loading' && data === undefined;
-
-  const remove = async (project: Project) => {
-    await deleteItem({
-      remove: () => projectApi.remove(project.id),
-      noun: 'project',
-      name: project.name,
-    });
-    reload((current) => ({ projects: current.projects.filter((item) => item.id !== project.id) }));
-    // The row and its delete button are gone, so focus would fall to the page body.
-    requestAnimationFrame(() => heading.current?.focus());
-  };
-
   return (
-    <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
-      <PageHeader
-        title="Projects"
-        description="See the projects you worked on, newest start first."
-        headingRef={heading}
-      >
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading projects' : ''}
-          {data ? entryCount(projects.length) : ''}
-        </p>
-      </PageHeader>
-      <Button asChild className="w-fit">
-        <Link to={paths.create}>
-          <Plus aria-hidden />
-          Add project
-        </Link>
-      </Button>
-      {firstLoad ? <SkeletonList rows={3} /> : null}
-      {loaded.state === 'error' && data === undefined ? (
-        // Say what failed first: a proxy error without a server message only carries the generic text.
-        <Notice
-          notice={{
-            kind: 'error',
-            text: `Could not load projects. ${errorText(loaded.error)}`,
-          }}
-        />
-      ) : null}
-      {data && projects.length === 0 ? (
-        <EmptyState
-          className="break-keep"
-          icon={<FolderKanban />}
-          title="No projects added yet"
-          description="Add a project and it will appear here, newest start first."
-        />
-      ) : null}
-      {projects.length > 0 ? (
-        <ul
-          aria-label="Project list"
-          className="flex flex-col divide-y rounded-xl border bg-card text-card-foreground shadow-sm"
-        >
-          {projects.map((project) => (
-            <ProjectItem key={project.id} project={project} paths={paths} onDelete={remove} />
+    <ItemListPage<Project>
+      load={loadProjectsRows}
+      title="Projects"
+      description="See the projects you worked on, newest start first."
+      noun="projects"
+      addLabel="Add project"
+      addTo={paths.create}
+      empty={{
+        icon: <FolderKanban />,
+        title: 'No projects added yet',
+        description: 'Add a project and it will appear here, newest start first.',
+      }}
+      deleteNoun="project"
+      deleteName={(row) => row.name}
+      removeRow={(row) => projectApi.remove(row.id)}
+      renderRows={(rows, onDelete) => (
+        <ItemUl label="Project list">
+          {rows.map((row) => (
+            <ProjectItem key={row.id} project={row} paths={paths} onDelete={onDelete} />
           ))}
-        </ul>
-      ) : null}
-    </section>
+        </ItemUl>
+      )}
+    />
   );
 }
 
@@ -204,8 +163,7 @@ function ProjectFields({
 }) {
   const [form, setForm] = useState(initial);
   const endDateInput = useRef<HTMLInputElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } =
-    useServerForm(projectFieldErrors);
+  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm(projectFieldOf);
   const set = (field: keyof ProjectForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -371,13 +329,15 @@ export function NewProject({ paths }: { paths: ProjectPaths }) {
 
 export function EditProject({ paths }: { paths: ProjectPaths }) {
   const { id = '' } = useParams();
+  const valid = isValidId(id);
   // There is no single-item API (#33): the list is small, so the form finds its row there.
   const loaded = useLoad('all', loadProjects);
   const navigate = useNavigate();
   const project =
     loaded.state === 'ok' ? loaded.data.projects.find((item) => String(item.id) === id) : undefined;
   const update = async (form: ProjectForm) => {
-    await projectApi.update(Number(id), toProjectInput(form));
+    if (!project) return;
+    await projectApi.update(project.id, toProjectInput(form));
     toast.success('Saved');
     void navigate(paths.list);
   };
@@ -389,8 +349,9 @@ export function EditProject({ paths }: { paths: ProjectPaths }) {
     >
       <BackLink to={paths.list} label="Project list" />
       <PageHeader title="Edit project" description="Change what you need, then save." />
-      {loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {loaded.state === 'error' ? (
+      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
+      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
+      {valid && loaded.state === 'error' ? (
         <Notice
           notice={{
             kind: 'error',
@@ -398,7 +359,7 @@ export function EditProject({ paths }: { paths: ProjectPaths }) {
           }}
         />
       ) : null}
-      {loaded.state === 'ok' && !project ? (
+      {valid && loaded.state === 'ok' && !project ? (
         <Notice notice={{ kind: 'error', text: 'Project not found. It may already be deleted.' }} />
       ) : null}
       {project ? (
