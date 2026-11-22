@@ -12,6 +12,7 @@ import {
   toSkillInput,
 } from './skill-data';
 import { findLive, queryLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
 // All skills here are made up for the test.
@@ -41,17 +42,20 @@ function fakeApi(rows: Skill[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
+      const request = parseRequest(input, init);
+      const { method, path: url, id } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
-      if (url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      const known =
+        (url === '/api/skills' && (method === 'GET' || method === 'POST')) ||
+        (id !== null && url === `/api/skills/${id}` && (method === 'PUT' || method === 'DELETE'));
+      if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
         const { status, body: refused } = refuse;
         refuse = undefined;
         return json(refused, status);
       }
-      const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
       if (method === 'GET') return json({ skills: store });
       const saved = (input: Skill) => ({ ...input, memo: input.memo === '' ? null : input.memo });
@@ -62,7 +66,7 @@ function fakeApi(rows: Skill[]) {
       }
       if (index === -1) return json({ error: 'Skill not found' }, 404);
       if (method === 'PUT') {
-        store[index] = saved({ ...(body as Skill), id });
+        store[index] = saved({ ...(body as Skill), id: id as number });
         return json({ skill: store[index] });
       }
       if (method === 'DELETE' && deleteFails)

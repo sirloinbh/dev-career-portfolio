@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import express from 'express';
@@ -64,4 +64,44 @@ test('guarded routes document the sign-in, 401 and 429; the public route does no
 
 test('a type JSON Schema cannot express fails instead of being skipped', () => {
   assert.throws(() => schemaOf(z.date()), /Date cannot be represented/);
+});
+
+// A route file that throws `new HttpError(<status>` must have an operation under its own path that lists the status, so
+// a client generated from the document knows every answer (#190). The question list lives under /api/applications.
+const pathOf: Record<string, string> = {
+  'cover-letter-questions.ts': '/api/applications/:id/questions',
+};
+
+test('every status a route file throws is listed by an operation of that route', async () => {
+  const dir = new URL('../src/routes/', import.meta.url);
+  for (const file of await readdir(dir)) {
+    if (file === 'shared.ts') continue;
+    const source = await readFile(new URL(file, dir), 'utf8');
+    const prefix = pathOf[file] ?? `/api/${file.replace(/\.ts$/, '')}`;
+    const documented = new Set(
+      Object.entries(operations)
+        .filter(([route]) => route.split(' ')[1]!.startsWith(prefix))
+        .flatMap(([, operation]) => operation.status),
+    );
+    const thrown = [...source.matchAll(/HttpError\(\s*(\d{3})/g)].map((match) => Number(match[1]));
+    for (const status of thrown) {
+      assert.ok(
+        documented.has(status),
+        `${file} throws ${String(status)} but no operation lists it`,
+      );
+    }
+  }
+});
+
+test('a duplicate skill name is documented as 409 on both write operations', () => {
+  assert.ok(operations['POST /api/skills']!.status.includes(409));
+  assert.ok(operations['PUT /api/skills/:id']!.status.includes(409));
+});
+
+test('the Error schema keeps error required and lists the validation fields (#200)', () => {
+  const error = (document.components as { schemas: Record<string, Record<string, unknown>> })
+    .schemas.Error!;
+  assert.deepEqual(error.required, ['error']);
+  const properties = error.properties as Record<string, { items?: { required?: string[] } }>;
+  assert.deepEqual(properties.fields?.items?.required, ['path', 'message']);
 });

@@ -3,7 +3,7 @@
   "info": {
     "title": "Dev Career Portfolio API",
     "version": "1.0.0",
-    "description": "Dates are YYYY-MM-DD. Every error response is { error: English message }."
+    "description": "Dates are YYYY-MM-DD. Every error response is { error: English message }; a validation 400 also lists the invalid fields as fields: [{ path, message }]."
   },
   "servers": [
     {
@@ -903,6 +903,16 @@
               }
             }
           },
+          "409": {
+            "description": "Duplicate or conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Request body too large",
             "content": {
@@ -1642,6 +1652,16 @@
               }
             }
           },
+          "409": {
+            "description": "Duplicate or conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Request body too large",
             "content": {
@@ -1674,6 +1694,27 @@
           "error": {
             "type": "string",
             "description": "English error message"
+          },
+          "fields": {
+            "type": "array",
+            "description": "Only on a validation 400: each invalid field with its message",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Where the field is in the request body, joined by dots (items.0.name)"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "English error message of this field"
+                }
+              },
+              "required": [
+                "path",
+                "message"
+              ]
+            }
           }
         },
         "required": [

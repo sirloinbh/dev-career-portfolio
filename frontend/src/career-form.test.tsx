@@ -11,6 +11,7 @@ import {
 } from './career-data';
 import { toast } from './components/ui/sonner';
 import { findLive, queryLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
 // All companies here are made up for the test.
@@ -50,17 +51,20 @@ function fakeApi(rows: Career[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
+      const request = parseRequest(input, init);
+      const { method, path: url, id } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
-      if (url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      const known =
+        (url === '/api/careers' && (method === 'GET' || method === 'POST')) ||
+        (id !== null && url === `/api/careers/${id}` && (method === 'PUT' || method === 'DELETE'));
+      if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
         const refused = refuse;
         refuse = undefined;
         return json(refused, 400);
       }
-      const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
       if (method === 'GET') return json({ careers: store });
       // The server stores blank text as NULL.
@@ -75,7 +79,7 @@ function fakeApi(rows: Career[]) {
       }
       if (index === -1) return json({ error: 'Career not found' }, 404);
       if (method === 'PUT') {
-        store[index] = saved({ ...(body as Career), id });
+        store[index] = saved({ ...(body as Career), id: id as number });
         return json({ career: store[index] });
       }
       if (method === 'DELETE' && deleteFails)

@@ -11,6 +11,7 @@ import {
   typedLimit,
 } from './cover-letter-data';
 import { findLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
 // All companies, questions, and answers here are made up for the test.
@@ -52,15 +53,21 @@ function fakeApi(rows: CoverLetterQuestion[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
+      const request = parseRequest(input, init);
+      const { method, path: url } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
-      if (url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      const known =
+        (method === 'GET' && url === '/api/applications') ||
+        (/^\/api\/applications\/\d+\/questions$/.test(url) &&
+          (method === 'GET' || method === 'PUT'));
+      if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
-      if (url === '/api/applications') return json({ applications: [cloud] });
-      if (url !== '/api/applications/1/questions') {
+      // Only application 1 exists in this fake.
+      if (url.endsWith('/questions') && url !== '/api/applications/1/questions') {
         return json({ error: 'Application not found' }, 404);
       }
+      if (url === '/api/applications') return json({ applications: [cloud] });
       if (method === 'GET') return json({ questions: store });
       if (refuse) {
         const { status, body: refused } = refuse;

@@ -63,12 +63,12 @@ export const operations: Record<string, Operation> = {
   'POST /api/skills': {
     summary: 'Add a skill',
     body: ['Skill', skillInput],
-    status: [201, 400],
+    status: [201, 400, 409],
   },
   'PUT /api/skills/:id': {
     summary: 'Replace a skill',
     body: ['Skill', skillInput],
-    status: [200, 400, 404],
+    status: [200, 400, 404, 409],
   },
   'DELETE /api/skills/:id': { summary: 'Delete a skill', status: [204, 400, 404] },
 
@@ -131,8 +131,30 @@ const statusText: Record<number, string> = {
 
 export const document = buildOpenApi({
   title: 'Dev Career Portfolio API',
-  description: 'Dates are YYYY-MM-DD. Every error response is { error: English message }.',
+  description:
+    'Dates are YYYY-MM-DD. Every error response is { error: English message }; a validation 400 also lists the invalid fields as fields: [{ path, message }].',
   errorDescription: 'English error message',
   operations,
   statusText,
 });
+
+// The shared Error schema (standard/openapi.ts) knows only `error`. app.ts turns on createErrorHandler({ fields: true }), so a
+// validation 400 also carries `fields`; it is added here because the managed builder has no option for it (#200).
+const errorSchema = (
+  document.components as { schemas: Record<string, { properties: Record<string, unknown> }> }
+).schemas.Error;
+errorSchema.properties.fields = {
+  type: 'array',
+  description: 'Only on a validation 400: each invalid field with its message',
+  items: {
+    type: 'object',
+    properties: {
+      path: {
+        type: 'string',
+        description: 'Where the field is in the request body, joined by dots (items.0.name)',
+      },
+      message: { type: 'string', description: 'English error message of this field' },
+    },
+    required: ['path', 'message'],
+  },
+};
