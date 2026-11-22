@@ -313,6 +313,21 @@ test('text that is not a number reaches the server as typed', async () => {
   });
 });
 
+test('a GPA without its maximum shows the error under Maximum GPA', async () => {
+  const api = fakeApi([]);
+  open('/educations/new');
+  await screen.findByRole('heading', { level: 1, name: 'Add education' });
+  type('GPA', '3.5');
+  api.refuseNext('Maximum GPA is required when GPA is entered');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await waitFor(() =>
+    expect(field('Maximum GPA')).toHaveAccessibleDescription(
+      /Maximum GPA is required when GPA is entered/,
+    ),
+  );
+  expect(field('GPA')).not.toHaveAttribute('aria-invalid');
+});
+
 test('choosing Enrolled also clears a message about the graduation date', async () => {
   const api = fakeApi([]);
   open('/educations/new');
@@ -334,7 +349,8 @@ test('server messages map to the field they start with', () => {
   expect(fieldOf('Enrollment date must be a date in YYYY-MM-DD format')).toBe('startDate');
   expect(fieldOf('Graduation date cannot be earlier than the enrollment date')).toBe('endDate');
   expect(fieldOf('Graduation date must be empty while enrolled')).toBe('endDate');
-  expect(fieldOf('GPA and maximum GPA must be entered together')).toBe('gpa');
+  expect(fieldOf('GPA is required when maximum GPA is entered')).toBe('gpa');
+  expect(fieldOf('Maximum GPA is required when GPA is entered')).toBe('gpaScale');
   expect(fieldOf('Maximum GPA must be greater than 0')).toBe('gpaScale');
   expect(fieldOf('Notes must be at most 2000 characters')).toBe('memo');
   expect(fieldOf('Request body must be a JSON object')).toBeUndefined();

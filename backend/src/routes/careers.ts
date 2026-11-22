@@ -3,7 +3,7 @@ import type { Pool } from 'pg';
 import { z } from 'zod/v4';
 
 import { HttpError, parseId } from '../standard/http.js';
-import { calendarDate, objectBodyError, optionalText, requiredText } from './shared.js';
+import { calendarDate, objectBodyError, oneOfError, optionalText, requiredText } from './shared.js';
 
 const employmentTypes = ['full_time', 'contract', 'intern', 'freelance', 'other'] as const;
 
@@ -15,7 +15,7 @@ export const careerInput = z
       department: optionalText('Department', 100),
       position: optionalText('Job title', 100),
       employmentType: z.enum(employmentTypes, {
-        error: 'Employment type must be one of full-time, contract, intern, freelance, other',
+        error: oneOfError('Employment type', employmentTypes),
       }),
       startDate: calendarDate('Start date'),
       endDate: calendarDate('End date').nullable().default(null),
