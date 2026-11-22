@@ -12,6 +12,7 @@ import {
 } from './certification-data';
 import { toast } from './components/ui/sonner';
 import { findLive, queryLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
 // All certifications here are made up for the test.
@@ -49,17 +50,22 @@ function fakeApi(rows: Certification[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
+      const request = parseRequest(input, init);
+      const { method, path: url, id } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
-      if (url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      const known =
+        (url === '/api/certifications' && (method === 'GET' || method === 'POST')) ||
+        (id !== null &&
+          url === `/api/certifications/${id}` &&
+          (method === 'PUT' || method === 'DELETE'));
+      if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
         const refused = refuse;
         refuse = undefined;
         return json(refused, 400);
       }
-      const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
       if (method === 'GET') return json({ certifications: store });
       // The server stores blank text as NULL.
@@ -74,7 +80,7 @@ function fakeApi(rows: Certification[]) {
       }
       if (index === -1) return json({ error: 'Certification not found' }, 404);
       if (method === 'PUT') {
-        store[index] = saved({ ...(body as Certification), id });
+        store[index] = saved({ ...(body as Certification), id: id as number });
         return json({ certification: store[index] });
       }
       if (method === 'DELETE' && deleteFails)
