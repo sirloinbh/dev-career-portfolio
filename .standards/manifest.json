@@ -1,5 +1,5 @@
 {
-  "centralSha": "4fb146f93b7f746384851f1b676bb0feaef6b02e",
+  "centralSha": "845dbce8df04ec27c97950a69ff81a520d4a57e5",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -300,7 +300,7 @@
     },
     "backend/src/standard/openapi.ts": {
       "mode": "full",
-      "sha256": "e9fe812e39f00d8c85ec55c7313fb3674fe02ed086e64e725e2671bef2e8ebc8",
+      "sha256": "9d4c92cf40151d7aa721497d77b22dcdec2e4d8ac730013456319c35e2056c82",
       "source": "templates/app/backend/src/standard/openapi.ts"
     },
     "backend/src/standard/rate-limit.ts": {
@@ -505,6 +505,7 @@
         "devDependencies.typescript": "5.9.3",
         "devDependencies.vite": "6.4.5",
         "devDependencies.vitest": "5.0.3",
+        "dependencies.@tanstack/react-query": "5.104.1",
         "devDependencies.@testing-library/user-event": "14.6.8"
       },
       "source": "templates/index.json"
@@ -913,6 +914,16 @@
       "mode": "full",
       "sha256": "d79c53b94936cd62befd9a4cbd6304c558eaa2e6d1ba11eb8f00dfe2ba60e617",
       "source": "templates/ui/frontend/src/lib/auth-config.ts.tmpl"
+    },
+    "frontend/src/lib/query.test.tsx": {
+      "mode": "full",
+      "sha256": "ffdf0cc2d11577b84e6dda4ae2518cc96bfca498a212771d6582ad8c3707429f",
+      "source": "templates/query/frontend/src/lib/query.test.tsx"
+    },
+    "frontend/src/lib/query.ts": {
+      "mode": "full",
+      "sha256": "2f1a83e3d4856a31cbb75c01d64f7afe449f600bd003cb444d5812ad18e5b9cf",
+      "source": "templates/query/frontend/src/lib/query.ts"
     },
     "frontend/src/lib/theme-config.ts": {
       "mode": "full",
