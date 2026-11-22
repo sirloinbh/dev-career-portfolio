@@ -1,4 +1,3 @@
-import { type FieldError, splitFieldErrors } from './field-errors';
 import { toNumber } from './form-fields';
 import { requestJson } from './lib/api';
 
@@ -85,26 +84,16 @@ export function typedLimit(charLimit: string) {
 export type QuestionField = `${number}:${'question' | 'charLimit' | 'answer'}`;
 
 /**
- * The server's message split per field (see field-errors.ts). The server names a question by its
- * position ("Question 2: Question is required"), so `keys` is the list in the order it was sent.
- * A message about the whole list ("Questions can have at most 10 items") names no field.
+ * The question field a server validation path names (`questions.2.answer`), given the keys of the list in the order it
+ * was sent. A path about the whole list (`questions`) names no field.
  */
-export function questionFieldErrors(keys: number[]) {
-  const labels = keys.flatMap((key, index) => {
-    const prefix = `Question ${String(index + 1)}: `;
-    return [
-      [`${prefix}Question`, `${key}:question`],
-      [`${prefix}Character limit`, `${key}:charLimit`],
-      [`${prefix}Answer`, `${key}:answer`],
-    ] as [string, QuestionField][];
-  });
-  return (message: string): FieldError<QuestionField>[] =>
-    splitFieldErrors(
-      message,
-      labels,
-      labels.map(([, field]) => field),
-    );
-}
+export const questionFieldOf =
+  (keys: readonly number[]) =>
+  (path: string): QuestionField | undefined => {
+    const match = /^questions\.(\d+)\.(question|charLimit|answer)$/.exec(path);
+    const key = match ? keys[Number(match[1])] : undefined;
+    return match && key !== undefined ? (`${String(key)}:${match[2]}` as QuestionField) : undefined;
+  };
 
 const base = (applicationId: string) =>
   `/api/applications/${encodeURIComponent(applicationId)}/questions`;

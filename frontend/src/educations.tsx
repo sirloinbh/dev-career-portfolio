@@ -17,10 +17,10 @@ import {
   degrees,
   type Education,
   educationApi,
+  educationFieldOf,
   type EducationForm,
   type EducationPaths,
   emptyEducationForm,
-  fieldErrors,
   gpaText,
   periodText,
   statuses,
@@ -193,7 +193,7 @@ function EducationFields({
   const [form, setForm] = useState(initial);
   const endDateInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, clearError, submit, actions, pending } =
-    useServerForm(fieldErrors);
+    useServerForm(educationFieldOf);
   const set = (field: keyof EducationForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 

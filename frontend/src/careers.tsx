@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import {
   type Career,
   careerApi,
-  careerFieldErrors,
+  careerFieldOf,
   type CareerForm,
   type CareerPaths,
   careerPeriodText,
@@ -177,8 +177,7 @@ function CareerFields({
 }) {
   const [form, setForm] = useState(initial);
   const endDateInput = useRef<HTMLInputElement>(null);
-  const { fieldId, describe, errorFor, submit, actions, pending } =
-    useServerForm(careerFieldErrors);
+  const { fieldId, describe, errorFor, submit, actions, pending } = useServerForm(careerFieldOf);
   const set = (field: keyof CareerForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 

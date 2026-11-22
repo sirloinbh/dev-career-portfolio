@@ -58,13 +58,16 @@ test('health answers 503 { ok: false } without leaking the error when the databa
   }
 });
 
-test('a zod 4 validation error becomes a 400 with its own message', async () => {
+test('a zod 4 validation error becomes a 400 with its own message and the invalid field by path', async () => {
   await withApi(
     pool(async () => z.string({ error: 'Enter text' }).parse(1)),
     async (call) => {
       const { status, data } = await call('/api/educations');
       assert.equal(status, 400);
-      assert.deepEqual(data, { error: 'Enter text' });
+      assert.deepEqual(data, {
+        error: 'Enter text',
+        fields: [{ path: '', message: 'Enter text' }],
+      });
     },
   );
 });

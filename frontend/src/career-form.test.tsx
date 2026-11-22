@@ -4,13 +4,14 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { App } from './app';
 import {
   type Career,
-  careerFieldErrors,
+  careerFieldOf,
   emptyCareerForm,
   toCareerForm,
   toCareerInput,
 } from './career-data';
 import { toast } from './components/ui/sonner';
 import { findLive, queryLive } from './test/live';
+import { type ErrorBody, validation } from './test/server-errors';
 
 // All companies here are made up for the test.
 
@@ -41,7 +42,7 @@ type Call = { method: string; url: string; body: unknown };
 function fakeApi(rows: Career[]) {
   const store = [...rows];
   const calls: Call[] = [];
-  let refuse: string | undefined;
+  let refuse: ErrorBody | undefined;
   let deleteFails: { status: number; error: string } | undefined;
   let nextId = 100;
   const json = (body: unknown, status = 200) =>
@@ -55,9 +56,9 @@ function fakeApi(rows: Career[]) {
       if (url === '/api/health') return json({ today: '2026-11-05' });
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
-        const error = refuse;
+        const refused = refuse;
         refuse = undefined;
-        return json({ error }, 400);
+        return json(refused, 400);
       }
       const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
@@ -86,8 +87,8 @@ function fakeApi(rows: Career[]) {
   return {
     store,
     calls,
-    refuseNext: (message: string) => {
-      refuse = message;
+    refuseNext: (body: string | ErrorBody) => {
+      refuse = typeof body === 'string' ? { error: body } : body;
     },
     failDeletes: (status: number, error: string) => {
       deleteFails = { status, error };
@@ -150,7 +151,7 @@ test('the server message is shown under the field it is about, and focus moves t
   type('Company', '한빛소프트');
   type('Start date', '2023-03-02');
   type('End date', '2020-02-28');
-  api.refuseNext('End date cannot be earlier than start date');
+  api.refuseNext(validation(['endDate', 'End date cannot be earlier than start date']));
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
   await waitFor(() => expect(field('End date')).toHaveAttribute('aria-invalid', 'true'));
@@ -168,7 +169,12 @@ test('each joined server message is shown under its own field, topmost focused',
   const api = fakeApi([]);
   open('/careers/new');
   await screen.findByRole('heading', { level: 1, name: 'Add career' });
-  api.refuseNext('Start date must be a date in YYYY-MM-DD format, Company is required');
+  api.refuseNext(
+    validation(
+      ['startDate', 'Start date must be a date in YYYY-MM-DD format'],
+      ['company', 'Company is required'],
+    ),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('Company')).toHaveFocus());
   expect(field('Company')).toHaveAccessibleDescription('Company is required');
@@ -295,7 +301,7 @@ test('a half-typed end date is sent as text the server refuses, not as a job sti
   type('Start date', '2023-03-02');
   // A browser reads an unfinished date ("2023-12-__") as '' and flags it as bad input.
   Object.defineProperty(field('End date'), 'validity', { value: { badInput: true } });
-  api.refuseNext('End date must be a date in YYYY-MM-DD format');
+  api.refuseNext(validation(['endDate', 'End date must be a date in YYYY-MM-DD format']));
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await waitFor(() => expect(field('End date')).toHaveFocus());
   expect(api.calls.find((call) => call.method === 'POST')?.body).toMatchObject({
@@ -307,28 +313,11 @@ test('a half-typed end date is sent as text the server refuses, not as a job sti
   expect(api.store).toHaveLength(0);
 });
 
-test('server messages map to the field they start with', () => {
-  const fieldOf = (message: string) => careerFieldErrors(message)[0]?.field;
-  expect(fieldOf('Company is required')).toBe('company');
-  expect(fieldOf('Department must be at most 100 characters')).toBe('department');
-  expect(fieldOf('Job title must be at most 100 characters')).toBe('position');
-  expect(fieldOf('Start date must be a date in YYYY-MM-DD format')).toBe('startDate');
-  expect(fieldOf('End date cannot be earlier than start date')).toBe('endDate');
-  expect(fieldOf('Duties must be at most 2000 characters')).toBe('duties');
-  expect(fieldOf('Achievements must be at most 2000 characters')).toBe('achievements');
-  expect(fieldOf('Request body must be a JSON object')).toBeUndefined();
-  // The employment type message holds commas of its own; it stays one message.
-  expect(
-    careerFieldErrors(
-      'Employment type must be one of full-time, contract, intern, freelance, other, Company is required',
-    ),
-  ).toEqual([
-    { field: 'company', message: 'Company is required' },
-    {
-      field: 'employmentType',
-      message: 'Employment type must be one of full-time, contract, intern, freelance, other',
-    },
-  ]);
+test('a validation path maps to the form field it names', () => {
+  for (const field of Object.keys(emptyCareerForm)) expect(careerFieldOf(field)).toBe(field);
+  expect(careerFieldOf('')).toBeUndefined();
+  expect(careerFieldOf('toString')).toBeUndefined();
+  expect(careerFieldOf('items.0.name')).toBeUndefined();
 });
 
 test('form values become the API input and back', () => {

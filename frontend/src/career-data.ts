@@ -1,4 +1,4 @@
-import { splitFieldErrors } from './field-errors';
+import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
 import { formatDate } from './service-date';
 
@@ -97,33 +97,8 @@ export function toCareerInput(form: CareerForm): CareerInput {
   return { ...form, endDate: form.endDate === '' ? null : form.endDate };
 }
 
-// The server's messages start with these labels (backend/src/routes/careers.ts).
-const fieldLabels: [string, keyof CareerForm][] = [
-  ['Company', 'company'],
-  ['Department', 'department'],
-  ['Job title', 'position'],
-  ['Employment type', 'employmentType'],
-  ['Start date', 'startDate'],
-  ['End date', 'endDate'],
-  ['Duties', 'duties'],
-  ['Achievements', 'achievements'],
-];
-
-// The order the inputs appear on screen (careers.tsx CareerFields).
-const formOrder: (keyof CareerForm)[] = [
-  'company',
-  'department',
-  'position',
-  'employmentType',
-  'startDate',
-  'endDate',
-  'duties',
-  'achievements',
-];
-
-/** The server's message split per field, topmost field first (see field-errors.ts). */
-export const careerFieldErrors = (message: string) =>
-  splitFieldErrors(message, fieldLabels, formOrder);
+/** The form field a server validation path names (see form-state.tsx). */
+export const careerFieldOf = flatFieldOf(emptyCareerForm);
 
 const base = '/api/careers';
 
