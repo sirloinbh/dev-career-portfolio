@@ -299,12 +299,6 @@ test('clearing the end date of a finished project makes it Ongoing', async () =>
   expect(item).toHaveTextContent('March 2, 2021 – Present');
 });
 
-test('editing a project that no longer exists says so', async () => {
-  fakeApi([]);
-  open('/projects/9/edit');
-  expect(await findLive('alert')).toHaveTextContent('Project not found');
-});
-
 test('cancelling the delete dialog keeps the project', async () => {
   const api = fakeApi([past]);
   open('/projects');

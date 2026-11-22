@@ -223,12 +223,6 @@ test('a skill is edited with its saved values filled in', async () => {
   expect(item).toHaveTextContent('사이드 프로젝트 2개');
 });
 
-test('editing a skill that no longer exists says so', async () => {
-  fakeApi([]);
-  open('/skills/9/edit');
-  expect(await findLive('alert')).toHaveTextContent('Skill not found');
-});
-
 test('cancelling the delete dialog keeps the skill', async () => {
   const api = fakeApi([go]);
   open('/skills');

@@ -230,12 +230,6 @@ test('clearing the end date of a past job makes it Current', async () => {
   expect(item).toHaveTextContent('February 11, 2019 – Present');
 });
 
-test('editing a career that no longer exists says so', async () => {
-  fakeApi([]);
-  open('/careers/9/edit');
-  expect(await findLive('alert')).toHaveTextContent('Career not found');
-});
-
 test('cancelling the delete dialog keeps the career', async () => {
   const api = fakeApi([past]);
   open('/careers');

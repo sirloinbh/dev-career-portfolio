@@ -1,6 +1,6 @@
 import { Briefcase, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link } from 'react-router';
 
 import {
   type Career,
@@ -22,18 +22,12 @@ import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
-import { Notice } from './components/ui/notice';
-import { SkeletonList } from './components/ui/skeleton';
-import { toast } from './components/ui/sonner';
-import { invalidAddressText, isValidId } from './entity-id';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
+import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
-import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
-import { BackLink, PageHeader } from './page-header';
 import { TextBlocks } from './text-blocks';
-import { useLoad } from './use-load';
 
 const loadCareers = () => careerApi.list();
 const loadCareersRows = () => loadCareers().then((response) => response.careers);
@@ -245,71 +239,27 @@ function CareerFields({
 }
 
 export function NewCareer({ paths }: { paths: CareerPaths }) {
-  const navigate = useNavigate();
-  const create = async (form: CareerForm) => {
-    const { career } = await careerApi.create(toCareerInput(form));
-    toast.success(`Added '${career.company}'`);
-    void navigate(paths.list);
-  };
   return (
-    <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="Career list" />
-      <PageHeader
-        title="Add career"
-        description="Company, employment type, and start date are all you need. The rest can stay empty."
-      />
-      <CareerFields
-        initial={emptyCareerForm}
-        submitLabel="Add"
-        cancelTo={paths.list}
-        onSubmit={create}
-      />
-    </section>
+    <NewItemPage
+      paths={paths}
+      texts={{ noun: 'career', backLabel: 'Career list' }}
+      description="Company, employment type, and start date are all you need. The rest can stay empty."
+      initial={emptyCareerForm}
+      create={async (form) => (await careerApi.create(toCareerInput(form))).career.company}
+      Fields={CareerFields}
+    />
   );
 }
 
 export function EditCareer({ paths }: { paths: CareerPaths }) {
-  const { id = '' } = useParams();
-  const valid = isValidId(id);
-  // There is no single-item API (#32): the list is small, so the form finds its row there.
-  const loaded = useLoad('all', loadCareers);
-  const navigate = useNavigate();
-  const career =
-    loaded.state === 'ok' ? loaded.data.careers.find((item) => String(item.id) === id) : undefined;
-  const update = async (form: CareerForm) => {
-    if (!career) return;
-    await careerApi.update(career.id, toCareerInput(form));
-    toast.success('Saved');
-    void navigate(paths.list);
-  };
   return (
-    <section
-      aria-labelledby="page-title"
-      aria-busy={loaded.state === 'loading'}
-      className="flex flex-col gap-6"
-    >
-      <BackLink to={paths.list} label="Career list" />
-      <PageHeader title="Edit career" description="Change what you need, then save." />
-      {!valid ? <Notice notice={{ kind: 'error', text: invalidAddressText }} /> : null}
-      {valid && loaded.state === 'loading' ? <SkeletonList rows={4} /> : null}
-      {valid && loaded.state === 'error' ? (
-        <Notice
-          notice={{ kind: 'error', text: `Could not load career. ${errorText(loaded.error)}` }}
-        />
-      ) : null}
-      {valid && loaded.state === 'ok' && !career ? (
-        <Notice notice={{ kind: 'error', text: 'Career not found. It may already be deleted.' }} />
-      ) : null}
-      {career ? (
-        <CareerFields
-          // A new id starts a fresh form instead of keeping the previous row's typing.
-          key={career.id}
-          initial={toCareerForm(career)}
-          submitLabel="Save"
-          cancelTo={paths.list}
-          onSubmit={update}
-        />
-      ) : null}
-    </section>
+    <EditItemPage
+      paths={paths}
+      texts={{ noun: 'career', backLabel: 'Career list' }}
+      loadItems={loadCareersRows}
+      toForm={toCareerForm}
+      update={(item, form) => careerApi.update(item.id, toCareerInput(form))}
+      Fields={CareerFields}
+    />
   );
 }
