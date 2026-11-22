@@ -12,6 +12,7 @@ import {
 } from './application-data';
 import { toast } from './components/ui/sonner';
 import { findLive, queryLive } from './test/live';
+import { parseRequest, unexpectedRequest } from './test/route';
 import { type ErrorBody, validation } from './test/server-errors';
 
 // All companies here are made up for the test.
@@ -51,17 +52,23 @@ function fakeApi(rows: Application[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
+      const request = parseRequest(input, init);
+      const { method, path: url, id } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
-      if (url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      const known =
+        (url === '/api/applications' && (method === 'GET' || method === 'POST')) ||
+        (id !== null &&
+          url === `/api/applications/${id}` &&
+          (method === 'PUT' || method === 'DELETE')) ||
+        (method === 'GET' && /^\/api\/applications\/\d+\/questions$/.test(url));
+      if (!known) return unexpectedRequest(request);
       calls.push({ method, url, body });
       if (refuse && (method === 'POST' || method === 'PUT')) {
         const refused = refuse;
         refuse = undefined;
         return json(refused, 400);
       }
-      const id = Number(url.split('/')[3]);
       const index = store.findIndex((row) => row.id === id);
       // The delete dialog counts the application's questions (#51).
       if (url.endsWith('/questions')) {
@@ -83,7 +90,7 @@ function fakeApi(rows: Application[]) {
       }
       if (index === -1) return json({ error: 'Application not found' }, 404);
       if (method === 'PUT') {
-        store[index] = saved({ ...(body as Application), id });
+        store[index] = saved({ ...(body as Application), id: id as number });
         return json({ application: store[index] });
       }
       if (method === 'DELETE' && deleteFails)
