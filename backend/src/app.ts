@@ -42,7 +42,13 @@ export function createApp(
   if (options.auth) app.use('/api', options.auth);
   app.get('/api/me', meHandler);
   app.get('/api/health', async (_req, res) => {
-    await pool.query('SELECT 1');
+    try {
+      await pool.query('SELECT 1');
+    } catch {
+      // #138: a database outage is a 503 the probe can read, not the generic 500.
+      res.status(503).json({ ok: false });
+      return;
+    }
     res.json({ ok: true, service: 'dev-career-portfolio', today: today() });
   });
   registerEducationRoutes(app, pool);
