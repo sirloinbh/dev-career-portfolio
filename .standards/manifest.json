@@ -1,5 +1,5 @@
 {
-  "centralSha": "845dbce8df04ec27c97950a69ff81a520d4a57e5",
+  "centralSha": "ed890665817b1d1159b4f674c09fe923d6828e14",
   "profile": "app",
   "project": "dev-career-portfolio",
   "files": {
@@ -470,7 +470,7 @@
     },
     "frontend/nginx.conf": {
       "mode": "full",
-      "sha256": "1357327a9eb83214900551f3caf4b09448c481dc4980b2b379f7b25592619cf0",
+      "sha256": "89fec23724b42cce53a7b52f050b98f31c0b0673a88d08d7df649002e7d3d9bb",
       "source": "templates/app/frontend/nginx.conf.tmpl"
     },
     "frontend/package.json": {
