@@ -89,6 +89,7 @@ export function FindEarlierAnswers({
           type="button"
           variant="outline"
           size="sm"
+          className="w-fit"
           aria-label={`Find earlier answers for ${label}`}
         >
           <Search aria-hidden />
@@ -96,7 +97,7 @@ export function FindEarlierAnswers({
         </Button>
       </DialogTrigger>
       {/* The dialog sits inside the form in the React tree: keep its typing and Enter from reaching the form. */}
-      <DialogContent onChange={(e) => e.stopPropagation()} className="max-w-2xl">
+      <DialogContent onChange={(e) => e.stopPropagation()} className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Find earlier answers</DialogTitle>
           <DialogDescription>
