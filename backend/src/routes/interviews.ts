@@ -51,8 +51,8 @@ export function registerInterviewRoutes(app: Express, pool: Pool) {
   app.post('/api/applications/:id/interviews', async (req, res) => {
     const applicationId = parseId(req.params.id, 'application');
     const input = interviewInput.parse(req.body);
-    // One statement that inserts from the application's own row: when the application is gone (or deleted a moment
-    // ago) nothing is inserted and the answer is a 404, never a foreign key error.
+    // One statement that inserts from the application's own row: a missing application inserts nothing and answers 404.
+    // (A delete that lands in the same instant is refused by the foreign key; that is the same rare race the other routes have.)
     // The Seoul wall clock becomes an instant with AT TIME ZONE (a fixed +09:00, no daylight saving).
     const { rows } = await pool.query<InterviewRow>(
       `INSERT INTO interviews (application_id, round, scheduled_at, format, questions, retrospective)
