@@ -40,6 +40,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
       id: 9,
       name: '포트폴리오 사이트',
       organization: null,
+      careerId: null,
       startDate: '2025-03-03',
       endDate: null,
       role: null,
@@ -57,6 +58,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
       id: 10,
       name: '주문 관리 서비스',
       organization: '한빛소프트',
+      careerId: null,
       startDate: '2024-01-08',
       endDate: '2024-06-28',
       role: '백엔드',
@@ -100,6 +102,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
       id: project.id,
       name: '주문 관리 서비스 2',
       organization: '다온테크',
+      careerId: null,
       startDate: '2024-01-09',
       endDate: null,
       role: '팀장',
@@ -139,3 +142,68 @@ test('the database itself refuses rows the API would refuse', { skip: !url }, as
   );
   await assert.rejects(insert({ link: 'javascript:alert(1)' }), /projects_links/);
 });
+
+test(
+  'a project links to a career, unlinks, and keeps living when the career is deleted',
+  { skip: !url },
+  async (t) => {
+    const pool = new Pool({ connectionString: url });
+    t.after(() => pool.end());
+
+    await withApi(pool, async (call) => {
+      const career = await call('/api/careers', {
+        method: 'POST',
+        body: { company: 'Link Test Co', employmentType: 'full_time', startDate: '2022-01-03' },
+      });
+      assert.equal(career.status, 201);
+      const careerId = (career.data.career as { id: number }).id;
+
+      const linked = await call('/api/projects', {
+        method: 'POST',
+        body: { name: 'Linked project', startDate: '2022-02-01', careerId },
+      });
+      assert.equal(linked.status, 201);
+      const project = linked.data.project as { id: number; careerId: number | null };
+      assert.equal(project.careerId, careerId);
+
+      // A career id that does not exist is refused, on create and on update.
+      const missing = {
+        name: 'Linked project',
+        startDate: '2022-02-01',
+        careerId: careerId + 100000,
+      };
+      const refusedCreate = await call('/api/projects', { method: 'POST', body: missing });
+      assert.equal(refusedCreate.status, 400);
+      assert.equal(refusedCreate.data.error, 'Career not found');
+      const refusedUpdate = await call(`/api/projects/${String(project.id)}`, {
+        method: 'PUT',
+        body: missing,
+      });
+      assert.equal(refusedUpdate.status, 400);
+      assert.equal(refusedUpdate.data.error, 'Career not found');
+
+      // Unlinking and linking again through PUT.
+      const unlinked = await call(`/api/projects/${String(project.id)}`, {
+        method: 'PUT',
+        body: { name: 'Linked project', startDate: '2022-02-01', careerId: null },
+      });
+      assert.equal((unlinked.data.project as { careerId: unknown }).careerId, null);
+      const relinked = await call(`/api/projects/${String(project.id)}`, {
+        method: 'PUT',
+        body: { name: 'Linked project', startDate: '2022-02-01', careerId },
+      });
+      assert.equal((relinked.data.project as { careerId: unknown }).careerId, careerId);
+
+      // Deleting the career keeps the project and clears its link.
+      const removed = await call(`/api/careers/${String(careerId)}`, { method: 'DELETE' });
+      assert.equal(removed.status, 204);
+      const list = await call('/api/projects');
+      const kept = (list.data.projects as { id: number; careerId: unknown }[]).find(
+        (row) => row.id === project.id,
+      );
+      assert.equal(kept?.careerId, null);
+
+      await call(`/api/projects/${String(project.id)}`, { method: 'DELETE' });
+    });
+  },
+);

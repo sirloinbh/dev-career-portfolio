@@ -50,6 +50,8 @@ export type CareerPaths = {
   list: string;
   create: string;
   edit: (id: number) => string;
+  /** Where a project linked to a career is edited (#224). */
+  projectEdit: (id: number) => string;
 };
 
 type CareerInput = Omit<Career, 'id'>;
