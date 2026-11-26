@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { testDatabaseUrl, withApi } from './helpers.js';
+import { lockPortfolio,testDatabaseUrl, withApi } from './helpers.js';
 
 const url = testDatabaseUrl();
 
@@ -24,10 +24,10 @@ const shop = {
 test('projects are stored, listed newest first, updated and deleted', { skip: !url }, async (t) => {
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
+  await lockPortfolio(t);
   await pool.query('DELETE FROM projects');
   // Two skills, named so that their order by name is the opposite of their order by id.
   await pool.query("DELETE FROM skills WHERE name LIKE 'Zz %'");
-  t.after(() => pool.query("DELETE FROM skills WHERE name LIKE 'Zz %'"));
   const made = await pool.query<{ id: number }>(
     `INSERT INTO skills (name, category, proficiency)
      VALUES ('Zz Beta', 'tool', 1), ('Zz Alpha', 'tool', 1) RETURNING id`,
@@ -135,11 +135,13 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
       assert.equal(missing.data.error, 'Project not found');
     }
   });
+  await pool.query("DELETE FROM skills WHERE name LIKE 'Zz %'");
 });
 
 test('the database itself refuses rows the API would refuse', { skip: !url }, async (t) => {
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
+  await lockPortfolio(t);
   const insert = (fields: { end?: string; link?: string }) =>
     pool.query(
       `INSERT INTO projects (name, start_date, end_date, repository_url)
@@ -156,6 +158,7 @@ test(
   async (t) => {
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
+    await lockPortfolio(t);
 
     await withApi(pool, async (call) => {
       const career = await call('/api/careers', {
@@ -212,6 +215,7 @@ test(
 
       await call(`/api/projects/${String(project.id)}`, { method: 'DELETE' });
     });
+    await pool.query("DELETE FROM skills WHERE name LIKE 'Zz Link %'");
   },
 );
 
@@ -221,8 +225,8 @@ test(
   async (t) => {
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
+    await lockPortfolio(t);
     await pool.query("DELETE FROM skills WHERE name LIKE 'Zz Link %'");
-    t.after(() => pool.query("DELETE FROM skills WHERE name LIKE 'Zz Link %'"));
     const made = await pool.query<{ id: number }>(
       `INSERT INTO skills (name, category, proficiency)
      VALUES ('Zz Link One', 'tool', 1), ('Zz Link Two', 'tool', 1) RETURNING id`,

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { testDatabaseUrl, withApi } from './helpers.js';
+import { lockPortfolio,testDatabaseUrl, withApi } from './helpers.js';
 
 const url = testDatabaseUrl();
 
@@ -13,6 +13,7 @@ type Skill = { id: number; name: string; category: string; proficiency: number; 
 test('skills are stored, listed by category, updated and deleted', { skip: !url }, async (t) => {
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
+  await lockPortfolio(t);
   await pool.query('DELETE FROM skills');
 
   await withApi(pool, async (call) => {
@@ -124,6 +125,7 @@ test('skills are stored, listed by category, updated and deleted', { skip: !url 
 test('the database itself refuses rows the API would refuse', { skip: !url }, async (t) => {
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
+  await lockPortfolio(t);
   await pool.query('DELETE FROM skills');
   const insert = (name: string, category: string, proficiency: number) =>
     pool.query('INSERT INTO skills (name, category, proficiency) VALUES ($1, $2, $3)', [
@@ -145,12 +147,9 @@ test(
   async (t) => {
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
+    await lockPortfolio(t);
     await pool.query("DELETE FROM skills WHERE name LIKE 'Zz Usage %'");
     await pool.query("DELETE FROM projects WHERE name LIKE 'Zz Usage %'");
-    t.after(async () => {
-      await pool.query("DELETE FROM skills WHERE name LIKE 'Zz Usage %'");
-      await pool.query("DELETE FROM projects WHERE name LIKE 'Zz Usage %'");
-    });
 
     await withApi(pool, async (call) => {
       const skill = await call('/api/skills', {
@@ -190,5 +189,7 @@ test(
       assert.deepEqual(none?.projects, []);
       assert.equal(none?.usedMonths, 0);
     });
+    await pool.query("DELETE FROM skills WHERE name LIKE 'Zz Usage %'");
+    await pool.query("DELETE FROM projects WHERE name LIKE 'Zz Usage %'");
   },
 );
