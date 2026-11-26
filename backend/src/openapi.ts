@@ -5,6 +5,7 @@ import { applicationInput } from './routes/applications.js';
 import { careerInput } from './routes/careers.js';
 import { certificationInput } from './routes/certifications.js';
 import { questionsInput } from './routes/cover-letter-questions.js';
+import { importFile } from './routes/data.js';
 import { educationInput } from './routes/educations.js';
 import { projectInput } from './routes/projects.js';
 import { skillInput } from './routes/skills.js';
@@ -19,6 +20,12 @@ export const operations: Record<string, Operation> = {
     public: true,
   },
   'GET /api/me': { summary: 'Get the signed-in user', status: [200, 401, 503] },
+  'GET /api/data/export': { summary: 'Export every record as one JSON file', status: [200] },
+  'POST /api/data/import': {
+    summary: 'Replace all records with the ones in an export file, or change nothing',
+    body: ['DataExport', importFile],
+    status: [200, 400],
+  },
   'GET /api/dashboard': {
     summary:
       'Summarize item counts, upcoming deadlines, expiring certifications and recent changes',
