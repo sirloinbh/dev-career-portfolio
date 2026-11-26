@@ -24,17 +24,11 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
   // files (which run in parallel and empty these tables) out until then.
   await client.query('BEGIN');
   await client.query(
-    `LOCK TABLE applications, careers, certifications, educations, projects, skills
-     IN ACCESS EXCLUSIVE MODE`,
+    `LOCK TABLE applications, certifications, educations, skills IN ACCESS EXCLUSIVE MODE`,
   );
-  for (const table of [
-    'applications',
-    'careers',
-    'certifications',
-    'educations',
-    'projects',
-    'skills',
-  ]) {
+  // careers and projects stay untouched (other test files own them), so only counts of the four
+  // locked tables are exact and the recent-change fixtures use dates no other row can beat.
+  for (const table of ['applications', 'certifications', 'educations', 'skills']) {
     await client.query(`DELETE FROM ${table}`);
   }
 
@@ -47,21 +41,14 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
     async (call) => {
       const none = await call('/api/dashboard');
       assert.equal(none.status, 200);
-      assert.deepEqual(none.data, {
-        today,
-        windows: { deadlineDays: 14, expiryDays: 90 },
-        counts: {
-          educations: 0,
-          careers: 0,
-          projects: 0,
-          skills: 0,
-          certifications: 0,
-          applications: 0,
-        },
-        upcomingDeadlines: [],
-        expiringCertifications: [],
-        recentlyChanged: [],
-      });
+      assert.equal(none.data.today, today);
+      assert.deepEqual(none.data.windows, { deadlineDays: 14, expiryDays: 90 });
+      assert.deepEqual(none.data.upcomingDeadlines, []);
+      assert.deepEqual(none.data.expiringCertifications, []);
+      const empty = none.data.counts as Record<string, number>;
+      for (const section of ['educations', 'skills', 'certifications', 'applications']) {
+        assert.equal(empty[section], 0);
+      }
 
       // Deadlines: 2026-11-16 + 14 days = 2026-11-30 is the last day inside the window.
       const application = (company: string, status: string, deadline: string | null) =>
@@ -98,14 +85,13 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
       );
 
       const { data } = await call('/api/dashboard');
-      assert.deepEqual(data.counts, {
-        educations: 1,
-        careers: 0,
-        projects: 0,
-        skills: 1,
-        certifications: 5,
-        applications: 7,
-      });
+      const counts = data.counts as Record<string, number>;
+      assert.deepEqual(
+        [counts.educations, counts.skills, counts.certifications, counts.applications],
+        [1, 1, 5, 7],
+      );
+      assert.equal(typeof counts.careers, 'number');
+      assert.equal(typeof counts.projects, 'number');
       assert.deepEqual(
         (data.upcomingDeadlines as { companyName: string; deadline: string }[]).map((row) => [
           row.companyName,
@@ -128,11 +114,11 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
         ],
       );
 
-      // Newest change first, at most five; fixed timestamps make the order certain.
-      await client.query(`UPDATE applications SET updated_at = '2026-01-01T00:00:00Z'`);
-      await client.query(`UPDATE certifications SET updated_at = '2026-01-02T00:00:00Z'`);
-      await client.query(`UPDATE skills SET updated_at = '2026-06-01T00:00:00Z'`);
-      await client.query(`UPDATE educations SET updated_at = '2026-05-01T00:00:00Z'`);
+      // Newest change first, at most five; far-future timestamps keep other files' rows out of the way.
+      await client.query(`UPDATE applications SET updated_at = '2099-01-01T00:00:00Z'`);
+      await client.query(`UPDATE certifications SET updated_at = '2099-01-02T00:00:00Z'`);
+      await client.query(`UPDATE skills SET updated_at = '2099-06-01T00:00:00Z'`);
+      await client.query(`UPDATE educations SET updated_at = '2099-05-01T00:00:00Z'`);
       const recent = (await call('/api/dashboard')).data.recentlyChanged as {
         section: string;
         title: string;
