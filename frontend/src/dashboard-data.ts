@@ -36,7 +36,7 @@ export const sectionLabels: Record<DashboardSection, string> = {
 };
 
 /** "Due today", "Due tomorrow" or "D-5" for a date inside the window; dates are YYYY-MM-DD in the service time zone. */
-export function countdownText(days: number) {
+function countdownText(days: number) {
   if (days === 0) return 'Today';
   return `D-${String(days)}`;
 }

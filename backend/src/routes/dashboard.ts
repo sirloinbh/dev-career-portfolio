@@ -3,8 +3,8 @@ import type { Pool } from 'pg';
 
 // Dashboard summary (#221): read-only. The windows are the recommended values on the card; the user's
 // answer is recorded on #221 and the constants change here only.
-export const deadlineWindowDays = 14;
-export const expiryWindowDays = 90;
+const deadlineWindowDays = 14;
+const expiryWindowDays = 90;
 const recentLimit = 5;
 
 export function registerDashboardRoutes(app: Express, pool: Pool, today: () => string) {
