@@ -4,10 +4,27 @@ import { expect, test, vi } from 'vitest';
 import { App } from './app';
 import { findLive } from './test/live';
 
+// The overview also loads its summary (#221); an empty one keeps these tests about the shell.
+const emptySummary = {
+  today: '2026-10-26',
+  windows: { deadlineDays: 14, expiryDays: 90 },
+  counts: { educations: 0, careers: 0, projects: 0, skills: 0, certifications: 0, applications: 0 },
+  upcomingDeadlines: [],
+  expiringCertifications: [],
+  recentlyChanged: [],
+};
+
 const health = (body: object, status = 200) =>
   vi.stubGlobal(
     'fetch',
-    vi.fn(() => Promise.resolve(new Response(JSON.stringify(body), { status }))),
+    vi.fn((input: RequestInfo | URL) =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify(String(input).endsWith('/api/dashboard') ? emptySummary : body),
+          { status: String(input).endsWith('/api/dashboard') ? 200 : status },
+        ),
+      ),
+    ),
   );
 
 test('shows the server date from /api/health on the overview', async () => {
@@ -67,6 +84,8 @@ function deployedPage(me: () => Response) {
       if (path === '/api/me') return Promise.resolve(me());
       if (path === '/api/health')
         return Promise.resolve(new Response(JSON.stringify({ today: '2026-10-26' })));
+      if (path === '/api/dashboard')
+        return Promise.resolve(new Response(JSON.stringify(emptySummary)));
       throw new Error(`Unexpected request to ${path}`);
     }),
   );

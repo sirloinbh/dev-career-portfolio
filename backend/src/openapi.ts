@@ -19,6 +19,11 @@ export const operations: Record<string, Operation> = {
     public: true,
   },
   'GET /api/me': { summary: 'Get the signed-in user', status: [200, 401, 503] },
+  'GET /api/dashboard': {
+    summary:
+      'Summarize item counts, upcoming deadlines, expiring certifications and recent changes',
+    status: [200],
+  },
 
   'GET /api/educations': { summary: 'List educations, newest start first', status: [200] },
   'POST /api/educations': {

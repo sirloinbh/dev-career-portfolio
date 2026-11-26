@@ -23,6 +23,7 @@ import { EmptyState } from './components/ui/empty-state';
 import { Toaster } from './components/ui/sonner';
 import { EditQuestions } from './cover-letter-form';
 import { ApplicationQuestions } from './cover-letter-questions';
+import { type DashboardPaths, DashboardScreen } from './dashboard';
 import type { EducationPaths } from './education-data';
 import { EditEducation, EducationList, NewEducation } from './educations';
 import { type Health, healthText } from './health';
@@ -89,6 +90,15 @@ const applicationPaths: ApplicationPaths = {
   edit: (id) => generatePath(pages.editApplication, { id: String(id) }),
   questions: (id) => generatePath(pages.applicationQuestions, { id: String(id) }),
   editQuestions: (id) => generatePath(pages.editQuestions, { id: String(id) }),
+};
+
+const dashboardPaths: DashboardPaths = {
+  educations: pages.educations,
+  careers: pages.careers,
+  projects: pages.projects,
+  skills: pages.skills,
+  certifications: pages.certifications,
+  applications: pages.applications,
 };
 
 const careerPaths: CareerPaths = {
@@ -171,13 +181,7 @@ function AppRoutes() {
           <Routes>
             <Route
               path={pages.overview}
-              element={
-                <Page
-                  title="Dashboard"
-                  description="A personal portfolio service for organizing your career, projects, and skill growth"
-                  health={health}
-                />
-              }
+              element={<DashboardScreen paths={dashboardPaths} health={health} />}
             />
             <Route path={pages.educations} element={<EducationList paths={educationPaths} />} />
             <Route path={pages.newEducation} element={<NewEducation paths={educationPaths} />} />
