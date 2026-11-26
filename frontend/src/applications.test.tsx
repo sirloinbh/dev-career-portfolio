@@ -33,7 +33,7 @@ const near: Application = {
 const today = application(2, '한빛소프트', 'drafting', '2026-11-05');
 const open = application(3, '새벽커머스', 'drafting', null);
 const sent = application(4, '바다물류', 'submitted', '2026-11-01');
-const done = application(5, '숲게임즈', 'closed', '2025-01-10');
+const done = application(5, '숲게임즈', 'rejected', '2025-01-10');
 
 /** Answers /api/applications with `result` (or an error) and /api/health with a date. */
 function serve(result: { status: number; body: object } | 'offline') {
@@ -108,10 +108,10 @@ test('applications keep the API order and show status, position, deadline and me
     within(item('한빛소프트')).getByText('Due November 5, 2026 · Due today'),
   ).toBeInTheDocument();
   expect(within(item('새벽커머스')).getByText('No deadline')).toBeInTheDocument();
-  // Submitted and closed applications show the date alone, without a countdown.
+  // Submitted and rejected applications show the date alone, without a countdown.
   expect(within(item('바다물류')).getByText('Submitted')).toBeInTheDocument();
   expect(within(item('바다물류')).getByText('Due November 1, 2026')).toBeInTheDocument();
-  expect(within(item('숲게임즈')).getByText('Closed')).toBeInTheDocument();
+  expect(within(item('숲게임즈')).getByText('Rejected')).toBeInTheDocument();
   expect(within(item('숲게임즈')).getByText('Due January 10, 2025')).toBeInTheDocument();
 });
 
@@ -188,7 +188,7 @@ test('display rules: deadline countdown and day counts', () => {
     'Due November 5, 2026 · Due today',
   );
   expect(deadlineText(drafting('2026-11-04'), '2026-11-05')).toBe('Due November 4, 2026 · Overdue');
-  expect(deadlineText({ deadline: '2026-11-04', status: 'closed' }, '2026-11-05')).toBe(
+  expect(deadlineText({ deadline: '2026-11-04', status: 'rejected' }, '2026-11-05')).toBe(
     'Due November 4, 2026',
   );
   // Across a month end, a year end and a leap day.

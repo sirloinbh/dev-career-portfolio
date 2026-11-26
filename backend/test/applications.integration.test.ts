@@ -66,7 +66,7 @@ test(
         // A deadline already past is still stored.
         const closed = await add({
           companyName: '종료회사',
-          status: 'closed',
+          status: 'rejected',
           deadline: '2025-01-10',
         });
         const lateSubmitted = await add({
@@ -121,9 +121,9 @@ test(
 
         const list = await call('/api/applications');
         assert.equal(list.status, 200);
-        // Drafting, submitted, closed. Inside drafting, past deadlines go after the rest (no deadline
+        // Drafting, submitted, then the other stages in order. Inside drafting, past deadlines go after the rest (no deadline
         // included), and due today is not past. Nearest deadline first, none last; same deadline
-        // newest first. Submitted and closed keep that order though their deadlines are past too.
+        // newest first. Submitted and rejected keep that order though their deadlines are past too.
         assert.deepEqual(
           (list.data.applications as Application[]).map((row) => row.id),
           [
@@ -173,7 +173,7 @@ test(
             position: '플랫폼',
             postingUrl: null,
             deadline: null,
-            status: 'closed',
+            status: 'rejected',
             memo: '최종 결과 대기',
           },
         });
@@ -184,7 +184,7 @@ test(
           position: '플랫폼',
           postingUrl: null,
           deadline: null,
-          status: 'closed',
+          status: 'rejected',
           memo: '최종 결과 대기',
         });
 
@@ -253,3 +253,138 @@ test('the database itself refuses rows the API would refuse', { skip: !url }, as
   );
   await insert('한국소프트', 'drafting', 'HTTPS://example.com');
 });
+
+type HistoryRow = { id: number; fromStatus: string | null; status: string; date: string };
+
+test(
+  'every status change writes one history row in the same transaction',
+  { skip: !url },
+  async (t) => {
+    await lockApplications(t);
+    const pool = new Pool({ connectionString: url });
+    t.after(() => pool.end());
+    await pool.query('DELETE FROM applications');
+
+    await withApi(pool, async (call) => {
+      const history = async (id: number) => {
+        const response = await call(`/api/applications/${String(id)}/status-history`);
+        assert.equal(response.status, 200);
+        return response.data.history as HistoryRow[];
+      };
+      const created = await call('/api/applications', {
+        method: 'POST',
+        body: { companyName: '한국소프트', status: 'drafting' },
+      });
+      const id = (created.data.application as Application).id;
+      const put = (body: Record<string, unknown>) =>
+        call(`/api/applications/${String(id)}`, {
+          method: 'PUT',
+          body: { companyName: '한국소프트', status: 'drafting', ...body },
+        });
+
+      // Creating the application writes the first row.
+      let rows = await history(id);
+      assert.deepEqual(
+        rows.map((row) => [row.fromStatus, row.status]),
+        [[null, 'drafting']],
+      );
+      assert.match(rows[0].date, /^\d{4}-\d{2}-\d{2}$/);
+
+      // Saving other fields writes none; each stage change writes exactly one, oldest first.
+      assert.equal((await put({ memo: '메모만 바꿈' })).status, 200);
+      assert.equal((await history(id)).length, 1);
+      assert.equal((await put({ status: 'submitted' })).status, 200);
+      assert.equal((await put({ status: 'first_interview' })).status, 200);
+      assert.equal((await put({ status: 'offer' })).status, 200);
+      rows = await history(id);
+      assert.deepEqual(
+        rows.map((row) => [row.fromStatus, row.status]),
+        [
+          [null, 'drafting'],
+          ['drafting', 'submitted'],
+          ['submitted', 'first_interview'],
+          ['first_interview', 'offer'],
+        ],
+      );
+
+      // A save the database refuses (NUL) changes neither the stage nor the history.
+      const refused = await put({ status: 'rejected', memo: '바뀌면\u0000안 됨' });
+      assert.equal(refused.status, 400);
+      assert.equal((await history(id)).length, 4);
+      const list = await call('/api/applications');
+      assert.equal((list.data.applications as Application[])[0].status, 'offer');
+
+      // A missing application has no history; deleting one deletes its history.
+      const missing = await call('/api/applications/999999999/status-history');
+      assert.equal(missing.status, 404);
+      assert.equal(
+        (await call(`/api/applications/${String(id)}`, { method: 'DELETE' })).status,
+        204,
+      );
+      const left = await pool.query('SELECT 1 FROM application_status_history');
+      assert.equal(left.rowCount, 0);
+    });
+  },
+);
+
+test(
+  'migration 013 maps every old status and gives each application one history row',
+  { skip: !url },
+  async () => {
+    const { readFile } = await import('node:fs/promises');
+    const sql = (name: string) =>
+      readFile(new URL(`../../database/migrations/${name}`, import.meta.url), 'utf8');
+    const pool = new Pool({ connectionString: url });
+    const client = await pool.connect();
+    try {
+      // A scratch schema holding the old table, rolled back at the end, so no real data is touched.
+      await client.query('BEGIN');
+      await client.query('CREATE SCHEMA mig_012_test');
+      await client.query('SET LOCAL search_path TO mig_012_test');
+      await client.query(await sql('007_applications.sql'));
+      await client.query(
+        `INSERT INTO applications (company_name, status) VALUES
+         ('작성중', 'drafting'), ('제출함', 'submitted'), ('종료함', 'closed')`,
+      );
+      await client.query(await sql('013_application_stages.sql'));
+      const statuses = await client.query<{ company_name: string; status: string }>(
+        'SELECT company_name, status FROM applications ORDER BY id',
+      );
+      assert.deepEqual(
+        statuses.rows.map((row) => [row.company_name, row.status]),
+        [
+          ['작성중', 'drafting'],
+          ['제출함', 'submitted'],
+          ['종료함', 'rejected'],
+        ],
+      );
+      const history = await client.query<{ status: string; from_status: string | null }>(
+        `SELECT h.status, h.from_status FROM application_status_history h
+       JOIN applications a ON a.id = h.application_id ORDER BY a.id`,
+      );
+      assert.deepEqual(
+        history.rows.map((row) => [row.from_status, row.status]),
+        [
+          [null, 'drafting'],
+          [null, 'submitted'],
+          [null, 'rejected'],
+        ],
+      );
+      // The old value is no longer allowed.
+      await client.query('SAVEPOINT refused');
+      await assert.rejects(
+        client.query(`INSERT INTO applications (company_name, status) VALUES ('x', 'closed')`),
+        /applications_status_check/,
+      );
+      await client.query('ROLLBACK TO SAVEPOINT refused');
+      // Running the file again changes nothing (migrations must be safe to run twice).
+      await client.query(await sql('013_application_stages.sql'));
+      const again = await client.query('SELECT 1 FROM application_status_history');
+      assert.equal(again.rowCount, 3);
+    } finally {
+      await client.query('ROLLBACK').catch(() => undefined);
+      client.release();
+      await pool.end();
+    }
+  },
+);

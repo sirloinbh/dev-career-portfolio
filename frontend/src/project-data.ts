@@ -19,7 +19,8 @@ export type Project = {
   role: string | null;
   summary: string | null;
   contributions: string | null;
-  technologies: string[];
+  /** The skills this project used, by skill id, in skill-name order (#225). */
+  skillIds: number[];
   repositoryUrl: string | null;
   serviceUrl: string | null;
 };
@@ -51,7 +52,7 @@ export type ProjectPaths = {
 
 type ProjectInput = Omit<Project, 'id'>;
 
-/** The form keeps every field as the text in its input; technologies are one comma-separated line. */
+/** The form keeps every field as the text in its input; the skills are the ids picked from the skill list. */
 export type ProjectForm = {
   name: string;
   organization: string;
@@ -62,7 +63,7 @@ export type ProjectForm = {
   role: string;
   summary: string;
   contributions: string;
-  technologies: string;
+  skillIds: number[];
   repositoryUrl: string;
   serviceUrl: string;
 };
@@ -76,7 +77,7 @@ export const emptyProjectForm: ProjectForm = {
   role: '',
   summary: '',
   contributions: '',
-  technologies: '',
+  skillIds: [],
   repositoryUrl: '',
   serviceUrl: '',
 };
@@ -91,21 +92,10 @@ export function toProjectForm(project: Project): ProjectForm {
     role: project.role ?? '',
     summary: project.summary ?? '',
     contributions: project.contributions ?? '',
-    technologies: project.technologies.join(', '),
+    skillIds: project.skillIds,
     repositoryUrl: project.repositoryUrl ?? '',
     serviceUrl: project.serviceUrl ?? '',
   };
-}
-
-/**
- * "TypeScript, PostgreSQL," → ["TypeScript", "PostgreSQL"]. The pieces between commas are trimmed
- * and empty ones (a trailing comma) dropped; length, count and duplicates are the server's to check.
- */
-export function splitTechnologies(text: string) {
-  return text
-    .split(',')
-    .map((name) => name.trim())
-    .filter((name) => name !== '');
 }
 
 /**
@@ -117,7 +107,6 @@ export function toProjectInput(form: ProjectForm): ProjectInput {
     ...form,
     careerId: form.careerId === '' ? null : Number(form.careerId),
     endDate: form.endDate === '' ? null : form.endDate,
-    technologies: splitTechnologies(form.technologies),
   };
 }
 

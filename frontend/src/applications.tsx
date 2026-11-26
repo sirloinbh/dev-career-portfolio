@@ -151,7 +151,7 @@ export function ApplicationList({ paths }: { paths: ApplicationPaths }) {
     <ItemListPage<Application>
       list={applicationList}
       title="Cover letters"
-      description="See the companies you applied to by status (drafting, submitted, closed), earliest deadline first within each status. Drafts past their deadline come after the other drafts."
+      description="See the companies you applied to by hiring stage (drafting, submitted, document passed, interviews, offer, rejected, withdrawn), earliest deadline first within each stage. Drafts past their deadline come after the other drafts."
       noun="applications"
       addLabel="Add application"
       addTo={paths.create}

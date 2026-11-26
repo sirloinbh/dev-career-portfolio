@@ -9,6 +9,7 @@ import {
   applicationStatusVariant,
   deadlineText,
 } from './application-data';
+import { StatusHistory } from './application-status-history';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { EmptyState } from './components/ui/empty-state';
@@ -90,6 +91,7 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
           {loaded ? `${String(list.length)} ${list.length === 1 ? 'question' : 'questions'}` : ''}
         </p>
       </PageHeader>
+      {missing || !valid ? null : <StatusHistory applicationId={id} enabled />}
       {missing || !valid ? null : (
         <Button asChild className="w-fit">
           <Link to={paths.editQuestions(id)}>

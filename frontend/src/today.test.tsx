@@ -31,7 +31,7 @@ const rows = [
   row(4, 'Yesterday', '2026-11-26'),
   row(5, 'Long Ago', '2026-10-01'),
   row(6, 'Sent Late', '2026-11-20', 'submitted'),
-  row(7, 'Closed Soon', '2026-11-28', 'closed'),
+  row(7, 'Rejected Soon', '2026-11-28', 'rejected'),
   row(8, 'No Deadline', null),
   row(9, 'Tomorrow', '2026-11-28'),
 ];

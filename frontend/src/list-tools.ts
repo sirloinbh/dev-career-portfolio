@@ -63,14 +63,7 @@ export function projectYears(projects: readonly Project[], thisYear = new Date()
 }
 
 export const projectTools: ListTools<Project> = {
-  searchText: (p) => [
-    p.name,
-    p.organization,
-    p.role,
-    p.summary,
-    p.contributions,
-    ...p.technologies,
-  ],
+  searchText: (p) => [p.name, p.organization, p.role, p.summary, p.contributions],
   filter: {
     label: 'Year',
     options: (projects) =>

@@ -147,7 +147,8 @@ test('projects: the year filter offers the years the projects ran in', async () 
     role: null,
     summary: null,
     contributions: null,
-    technologies: [],
+    careerId: null,
+    skillIds: [],
     repositoryUrl: null,
     serviceUrl: null,
   };
@@ -168,9 +169,33 @@ test('projects: the year filter offers the years the projects ran in', async () 
 
 test('skills: filter by category and sort inside the groups', async () => {
   serve('skills', [
-    { id: 1, name: 'Go', category: 'language', proficiency: 4, memo: null },
-    { id: 2, name: 'Rust', category: 'language', proficiency: 1, memo: null },
-    { id: 3, name: 'Docker', category: 'tool', proficiency: 2, memo: null },
+    {
+      id: 1,
+      name: 'Go',
+      category: 'language',
+      proficiency: 4,
+      memo: null,
+      projects: [],
+      usedMonths: 0,
+    },
+    {
+      id: 2,
+      name: 'Rust',
+      category: 'language',
+      proficiency: 1,
+      memo: null,
+      projects: [],
+      usedMonths: 0,
+    },
+    {
+      id: 3,
+      name: 'Docker',
+      category: 'tool',
+      proficiency: 2,
+      memo: null,
+      projects: [],
+      usedMonths: 0,
+    },
   ]);
   open('/skills');
   await screen.findByRole('heading', { level: 2, name: 'Language 2 entries' });
