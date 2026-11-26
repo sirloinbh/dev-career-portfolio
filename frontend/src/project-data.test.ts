@@ -4,7 +4,6 @@ import {
   emptyProjectForm,
   type Project,
   projectFieldOf,
-  splitTechnologies,
   toProjectForm,
   toProjectInput,
 } from './project-data';
@@ -21,7 +20,7 @@ const past: Project = {
   role: '프론트엔드',
   summary: null,
   contributions: null,
-  technologies: ['React', 'Elasticsearch'],
+  skillIds: [1, 2],
   repositoryUrl: 'https://github.com/example/wiki',
   serviceUrl: null,
 };
@@ -30,17 +29,16 @@ test('a validation path maps to the form field it names', () => {
   for (const field of Object.keys(emptyProjectForm)) expect(projectFieldOf(field)).toBe(field);
   expect(projectFieldOf('')).toBeUndefined();
   expect(projectFieldOf('toString')).toBeUndefined();
-  expect(projectFieldOf('technologies.3')).toBe('technologies');
+  expect(projectFieldOf('skillIds.3')).toBe('skillIds');
   expect(projectFieldOf('items.0.name')).toBeUndefined();
 });
 
 test('form values become the API input and back', () => {
-  expect(splitTechnologies('')).toEqual([]);
-  expect(splitTechnologies(' , ,')).toEqual([]);
-  expect(splitTechnologies('Go,  Rust ')).toEqual(['Go', 'Rust']);
   expect(toProjectInput({ ...emptyProjectForm, endDate: '' }).endDate).toBeNull();
-  expect(toProjectInput(emptyProjectForm).technologies).toEqual([]);
-  expect(
-    toProjectForm({ ...past, organization: null, endDate: null, technologies: [] }),
-  ).toMatchObject({ organization: '', endDate: '', technologies: '', serviceUrl: '' });
+  expect(toProjectInput(emptyProjectForm).skillIds).toEqual([]);
+  expect(toProjectInput({ ...emptyProjectForm, skillIds: [3, 1] }).skillIds).toEqual([3, 1]);
+  expect(toProjectForm({ ...past, organization: null, endDate: null, skillIds: [] })).toMatchObject(
+    { organization: '', endDate: '', skillIds: [], serviceUrl: '' },
+  );
+  expect(toProjectForm(past).skillIds).toEqual([1, 2]);
 });

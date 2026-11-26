@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { testDatabaseUrl, withApi } from './helpers.js';
+import { lockPortfolio, testDatabaseUrl, withApi } from './helpers.js';
 
 const url = testDatabaseUrl();
 
@@ -23,6 +23,7 @@ const startup = {
 test('careers are stored, listed newest first, updated and deleted', { skip: !url }, async (t) => {
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
+  await lockPortfolio(t);
   await pool.query('DELETE FROM careers');
 
   await withApi(pool, async (call) => {
@@ -113,6 +114,7 @@ test('careers are stored, listed newest first, updated and deleted', { skip: !ur
 test('the database itself refuses rows the API would refuse', { skip: !url }, async (t) => {
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
+  await lockPortfolio(t);
   const insert = (company: string, type: string, end: string | null) =>
     pool.query(
       `INSERT INTO careers (company, employment_type, start_date, end_date)
@@ -132,6 +134,7 @@ test(
   async (t) => {
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
+    await lockPortfolio(t);
     await pool.query('DELETE FROM careers');
     // The next ids are 9 to 13, so a text sort ("10" before "9") would show on any database.
     await pool.query("SELECT setval(pg_get_serial_sequence('careers', 'id'), 8)");

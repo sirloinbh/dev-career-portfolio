@@ -22,11 +22,24 @@ export async function lockApplications(t: TestContext) {
 // another inserts rows, so every test that writes projects holds this lock for its whole run.
 const projectsLock = 37_037;
 
-export async function lockProjects(t: TestContext) {
+async function lockProjects(t: TestContext) {
   const client = new Client({ connectionString: testDatabaseUrl() });
   await client.connect();
   await client.query('SELECT pg_advisory_lock($1)', [projectsLock]);
+  // Closing the session releases the lock, even when the test fails.
   t.after(() => client.end());
+}
+
+// The careers, projects and skills tables are linked (#224, #225), so tests that clear or count rows in any of
+// them hold this lock too, taken before the projects lock, for their whole run.
+const portfolioLock = 225_224;
+
+export async function lockPortfolio(t: TestContext) {
+  const client = new Client({ connectionString: testDatabaseUrl() });
+  await client.connect();
+  await client.query('SELECT pg_advisory_lock($1)', [portfolioLock]);
+  t.after(() => client.end());
+  await lockProjects(t);
 }
 
 // TEST_DATABASE_URL is often a machine-wide variable set for another project. These tests delete

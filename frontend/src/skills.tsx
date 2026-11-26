@@ -7,6 +7,7 @@ import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { entryCount } from './entry-count';
+import { monthsText } from './experience';
 import { controlClass } from './form-fields';
 import { useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
@@ -20,7 +21,6 @@ import {
   proficiencyLevels,
   proficiencyName,
   proficiencyText,
-  type Skill,
   skillApi,
   skillCategories,
   skillCategoryLabels,
@@ -28,6 +28,7 @@ import {
   type SkillForm,
   skillList,
   type SkillPaths,
+  type SkillWithUsage,
   toSkillForm,
   toSkillInput,
 } from './skill-data';
@@ -62,14 +63,21 @@ function Proficiency({ value }: { value: number }) {
   );
 }
 
+/** "3 projects · 1 year 7 months": how many projects used the skill and the time they cover (#225). */
+function usageText(skill: SkillWithUsage) {
+  const count = skill.projects.length;
+  if (count === 0) return null;
+  return `${count} ${count === 1 ? 'project' : 'projects'} · ${monthsText(skill.usedMonths)}`;
+}
+
 function SkillItem({
   skill,
   paths,
   onDelete,
 }: {
-  skill: Skill;
+  skill: SkillWithUsage;
   paths: SkillPaths;
-  onDelete: (skill: Skill) => Promise<void>;
+  onDelete: (skill: SkillWithUsage) => Promise<void>;
 }) {
   const titleId = `skill-${skill.id}`;
   return (
@@ -81,7 +89,18 @@ function SkillItem({
         </h3>
         <Proficiency value={skill.proficiency} />
       </div>
-      <TextBlocks entries={[['Notes', skill.memo]]} />
+      <TextBlocks
+        entries={[
+          ['Notes', skill.memo],
+          ['Used in', usageText(skill)],
+          [
+            'Projects',
+            skill.projects.length > 0
+              ? skill.projects.map((project) => project.name).join(', ')
+              : null,
+          ],
+        ]}
+      />
       <div className="flex flex-wrap gap-2 pt-1">
         <Button asChild variant="outline" size="sm">
           <Link to={paths.edit(skill.id)} aria-label={`Edit ${skill.name}`}>
@@ -111,7 +130,7 @@ function SkillItem({
 
 export function SkillList({ paths }: { paths: SkillPaths }) {
   return (
-    <ItemListPage<Skill>
+    <ItemListPage<SkillWithUsage>
       list={skillList}
       title="Skills"
       description="See the technologies you can work with, by category."

@@ -95,7 +95,7 @@ test('projects filter by a year they ran in, and search their technologies', () 
     name: string,
     startDate: string,
     endDate: string | null,
-    technologies: string[] = [],
+    summary: string | null = null,
   ): Project => ({
     id,
     name,
@@ -104,15 +104,15 @@ test('projects filter by a year they ran in, and search their technologies', () 
     startDate,
     endDate,
     role: null,
-    summary: null,
+    summary,
     contributions: null,
-    technologies,
+    skillIds: [],
     repositoryUrl: null,
     serviceUrl: null,
   });
   const rows = [
     project(1, 'Old', '2019-05-01', '2020-02-01'),
-    project(2, 'Long', '2020-06-01', '2022-01-01', ['Rust']),
+    project(2, 'Long', '2020-06-01', '2022-01-01', 'Rust backend'),
     project(3, 'Running', '2024-01-01', null),
   ];
   expect(projectYears(rows, 2025)).toEqual([2025, 2024, 2022, 2021, 2020, 2019]);

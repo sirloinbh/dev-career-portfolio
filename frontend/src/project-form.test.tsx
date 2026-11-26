@@ -13,6 +13,7 @@ import { type ErrorBody, validation } from './test/server-errors';
 
 afterEach(() => {
   careerRows = [];
+  skillRows.splice(3);
   act(() => {
     toast.dismiss();
   });
@@ -28,10 +29,17 @@ const past: Project = {
   role: '프론트엔드',
   summary: null,
   contributions: null,
-  technologies: ['React', 'Elasticsearch'],
+  skillIds: [1, 2],
   repositoryUrl: 'https://github.com/example/wiki',
   serviceUrl: null,
 };
+
+/** The skills the fake API lists for the Skills used picker; a POST to /api/skills adds one. */
+const skillRows: { id: number; name: string }[] = [
+  { id: 1, name: 'React' },
+  { id: 2, name: 'Elasticsearch' },
+  { id: 3, name: 'Redis' },
+];
 
 /** The careers the fake API lists for the Career picker. */
 let careerRows: Career[] = [];
@@ -58,6 +66,15 @@ function fakeApi(rows: Project[]) {
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
       if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
       if (method === 'GET' && url === '/api/careers') return json({ careers: careerRows });
+      if (url === '/api/skills' && method === 'GET') {
+        return json({ skills: skillRows.map((row) => ({ ...row, projects: [], usedMonths: 0 })) });
+      }
+      if (url === '/api/skills' && method === 'POST') {
+        const skill = { ...(body as { name: string }), id: 200 };
+        skillRows.push(skill);
+        calls.push({ method, url, body });
+        return json({ skill }, 201);
+      }
       const known =
         (url === '/api/projects' && (method === 'GET' || method === 'POST')) ||
         (id !== null && url === `/api/projects/${id}` && (method === 'PUT' || method === 'DELETE'));
@@ -121,7 +138,8 @@ test('a new project with no end date is sent as running and listed as Ongoing', 
   type('Project name', '주문 정산 자동화');
   type('Role', '백엔드 개발');
   type('Start date', '2024-05-01');
-  type('Technologies', ' TypeScript, PostgreSQL ,, AWS Lambda, ');
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'React' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Redis' }));
   type('Repository link', 'https://github.com/example/settlement');
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -136,8 +154,8 @@ test('a new project with no end date is sent as running and listed as Ongoing', 
     role: '백엔드 개발',
     summary: '',
     contributions: '',
-    // Pieces are trimmed and the empty ones from extra commas dropped.
-    technologies: ['TypeScript', 'PostgreSQL', 'AWS Lambda'],
+    // The skills go as ids, in the order they were checked.
+    skillIds: [1, 3],
     repositoryUrl: 'https://github.com/example/settlement',
     serviceUrl: '',
   });
@@ -150,15 +168,12 @@ test('a new project with no end date is sent as running and listed as Ongoing', 
   expect(await screen.findByText("Added '주문 정산 자동화'")).toBeInTheDocument();
 });
 
-test('the hints say how to leave a project running and how to list technologies', async () => {
+test('the hints say how to leave a project running and how to write the links', async () => {
   fakeApi([]);
   open('/projects/new');
   await screen.findByRole('heading', { level: 1, name: 'Add project' });
   expect(field('End date')).toHaveAccessibleDescription(
     'Leave it empty if the project is still running. The list shows "Ongoing".',
-  );
-  expect(field('Technologies')).toHaveAccessibleDescription(
-    'Separate items with commas. Up to 30 items, 50 characters each.',
   );
   expect(field('Repository link')).toHaveAccessibleDescription(
     'Use an address that starts with http:// or https://.',
@@ -213,18 +228,20 @@ test('a project is edited with its saved values filled in', async () => {
   expect(window.location.pathname).toBe('/projects/1/edit');
   expect(field('Project name')).toHaveValue('사내 위키 검색');
   expect(field('End date')).toHaveValue('2021-08-31');
-  expect(field('Technologies')).toHaveValue('React, Elasticsearch');
+  expect(await screen.findByRole('checkbox', { name: 'React' })).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Elasticsearch' })).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Redis' })).not.toBeChecked();
   expect(field('Repository link')).toHaveValue('https://github.com/example/wiki');
   expect(field('Service link')).toHaveValue('');
 
-  type('Technologies', 'React, Elasticsearch, Redis');
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Redis' }));
   type('Repository link', '');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('heading', { level: 1, name: 'Projects' })).toBeInTheDocument();
   const put = api.calls.find((call) => call.method === 'PUT');
   expect(put?.url).toBe('/api/projects/1');
   expect(put?.body).toMatchObject({
-    technologies: ['React', 'Elasticsearch', 'Redis'],
+    skillIds: [1, 2, 3],
     repositoryUrl: '',
     endDate: '2021-08-31',
   });
@@ -351,4 +368,34 @@ test("a project is linked to a career picked in the form, and the list shows tha
   const item = await screen.findByRole('listitem', { name: '결제 리뉴얼' });
   expect(postBody(api)).toMatchObject({ careerId: 5 });
   expect(item).toHaveTextContent('한빛소프트');
+});
+
+test('a skill that is not in the list is added from the form and checked; a known name just gets checked', async () => {
+  const api = fakeApi([]);
+  open('/projects/new');
+  await screen.findByRole('heading', { level: 1, name: 'Add project' });
+  await screen.findByRole('checkbox', { name: 'React' });
+
+  // A name already in the list (letter case and spaces ignored) is checked, and nothing is created.
+  type('New skill', '  redis ');
+  fireEvent.click(screen.getByRole('button', { name: 'Add skill' }));
+  expect(
+    await screen.findByText('Redis is already in your skills list, so it is checked.'),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: 'Redis' })).toBeChecked();
+  expect(api.calls.some((call) => call.method === 'POST')).toBe(false);
+
+  // A new name is created as "Other", level 1, then checked.
+  type('New skill', 'Terraform');
+  fireEvent.click(screen.getByRole('button', { name: 'Add skill' }));
+  expect(await screen.findByRole('checkbox', { name: 'Terraform' })).toBeChecked();
+  const created = api.calls.find((call) => call.url === '/api/skills' && call.method === 'POST');
+  expect(created?.body).toEqual({ name: 'Terraform', category: 'other', proficiency: 1, memo: '' });
+
+  type('Project name', 'Infra work');
+  type('Start date', '2024-05-01');
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  await screen.findByRole('heading', { level: 1, name: 'Projects' });
+  const saved = api.calls.find((call) => call.url === '/api/projects' && call.method === 'POST');
+  expect(saved?.body).toMatchObject({ skillIds: [3, 200] });
 });

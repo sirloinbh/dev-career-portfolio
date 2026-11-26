@@ -165,7 +165,16 @@ test('every field is sent as typed, and the status comes from the list', async (
     within(field('Status'))
       .getAllByRole('option')
       .map((option) => option.textContent),
-  ).toEqual(['Drafting', 'Submitted', 'Closed']);
+  ).toEqual([
+    'Drafting',
+    'Submitted',
+    'Document passed',
+    'First interview',
+    'Second interview',
+    'Offer',
+    'Rejected',
+    'Withdrawn',
+  ]);
   type('Company name', '바다물류');
   type('Position', '프론트엔드');
   type('Job posting link', 'https://careers.example.com/jobs/7');
@@ -386,7 +395,7 @@ test('the form can be filled and saved with the keyboard alone', async () => {
   expect(field('Deadline')).toHaveFocus();
   await user.tab();
   expect(field('Status')).toHaveFocus();
-  await user.selectOptions(field('Status'), 'Closed');
+  await user.selectOptions(field('Status'), 'Rejected');
   await user.tab();
   expect(field('Notes')).toHaveFocus();
   // Enter in a textarea is a new line, so the keyboard user tabs on to the submit button.
@@ -406,7 +415,7 @@ test('the form can be filled and saved with the keyboard alone', async () => {
     position: '게임 서버',
     postingUrl: '',
     deadline: null,
-    status: 'closed',
+    status: 'rejected',
     memo: '불합격',
   });
 });

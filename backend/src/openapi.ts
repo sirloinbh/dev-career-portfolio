@@ -106,6 +106,10 @@ export const operations: Record<string, Operation> = {
   },
   'DELETE /api/applications/:id': { summary: 'Delete a job application', status: [204, 400, 404] },
 
+  'GET /api/applications/:id/status-history': {
+    summary: 'List the hiring stage changes of an application, oldest first, each with its day',
+    status: [200, 400, 404],
+  },
   'GET /api/cover-letter-answers': {
     summary:
       'Search earlier cover letter questions and answers by text (q), leaving out one application (exclude)',

@@ -18,7 +18,7 @@ const running: Project = {
   role: '백엔드 개발',
   summary: '월말 정산을 배치로 옮긴 프로젝트',
   contributions: '정산 시간 6시간 → 40분\n대사 오류 0건',
-  technologies: ['TypeScript', 'PostgreSQL', 'AWS Lambda'],
+  skillIds: [1, 2, 3],
   repositoryUrl: 'https://github.com/example/settlement',
   serviceUrl: 'https://settlement.example.com',
 };
@@ -33,10 +33,17 @@ const finished: Project = {
   role: null,
   summary: null,
   contributions: null,
-  technologies: [],
+  skillIds: [],
   repositoryUrl: null,
   serviceUrl: null,
 };
+
+/** The skills the fake API lists; a project names them by id. */
+const skillRows = [
+  { id: 1, name: 'TypeScript' },
+  { id: 2, name: 'PostgreSQL' },
+  { id: 3, name: 'AWS Lambda' },
+];
 
 /** Answers /api/projects with `projects` (or an error) and /api/health with a date. */
 function serve(projects: { status: number; body: object } | 'offline') {
@@ -46,6 +53,9 @@ function serve(projects: { status: number; body: object } | 'offline') {
       const url = String(input);
       if (url === '/api/health') {
         return Promise.resolve(new Response(JSON.stringify({ today: '2026-11-05' })));
+      }
+      if (url === '/api/skills') {
+        return Promise.resolve(new Response(JSON.stringify({ skills: skillRows })));
       }
       if (projects === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
       return Promise.resolve(
@@ -102,6 +112,8 @@ test('a running project shows "Ongoing" and every block that was filled in', asy
   const list = await screen.findByRole('list', { name: 'Project list' });
 
   const item = within(list).getByRole('listitem', { name: '주문 정산 자동화' });
+  // The skill names come from the skills list, which loads beside the projects.
+  await within(item).findByText('TypeScript');
   expect(runningBadge(item)).toBeInTheDocument();
   expect(item).toHaveTextContent('한빛소프트 · 백엔드 개발');
   expect(item).toHaveTextContent('May 1, 2024 – Present');

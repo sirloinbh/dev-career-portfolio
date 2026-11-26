@@ -41,6 +41,13 @@ const questionsOf: Record<string, CoverLetterQuestion[]> = {
   '2': [question(9, '바다물류 문항', '물류 답변', null)],
 };
 
+// The stage changes every fake application has (#229).
+const stages = [
+  { id: 1, fromStatus: null, status: 'drafting', date: '2026-10-20' },
+  { id: 2, fromStatus: 'drafting', status: 'submitted', date: '2026-11-01' },
+  { id: 3, fromStatus: 'submitted', status: 'first_interview', date: '2026-11-12' },
+];
+
 type Reply = { status: number; body: object } | 'offline';
 
 /** Lets the next answer for a held application's questions out (see `serve`). */
@@ -61,6 +68,7 @@ function serve(override?: Reply, hold?: string) {
       if (url === '/api/health') return json({ today: '2026-11-05' });
       urls.push(url);
       if (url === '/api/applications') return json({ applications: [cloud, sea] });
+      if (/^\/api\/applications\/\d+\/status-history$/.test(url)) return json({ history: stages });
       const id = /^\/api\/applications\/([^/]+)\/questions$/.exec(url)?.[1];
       if (id === undefined) return json({ error: 'API not found' }, 404);
       if (override === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
@@ -250,4 +258,18 @@ test('display rules: the count without spaces leaves out spaces, tabs, line brea
   expect(answerLengthWithoutSpaces('a\tb\r\nc\u3000d')).toBe(4);
   expect(answerLengthWithoutSpaces(' \n\t ')).toBe(0);
   expect(answerLengthWithoutSpaces('좋아요 👍 👍')).toBe(5);
+});
+
+test('the page lists the stage changes of the application with their dates', async () => {
+  serve();
+  open('/applications/1');
+  const list = await screen.findByRole('list', { name: 'Status changes' });
+  const rows = within(list).getAllByRole('listitem');
+  expect(rows).toHaveLength(3);
+  expect(rows[0]).toHaveTextContent('October 20, 2026');
+  expect(rows[0]).toHaveTextContent('Started as');
+  expect(rows[0]).toHaveTextContent('Drafting');
+  expect(rows[2]).toHaveTextContent('November 12, 2026');
+  expect(rows[2]).toHaveTextContent('Submitted');
+  expect(rows[2]).toHaveTextContent('First interview');
 });
