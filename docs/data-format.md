@@ -17,7 +17,9 @@ Settings can download every record as one JSON file (`GET /api/data/export`) and
     "skills": [],
     "certifications": [],
     "applications": [],
-    "cover_letter_questions": []
+    "cover_letter_questions": [],
+    "application_status_history": [],
+    "project_skills": []
   }
 }
 ```

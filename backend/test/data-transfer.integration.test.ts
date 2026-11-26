@@ -64,6 +64,14 @@ async function seed(pool: Pool) {
      VALUES ((SELECT id FROM applications LIMIT 1), '지원 동기는?', '성장하고 싶습니다', 500, 0),
             ((SELECT id FROM applications LIMIT 1), '강점은?', NULL, NULL, 1)`,
   );
+  await pool.query(
+    `INSERT INTO application_status_history (application_id, from_status, status)
+     VALUES ((SELECT id FROM applications LIMIT 1), NULL, 'drafting')`,
+  );
+  await pool.query(
+    `INSERT INTO project_skills (project_id, skill_id)
+     VALUES ((SELECT id FROM projects LIMIT 1), (SELECT id FROM skills LIMIT 1))`,
+  );
 }
 
 const exportAll = async (call: Call) => {
