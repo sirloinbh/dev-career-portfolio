@@ -136,17 +136,20 @@ function ExperienceTotal({ careers }: { careers: Career[] }) {
 /** The total, then the careers, each with its linked projects. The project list loads beside the careers. */
 function CareerRows({
   rows,
+  allRows,
   paths,
   onDelete,
 }: {
   rows: Career[];
+  /** Every career, so the total does not change with the search or filter (#259). */
+  allRows: Career[];
   paths: CareerPaths;
   onDelete: (career: Career) => Promise<void>;
 }) {
   const { rows: projects } = useListQuery(projectList);
   return (
     <>
-      <ExperienceTotal careers={rows} />
+      <ExperienceTotal careers={allRows} />
       <ItemUl label="Career list">
         {rows.map((row) => (
           <CareerItem
@@ -180,7 +183,9 @@ export function CareerList({ paths }: { paths: CareerPaths }) {
       deleteName={(row) => row.company}
       removeRow={(row) => careerApi.remove(row.id)}
       tools={careerTools}
-      renderRows={(rows, onDelete) => <CareerRows rows={rows} paths={paths} onDelete={onDelete} />}
+      renderRows={(rows, onDelete, allRows) => (
+        <CareerRows rows={rows} allRows={allRows} paths={paths} onDelete={onDelete} />
+      )}
     />
   );
 }
