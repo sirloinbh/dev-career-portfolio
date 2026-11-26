@@ -14,7 +14,7 @@ const migration = (name: string) =>
 // Runs the migrations in a scratch schema, so the shared test tables are never touched. Requires career_test
 // (any state); skipped, not passed, without it.
 test(
-  'migration 013 moves project technologies into skill links without losing a name (#225)',
+  'migration 013 moves project technologies into skill links without losing a name and can run again (#225)',
   { skip: !url },
   async (t) => {
     const client = new Client({ connectionString: url });
@@ -80,15 +80,23 @@ test(
       { project: 'third', skills: [] },
     ]);
 
-    // The column and the helper function are gone, and running the file again changes nothing.
-    const column = await client.query(
-      `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = $1 AND table_name = 'projects' AND column_name = 'technologies'`,
-      [schema],
+    // The names are cleared from the column, so running the file again moves nothing and brings nothing back.
+    const left = await client.query(
+      'SELECT count(*)::int AS n FROM projects WHERE cardinality(technologies) > 0',
     );
-    assert.equal(column.rowCount, 0);
+    assert.equal(left.rows[0]?.n, 0);
+    await client.query(
+      'DELETE FROM project_skills WHERE project_id = (SELECT id FROM projects WHERE name = $1)',
+      ['third'],
+    );
+    await client.query(
+      "DELETE FROM project_skills WHERE skill_id = (SELECT id FROM skills WHERE name = 'Rust')",
+    );
+    await client.query("DELETE FROM skills WHERE name = 'Rust'");
     await client.query(sql);
     const again = await client.query('SELECT count(*)::int AS n FROM project_skills');
-    assert.equal(again.rows[0]?.n, 6);
+    assert.equal(again.rows[0]?.n, 5);
+    const rust = await client.query("SELECT 1 FROM skills WHERE name = 'Rust'");
+    assert.equal(rust.rowCount, 0);
   },
 );

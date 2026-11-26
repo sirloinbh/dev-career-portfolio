@@ -1,9 +1,10 @@
 -- Project technologies become links to the skills table (#225). A project_skills row says one skill was used in
 -- one project; deleting either side deletes the link. The old projects.technologies names are moved in first:
 -- a name matches a skill ignoring letter case and surrounding spaces, and a name with no match becomes a new
--- skill (category 'other', proficiency 1, so it can be fixed on the Skills screen). Then the column is dropped,
--- with its CHECK constraints and the helper function from 011. Safe to run again: the move runs only while the
--- column exists.
+-- skill (category 'other', proficiency 1, so it can be fixed on the Skills screen). The names are then cleared
+-- from the column, so running this file again moves nothing and cannot bring back a link or skill that was
+-- removed on purpose. The column itself stays, unused and empty: CI (and a rebuild from scratch) runs every file
+-- twice, and 011 still refers to the column, so dropping it here would break the second run. Safe to run again.
 CREATE TABLE IF NOT EXISTS project_skills (
   project_id bigint NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
   skill_id bigint NOT NULL REFERENCES skills (id) ON DELETE CASCADE,
@@ -33,8 +34,6 @@ BEGIN
     WHERE btrim(t.name) <> ''
     ON CONFLICT DO NOTHING;
 
-    ALTER TABLE projects DROP COLUMN technologies;
+    UPDATE projects SET technologies = '{}' WHERE cardinality(technologies) > 0;
   END IF;
 END $$;
-
-DROP FUNCTION IF EXISTS projects_technologies_valid(text[]);
