@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
@@ -19,7 +19,7 @@ const summary: Dashboard = {
     { id: 7, name: '정보처리기사', issuer: '한국산업인력공단', expiryDate: '2026-12-01' },
   ],
   recentlyChanged: [
-    { section: 'skills', id: 3, title: 'TypeScript', updatedAt: '2026-11-15T03:00:00.000Z' },
+    { section: 'skills', id: 3, title: 'TypeScript', updatedAt: '2026-11-15T20:00:00.000Z' },
   ],
 };
 
@@ -37,7 +37,7 @@ function serve(body: Dashboard | 'offline') {
       return Promise.resolve(new Response(JSON.stringify(body)));
     }),
   );
-  window.history.replaceState(null, '', '/');
+  window.history.replaceState(null, '', '/dashboard');
   render(<App />);
 }
 
@@ -61,6 +61,8 @@ test('the dashboard shows counts, deadlines, expiries and recent changes with li
   const expiring = screen.getByRole('region', { name: 'Expiring certifications' });
   expect(within(expiring).getByText('Expires December 1, 2026 · D-15')).toBeInTheDocument();
   const recent = screen.getByRole('region', { name: 'Recently changed' });
+  // 20:00 UTC on the 15th is already the 16th in Seoul.
+  expect(within(recent).getByText('Skills · November 16, 2026')).toBeInTheDocument();
   expect(within(recent).getByRole('link', { name: /TypeScript/ })).toHaveAttribute(
     'href',
     '/skills',
@@ -92,7 +94,6 @@ test('a card with nothing to show says so', async () => {
 
 test('a failed load is announced', async () => {
   serve('offline');
-  fireEvent.click(await screen.findByRole('link', { name: 'Dashboard' }));
   expect(
     await screen.findByText(/reach|fetch/i, { selector: '[role="alert"]' }),
   ).toBeInTheDocument();

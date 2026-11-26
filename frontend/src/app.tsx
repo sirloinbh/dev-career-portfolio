@@ -2,6 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import {
   Award,
   Briefcase,
+  CalendarCheck,
   FileText,
   FolderKanban,
   GraduationCap,
@@ -33,10 +34,12 @@ import { EditProject, NewProject, ProjectList } from './projects';
 import { AccountActions, SignInGate } from './sign-in';
 import type { SkillPaths } from './skill-data';
 import { EditSkill, NewSkill, SkillList } from './skills';
+import { TodayPage } from './today';
 
 // Every page URL lives here (central docs/directory-rules.md).
 const pages = {
-  overview: '/',
+  today: '/',
+  dashboard: '/dashboard',
   educations: '/educations',
   newEducation: '/educations/new',
   editEducation: '/educations/:id/edit',
@@ -109,13 +112,14 @@ const careerPaths: CareerPaths = {
 
 // Main menu (LNB) items, in display order.
 const nav: NavItem[] = [
-  { to: pages.overview, label: 'Dashboard', icon: LayoutDashboard },
+  { to: pages.today, label: 'Today', icon: CalendarCheck },
   { to: pages.educations, label: 'Education', icon: GraduationCap },
   { to: pages.careers, label: 'Career', icon: Briefcase },
   { to: pages.projects, label: 'Projects', icon: FolderKanban },
   { to: pages.skills, label: 'Skills', icon: Wrench },
   { to: pages.certifications, label: 'Certifications', icon: Award },
   { to: pages.applications, label: 'Cover letters', icon: FileText },
+  { to: pages.dashboard, label: 'Dashboard', icon: LayoutDashboard },
   { to: pages.settings, label: 'Settings', icon: Settings2 },
 ];
 
@@ -179,8 +183,9 @@ function AppRoutes() {
       <SignInGate>
         <AppShell appName="Dev Career Portfolio" nav={nav} actions={<AccountActions />}>
           <Routes>
+            <Route path={pages.today} element={<TodayPage paths={applicationPaths} />} />
             <Route
-              path={pages.overview}
+              path={pages.dashboard}
               element={<DashboardScreen paths={dashboardPaths} health={health} />}
             />
             <Route path={pages.educations} element={<EducationList paths={educationPaths} />} />
@@ -237,7 +242,7 @@ function AppRoutes() {
                 />
               }
             />
-            <Route path="*" element={<Navigate to={pages.overview} replace />} />
+            <Route path="*" element={<Navigate to={pages.today} replace />} />
           </Routes>
         </AppShell>
         <Toaster />

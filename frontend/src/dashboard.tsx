@@ -15,7 +15,7 @@ import {
 import { type Health, healthText } from './health';
 import { apiKey, useApiQuery } from './lib/query';
 import { PageHeader } from './page-header';
-import { daysUntil, formatDate } from './service-date';
+import { daysUntil, formatDate, serviceToday } from './service-date';
 
 export type DashboardPaths = Record<DashboardSection, string>;
 
@@ -144,7 +144,7 @@ export function DashboardScreen({ paths, health }: { paths: DashboardPaths; heal
                       >
                         <span className="text-body wrap-anywhere break-keep">{row.title}</span>
                         <span className="text-body-sm text-muted-foreground">
-                          {`${sectionLabels[row.section]} · ${formatDate(row.updatedAt.slice(0, 10))}`}
+                          {`${sectionLabels[row.section]} · ${formatDate(serviceToday(new Date(row.updatedAt)))}`}
                         </span>
                       </Link>
                     </li>

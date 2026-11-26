@@ -36,7 +36,8 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
   }
 
   const shim = {
-    query: (...args: unknown[]) => (client.query as (...a: unknown[]) => unknown)(...args),
+    query: (...args: unknown[]) =>
+      (client.query as (...a: unknown[]) => unknown).apply(client, args),
   } as unknown as Pool;
   await withApi(
     shim,

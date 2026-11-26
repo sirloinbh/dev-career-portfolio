@@ -14,28 +14,52 @@ const emptySummary = {
   recentlyChanged: [],
 };
 
+// Answers /api/health with `body`; the start page's /api/applications gets an empty list and the Dashboard's
+// /api/dashboard an empty summary.
 const health = (body: object, status = 200) =>
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL) =>
       Promise.resolve(
-        new Response(
-          JSON.stringify(String(input).endsWith('/api/dashboard') ? emptySummary : body),
-          { status: String(input).endsWith('/api/dashboard') ? 200 : status },
-        ),
+        new URL(String(input), 'http://localhost').pathname === '/api/applications'
+          ? new Response(JSON.stringify({ applications: [] }))
+          : new URL(String(input), 'http://localhost').pathname === '/api/dashboard'
+            ? new Response(JSON.stringify(emptySummary))
+            : new Response(JSON.stringify(body), { status }),
       ),
     ),
   );
 
-test('shows the server date from /api/health on the overview', async () => {
+test('opens on Today and shows the server date from /api/health on the Dashboard', async () => {
+  health({ today: '2026-10-26' });
+  window.history.replaceState(null, '', '/');
+  render(<App />);
+  expect(screen.getByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
+  expect(await screen.findByText('Nothing due')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Add application' })).toHaveAttribute(
+    'href',
+    '/applications/new',
+  );
+  const menu = screen.getByRole('navigation', { name: 'Main menu' });
+  fireEvent.click(within(menu).getByRole('link', { name: 'Dashboard' }));
+  expect(window.location.pathname).toBe('/dashboard');
+  expect(await screen.findByText('Server connected · 2026-10-26')).toBeInTheDocument();
+});
+
+test('the menu starts with Today and has Dashboard just above Settings', () => {
   health({ today: '2026-10-26' });
   render(<App />);
-  expect(screen.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
-  expect(await screen.findByText('Server connected · 2026-10-26')).toBeInTheDocument();
+  const menu = screen.getByRole('navigation', { name: 'Main menu' });
+  const labels = within(menu)
+    .getAllByRole('link')
+    .map((link) => link.textContent);
+  expect(labels[0]).toBe('Today');
+  expect(labels.slice(-2)).toEqual(['Dashboard', 'Settings']);
 });
 
 test('reports a server error as an alert', async () => {
   health({ error: 'Cannot connect to the database' }, 503);
+  window.history.replaceState(null, '', '/dashboard');
   render(<App />);
   expect(await findLive('alert')).toHaveTextContent('Cannot connect to the database');
 });
@@ -53,11 +77,11 @@ test('each page has its own address and is marked in the main menu', async () =>
   );
 });
 
-test('an unknown address falls back to the overview', async () => {
+test('an unknown address falls back to Today', async () => {
   health({ today: '2026-10-26' });
   window.history.replaceState(null, '', '/no-such-page');
   render(<App />);
-  expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
   expect(window.location.pathname).toBe('/');
 });
 
@@ -86,6 +110,7 @@ function deployedPage(me: () => Response) {
         return Promise.resolve(new Response(JSON.stringify({ today: '2026-10-26' })));
       if (path === '/api/dashboard')
         return Promise.resolve(new Response(JSON.stringify(emptySummary)));
+      if (path === '/api/applications') return Promise.resolve(json({ applications: [] }));
       throw new Error(`Unexpected request to ${path}`);
     }),
   );
@@ -110,7 +135,7 @@ test('a signed-out visitor sees the checking state, then is sent to sign-in', as
 test('a signed-in visitor gets the app with the account name and a sign-out link', async () => {
   deployedPage(() => json({ user: { id: 'u1', email: 'me@example.com', name: 'Demo Person' } }));
   render(<App />);
-  expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
   expect(screen.getByText('Demo Person')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Sign out' })).toHaveAttribute(
     'href',

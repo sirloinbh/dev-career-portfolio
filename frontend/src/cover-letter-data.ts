@@ -20,18 +20,27 @@ export type CoverLetterQuestion = {
  */
 export const answerLength = (answer: string | null) => (answer ? [...answer].length : 0);
 
+/**
+ * Characters in an answer without any whitespace: spaces, tabs, line breaks and other Unicode white space
+ * are left out (#232). Some companies count this way. Counted by code point like `answerLength`.
+ */
+export const answerLengthWithoutSpaces = (answer: string | null) =>
+  answer ? [...answer.replace(/\s/gu, '')].length : 0;
+
 const count = (value: number) => value.toLocaleString('en-US');
 
 /**
- * "1,204 characters", "1,204 / 1,500 characters", or "1,620 / 1,500 characters · 120 over the limit".
- * #37 stores an answer over the limit, so the screen is where it is pointed out.
+ * "1,204 characters (1,032 without spaces)", "1,204 characters (1,032 without spaces) / 1,500", or
+ * "1,620 characters (1,400 without spaces) / 1,500 · 120 over the limit". The limit and the warning use the
+ * count with spaces. #37 stores an answer over the limit, so the screen is where it is pointed out.
  */
 export function answerLengthText(question: Pick<CoverLetterQuestion, 'answer' | 'charLimit'>) {
   const length = answerLength(question.answer);
-  if (question.charLimit === null) return `${count(length)} characters`;
-  const text = `${count(length)} / ${count(question.charLimit)} characters`;
+  const text = `${count(length)} characters (${count(answerLengthWithoutSpaces(question.answer))} without spaces)`;
+  if (question.charLimit === null) return text;
+  const withLimit = `${text} / ${count(question.charLimit)}`;
   const over = length - question.charLimit;
-  return over > 0 ? `${text} · ${count(over)} over the limit` : text;
+  return over > 0 ? `${withLimit} · ${count(over)} over the limit` : withLimit;
 }
 
 /** The server takes at most this many questions per application (#37). */
