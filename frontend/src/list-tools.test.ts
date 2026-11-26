@@ -100,6 +100,7 @@ test('projects filter by a year they ran in, and search their technologies', () 
     id,
     name,
     organization: null,
+    careerId: null,
     startDate,
     endDate,
     role: null,
