@@ -6,6 +6,7 @@ import {
   FileText,
   FolderKanban,
   GraduationCap,
+  History,
   LayoutDashboard,
   Settings2,
   Wrench,
@@ -33,6 +34,7 @@ import { EditProject, NewProject, ProjectList } from './projects';
 import { AccountActions, SignInGate } from './sign-in';
 import type { SkillPaths } from './skill-data';
 import { EditSkill, NewSkill, SkillList } from './skills';
+import { TimelinePage, type TimelinePaths } from './timeline';
 import { TodayPage } from './today';
 
 // Every page URL lives here (central docs/directory-rules.md).
@@ -59,6 +61,7 @@ const pages = {
   applicationQuestions: '/applications/:id',
   editQuestions: '/applications/:id/questions/edit',
   editApplication: '/applications/:id/edit',
+  timeline: '/timeline',
   settings: '/settings',
 } as const;
 
@@ -101,6 +104,12 @@ const careerPaths: CareerPaths = {
   projectEdit: projectPaths.edit,
 };
 
+const timelinePaths: TimelinePaths = {
+  career: careerPaths.edit,
+  education: educationPaths.edit,
+  project: projectPaths.edit,
+};
+
 // Main menu (LNB) items, in display order.
 const nav: NavItem[] = [
   { to: pages.today, label: 'Today', icon: CalendarCheck },
@@ -109,6 +118,7 @@ const nav: NavItem[] = [
   { to: pages.projects, label: 'Projects', icon: FolderKanban },
   { to: pages.skills, label: 'Skills', icon: Wrench },
   { to: pages.certifications, label: 'Certifications', icon: Award },
+  { to: pages.timeline, label: 'Timeline', icon: History },
   { to: pages.applications, label: 'Cover letters', icon: FileText },
   { to: pages.dashboard, label: 'Dashboard', icon: LayoutDashboard },
   { to: pages.settings, label: 'Settings', icon: Settings2 },
@@ -185,6 +195,7 @@ function AppRoutes() {
                 />
               }
             />
+            <Route path={pages.timeline} element={<TimelinePage paths={timelinePaths} />} />
             <Route path={pages.educations} element={<EducationList paths={educationPaths} />} />
             <Route path={pages.newEducation} element={<NewEducation paths={educationPaths} />} />
             <Route path={pages.editEducation} element={<EditEducation paths={educationPaths} />} />
