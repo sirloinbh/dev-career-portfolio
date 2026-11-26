@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { testDatabaseUrl } from './helpers.js';
+import { lockPortfolio, testDatabaseUrl } from './helpers.js';
 
 const url = testDatabaseUrl();
 
@@ -14,6 +14,7 @@ test(
   async (t) => {
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
+    await lockPortfolio(t);
     const insert = (company: string, extra = '', value: string | null = null) =>
       pool.query(
         `INSERT INTO careers (company, employment_type, start_date${extra ? `, ${extra}` : ''})

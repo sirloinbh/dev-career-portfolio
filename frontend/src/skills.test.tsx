@@ -2,12 +2,14 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
-import { groupSkills, proficiencyText, type Skill } from './skill-data';
+import { groupSkills, proficiencyText, type Skill, type SkillWithUsage } from './skill-data';
 import { findLive, getLive } from './test/live';
 
 // All skills here are made up for the test.
 
 const skill = (id: number, name: string, category: Skill['category'], proficiency: number) => ({
+  projects: [],
+  usedMonths: 0,
   id,
   name,
   category,
@@ -156,4 +158,26 @@ test('grouping keeps the API order within a group', () => {
   // The API sends the strongest first; the screen does not re-sort.
   expect(groups[0].skills.map((item) => item.name)).toEqual(['Go', 'TypeScript']);
   expect(proficiencyText(1)).toBe('Proficiency 1 of 5, Beginner');
+});
+
+test('a skill shows the projects that used it and the time they cover (#225)', async () => {
+  const used: SkillWithUsage = {
+    ...typescript,
+    usedMonths: 19,
+    projects: [
+      { id: 7, name: '주문 정산 자동화', startDate: '2026-01-01', endDate: null },
+      { id: 5, name: '사내 위키 검색', startDate: '2020-01-01', endDate: '2021-06-30' },
+    ],
+  };
+  serve({ status: 200, body: { skills: [used, skill(2, 'Go', 'language', 3)] } });
+  openSkills();
+  await screen.findByRole('heading', { level: 2, name: 'Language 2 entries' });
+  const list = groupList('Language 2 entries');
+  const item = within(list).getByRole('listitem', { name: 'TypeScript' });
+  expect(item).toHaveTextContent('2 projects · 1 year 7 months');
+  expect(item).toHaveTextContent('주문 정산 자동화, 사내 위키 검색');
+  // A skill no project used shows no usage block.
+  const unused = within(list).getByRole('listitem', { name: 'Go' });
+  expect(unused).not.toHaveTextContent('Used in');
+  expect(unused).not.toHaveTextContent('Projects');
 });

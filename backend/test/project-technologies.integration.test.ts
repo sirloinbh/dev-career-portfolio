@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { lockProjects, testDatabaseUrl } from './helpers.js';
+import { lockPortfolio, testDatabaseUrl } from './helpers.js';
 
 const url = testDatabaseUrl();
 
@@ -12,9 +12,9 @@ test(
   'the database refuses blank and over-length technology items that skip the API (#191)',
   { skip: !url },
   async (t) => {
-    await lockProjects(t);
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
+    await lockPortfolio(t);
     const insert = (technologies: (string | null)[]) =>
       pool.query(
         `INSERT INTO projects (name, start_date, technologies) VALUES ('프로젝트', '2020-01-01', $1)`,
