@@ -1,12 +1,12 @@
 // Search, filter, and sort for the resume item lists (#238). This file holds the pure rules; list-toolbar.tsx draws the
 // controls. Each section describes its own fields with a ListTools, and the choices live in the URL query.
 
-export type ListFilterOption<Row> = {
+type ListFilterOption<Row> = {
   value: string;
   label: string;
   matches: (row: Row) => boolean;
 };
-export type ListSortOption<Row> = {
+type ListSortOption<Row> = {
   value: string;
   label: string;
   /** Left out for the first option when it is the order the API already sends. */
