@@ -15,11 +15,14 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
   await lockApplications(t);
   const client = new Client({ connectionString: url });
   await client.connect();
-  t.after(() => client.end());
+  // Hooks run in the order registered, so one hook rolls back and then closes the client.
+  t.after(async () => {
+    await client.query('ROLLBACK');
+    await client.end();
+  });
   // Fixtures live in one transaction that is rolled back, and the table locks keep the other test
   // files (which run in parallel and empty these tables) out until then.
   await client.query('BEGIN');
-  t.after(() => client.query('ROLLBACK'));
   await client.query(
     `LOCK TABLE applications, careers, certifications, educations, projects, skills
      IN ACCESS EXCLUSIVE MODE`,
