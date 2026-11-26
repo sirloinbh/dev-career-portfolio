@@ -15,7 +15,7 @@ export async function deleteItem({
   name,
 }: {
   remove: () => Promise<unknown>;
-  /** What the row is: '학력', '이력'. */
+  /** What the row is: 'education', 'career'. */
   noun: string;
   /** The row's own name, quoted in the success message. */
   name: string;
