@@ -229,3 +229,21 @@ test('the Edit screen reuses the list it came from instead of loading it again (
     );
   expect(listGets).toHaveLength(1);
 });
+
+test('the top of the list shows the total experience and the internship time apart', async () => {
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-27T03:00:00Z') });
+  try {
+    serve({ status: 200, body: { careers: [current, past] } });
+    openCareers();
+    await screen.findByRole('list', { name: 'Career list' });
+    // 2024-01-02 up to 2026-11-27 is 2 years 10 months; the 2019 internship is 6 months, apart.
+    expect(screen.getByText('Total experience').nextElementSibling).toHaveTextContent(
+      '2 years 10 months',
+    );
+    expect(screen.getByText('Internships (not in the total)').nextElementSibling).toHaveTextContent(
+      '6 months',
+    );
+  } finally {
+    vi.useRealTimers();
+  }
+});
