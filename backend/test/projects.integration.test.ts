@@ -16,7 +16,6 @@ const shop = {
   role: '백엔드',
   summary: '주문과 배송을 한 화면에서 관리',
   contributions: '',
-  technologies: [' TypeScript ', 'PostgreSQL'],
   repositoryUrl: 'https://github.com/example/shop',
   serviceUrl: '',
 };
@@ -26,6 +25,14 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
   await pool.query('DELETE FROM projects');
+  // Two skills, named so that their order by name is the opposite of their order by id.
+  await pool.query("DELETE FROM skills WHERE name LIKE 'Zz %'");
+  t.after(() => pool.query("DELETE FROM skills WHERE name LIKE 'Zz %'"));
+  const made = await pool.query<{ id: number }>(
+    `INSERT INTO skills (name, category, proficiency)
+     VALUES ('Zz Beta', 'tool', 1), ('Zz Alpha', 'tool', 1) RETURNING id`,
+  );
+  const [beta, alpha] = made.rows.map((row) => row.id) as [number, number];
   // The next ids cross 9 to 10, so a text sort of ids would show in the same-day check below.
   await pool.query("SELECT setval(pg_get_serial_sequence('projects', 'id'), 8)");
 
@@ -46,12 +53,16 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
       role: null,
       summary: null,
       contributions: null,
-      technologies: [],
+      skillIds: [],
       repositoryUrl: null,
       serviceUrl: null,
     });
 
-    const created = await call('/api/projects', { method: 'POST', body: shop });
+    // Sent beta first: the answer lists them by skill name, alpha first.
+    const created = await call('/api/projects', {
+      method: 'POST',
+      body: { ...shop, skillIds: [beta, alpha] },
+    });
     assert.equal(created.status, 201);
     const project = created.data.project as Record<string, unknown>;
     assert.deepEqual(project, {
@@ -64,7 +75,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
       role: '백엔드',
       summary: '주문과 배송을 한 화면에서 관리',
       contributions: null,
-      technologies: ['TypeScript', 'PostgreSQL'],
+      skillIds: [alpha, beta],
       repositoryUrl: 'https://github.com/example/shop',
       serviceUrl: null,
     });
@@ -91,7 +102,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
         role: '팀장',
         summary: 'Summary 2',
         contributions: '응답 시간 40% 단축',
-        technologies: ['Go'],
+        skillIds: [beta],
         repositoryUrl: 'HTTPS://github.com/example/shop2',
         serviceUrl: 'http://shop.example.com',
       },
@@ -108,7 +119,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
       role: '팀장',
       summary: 'Summary 2',
       contributions: '응답 시간 40% 단축',
-      technologies: ['Go'],
+      skillIds: [beta],
       repositoryUrl: 'HTTPS://github.com/example/shop2',
       serviceUrl: 'http://shop.example.com',
     });
@@ -129,17 +140,13 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
 test('the database itself refuses rows the API would refuse', { skip: !url }, async (t) => {
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
-  const insert = (fields: { end?: string; technologies?: string[]; link?: string }) =>
+  const insert = (fields: { end?: string; link?: string }) =>
     pool.query(
-      `INSERT INTO projects (name, start_date, end_date, technologies, repository_url)
-       VALUES ('프로젝트', '2020-01-02', $1, $2, $3)`,
-      [fields.end ?? null, fields.technologies ?? [], fields.link ?? null],
+      `INSERT INTO projects (name, start_date, end_date, repository_url)
+       VALUES ('프로젝트', '2020-01-02', $1, $2)`,
+      [fields.end ?? null, fields.link ?? null],
     );
   await assert.rejects(insert({ end: '2020-01-01' }), /projects_period/);
-  await assert.rejects(
-    insert({ technologies: Array.from({ length: 31 }, (_, index) => String(index)) }),
-    /projects_technologies_count/,
-  );
   await assert.rejects(insert({ link: 'javascript:alert(1)' }), /projects_links/);
 });
 
@@ -202,6 +209,67 @@ test(
         (row) => row.id === project.id,
       );
       assert.equal(kept?.careerId, null);
+
+      await call(`/api/projects/${String(project.id)}`, { method: 'DELETE' });
+    });
+  },
+);
+
+test(
+  'a project keeps its skill links, refuses an unknown skill, and loses a link when the skill is deleted',
+  { skip: !url },
+  async (t) => {
+    const pool = new Pool({ connectionString: url });
+    t.after(() => pool.end());
+    await pool.query("DELETE FROM skills WHERE name LIKE 'Zz Link %'");
+    t.after(() => pool.query("DELETE FROM skills WHERE name LIKE 'Zz Link %'"));
+    const made = await pool.query<{ id: number }>(
+      `INSERT INTO skills (name, category, proficiency)
+     VALUES ('Zz Link One', 'tool', 1), ('Zz Link Two', 'tool', 1) RETURNING id`,
+    );
+    const [one, two] = made.rows.map((row) => row.id) as [number, number];
+
+    await withApi(pool, async (call) => {
+      const base = { name: 'Skill link project', startDate: '2023-01-02' };
+      const created = await call('/api/projects', {
+        method: 'POST',
+        body: { ...base, skillIds: [two, one] },
+      });
+      assert.equal(created.status, 201);
+      const project = created.data.project as { id: number; skillIds: number[] };
+      assert.deepEqual(project.skillIds, [one, two]);
+
+      // An unknown skill is refused and the project keeps its links (the whole write rolls back).
+      const unknown = { ...base, skillIds: [one, two + 100000] };
+      const refusedCreate = await call('/api/projects', { method: 'POST', body: unknown });
+      assert.equal(refusedCreate.status, 400);
+      assert.equal(refusedCreate.data.error, 'Skill not found');
+      const refusedUpdate = await call(`/api/projects/${String(project.id)}`, {
+        method: 'PUT',
+        body: unknown,
+      });
+      assert.equal(refusedUpdate.status, 400);
+      assert.equal(refusedUpdate.data.error, 'Skill not found');
+      const list = await call('/api/projects');
+      const same = (list.data.projects as { id: number; skillIds: number[] }[]).find(
+        (row) => row.id === project.id,
+      );
+      assert.deepEqual(same?.skillIds, [one, two]);
+
+      // Replacing the list drops links that are not in it; an empty list drops them all.
+      const narrowed = await call(`/api/projects/${String(project.id)}`, {
+        method: 'PUT',
+        body: { ...base, skillIds: [two] },
+      });
+      assert.deepEqual((narrowed.data.project as { skillIds: number[] }).skillIds, [two]);
+
+      // Deleting a skill removes its link and keeps the project.
+      await pool.query('DELETE FROM skills WHERE id = $1', [two]);
+      const after = await call('/api/projects');
+      const kept = (after.data.projects as { id: number; skillIds: number[] }[]).find(
+        (row) => row.id === project.id,
+      );
+      assert.deepEqual(kept?.skillIds, []);
 
       await call(`/api/projects/${String(project.id)}`, { method: 'DELETE' });
     });

@@ -29,6 +29,8 @@ import {
   toProjectForm,
   toProjectInput,
 } from './project-data';
+import { ProjectSkillPicker } from './project-skill-picker';
+import { skillList } from './skill-data';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
 import { webLink } from './web-link';
@@ -51,10 +53,13 @@ function Technologies({ names }: { names: string[] }) {
 function ProjectItem({
   project,
   careerCompany,
+  skillNames,
   paths,
   onDelete,
 }: {
   project: Project;
+  /** The names of the skills this project used (#225). */
+  skillNames: string[];
   /** The company of the linked career, if there is one (#224). */
   careerCompany?: string;
   paths: ProjectPaths;
@@ -79,10 +84,7 @@ function ProjectItem({
         entries={[
           ['Summary', project.summary],
           ['Contributions', project.contributions],
-          [
-            'Technologies',
-            project.technologies.length > 0 ? <Technologies names={project.technologies} /> : null,
-          ],
+          ['Technologies', skillNames.length > 0 ? <Technologies names={skillNames} /> : null],
         ]}
       />
       {repository || service ? (
@@ -131,7 +133,9 @@ function ProjectRows({
   onDelete: (project: Project) => Promise<void>;
 }) {
   const { rows: careers } = useListQuery(careerList);
+  const { rows: skills } = useListQuery(skillList);
   const companies = new Map((careers ?? []).map((career) => [career.id, career.company]));
+  const skillName = new Map((skills ?? []).map((skill) => [skill.id, skill.name]));
   return (
     <ItemUl label="Project list">
       {rows.map((row) => (
@@ -139,6 +143,7 @@ function ProjectRows({
           key={row.id}
           project={row}
           careerCompany={row.careerId === null ? undefined : companies.get(row.careerId)}
+          skillNames={row.skillIds.flatMap((id) => skillName.get(id) ?? [])}
           paths={paths}
           onDelete={onDelete}
         />
@@ -172,6 +177,9 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
 /** "Hanbit Soft (2024)": the company and the start year tell two jobs at one company apart. */
 const careerOption = (career: Career) => `${career.company} (${career.startDate.slice(0, 4)})`;
 
+/** The form fields that hold text typed into one input (the skills are a list of ids). */
+type TextField = Exclude<keyof ProjectForm, 'skillIds'>;
+
 const pickOrganization = (row: Project) => row.organization;
 const pickRole = (row: Project) => row.role;
 
@@ -196,12 +204,12 @@ function ProjectFields({
     role: useKnownValues(projectList, pickRole),
   };
   const { rows: careers } = useListQuery(careerList);
-  const set = (field: keyof ProjectForm) => (value: string) =>
+  const set = (field: TextField) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
   /** A one-line text input with its label, an optional hint and the server's message about it. */
   const textField = (
-    field: keyof ProjectForm,
+    field: TextField,
     label: string,
     {
       placeholder,
@@ -236,12 +244,7 @@ function ProjectFields({
   );
 
   /** A multi-line text area for the summary and contributions. */
-  const longField = (
-    field: keyof ProjectForm,
-    label: string,
-    placeholder: string,
-    maxLength: number,
-  ) => (
+  const longField = (field: TextField, label: string, placeholder: string, maxLength: number) => (
     <div className="flex flex-col gap-2">
       <Label htmlFor={fieldId(field)}>{label}</Label>
       <textarea
@@ -334,12 +337,11 @@ function ProjectFields({
         'Your part and results you can state in numbers',
         2000,
       )}
-      {textField('technologies', 'Technologies', {
-        placeholder: 'e.g. TypeScript, PostgreSQL, AWS',
-        // 30 names of up to 50 characters, with ", " between them.
-        maxLength: 1600,
-        hint: 'Separate items with commas. Up to 30 items, 50 characters each.',
-      })}
+      <ProjectSkillPicker
+        value={form.skillIds}
+        onChange={(ids) => setForm((current) => ({ ...current, skillIds: ids }))}
+        error={errorFor('skillIds')}
+      />
       {textField('repositoryUrl', 'Repository link', {
         placeholder: 'e.g. https://github.com/user/repository',
         maxLength: 500,

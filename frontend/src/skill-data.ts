@@ -25,6 +25,12 @@ export type Skill = {
   memo: string | null;
 };
 
+/** A project that used a skill (#225). */
+export type SkillProject = { id: number; name: string; startDate: string; endDate: string | null };
+
+/** A skill as the list gives it: the projects that used it and how many whole months they cover (#225). */
+export type SkillWithUsage = Skill & { projects: SkillProject[]; usedMonths: number };
+
 export const skillCategoryLabels: Record<SkillCategory, string> = {
   language: 'Language',
   framework: 'Framework / library',
@@ -54,7 +60,7 @@ export const proficiencyName = (proficiency: number) =>
  * The skills grouped by category, in the fixed category order; empty categories are left out.
  * Within a group the API's order is kept (strongest first, then the name).
  */
-export function groupSkills(skills: Skill[]) {
+export function groupSkills<T extends Skill>(skills: T[]) {
   return skillCategories
     .map((category) => ({
       category,
@@ -120,7 +126,7 @@ export const skillFieldOf = flatFieldOf(emptySkillForm);
 const base = '/api/skills';
 
 /** The list (#152): the list screen and the Edit screen share its cache entry. */
-export const skillList = listQuery(base, (body: { skills: Skill[] }) => body.skills);
+export const skillList = listQuery(base, (body: { skills: SkillWithUsage[] }) => body.skills);
 
 export const skillApi = {
   create: (input: SkillInput) =>

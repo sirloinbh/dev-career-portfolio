@@ -2,7 +2,8 @@ import type { Express } from 'express';
 import type { Pool } from 'pg';
 import { z } from 'zod/v4';
 
-import { HttpError, parseId } from '../standard/http.js';
+import { HttpError, parseId, serviceDate } from '../standard/http.js';
+import { usedMonths } from '../usage-period.js';
 import { objectBodyError, oneOfError, optionalText, requiredText } from './shared.js';
 
 // The list shows the categories in this order (issue #34).
@@ -68,9 +69,30 @@ export async function listSkills(db: Db, limit?: number) {
   return rows;
 }
 
+type UsedIn = { id: number; name: string; startDate: string; endDate: string | null };
+
+/**
+ * The skills as the list shows them, each with the projects that used it (newest start first) and how many whole
+ * months those projects cover, overlaps counted once and an open-ended project counted up to `today` (#225).
+ */
+async function listSkillsWithUsage(db: Db, today: string) {
+  const skills = await listSkills(db);
+  const { rows } = await db.query<UsedIn & { skillId: number }>(
+    `SELECT ps.skill_id AS "skillId", p.id, p.name, p.start_date AS "startDate", p.end_date AS "endDate"
+     FROM project_skills ps JOIN projects p ON p.id = ps.project_id
+     ORDER BY p.start_date DESC, p.id DESC`,
+  );
+  return skills.map((skill) => {
+    const projects = rows
+      .filter((row) => row.skillId === skill.id)
+      .map(({ skillId: _skillId, ...project }) => project);
+    return { ...skill, projects, usedMonths: usedMonths(projects, today) };
+  });
+}
+
 export function registerSkillRoutes(app: Express, pool: Pool) {
   app.get('/api/skills', async (_req, res) => {
-    res.json({ skills: await listSkills(pool) });
+    res.json({ skills: await listSkillsWithUsage(pool, serviceDate()) });
   });
 
   app.post('/api/skills', async (req, res) => {

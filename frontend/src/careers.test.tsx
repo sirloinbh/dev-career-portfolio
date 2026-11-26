@@ -269,7 +269,7 @@ test('a career lists the projects linked to it, and a project with no link appea
     role: null,
     summary: null,
     contributions: null,
-    technologies: [],
+    skillIds: [],
     repositoryUrl: null,
     serviceUrl: null,
   });

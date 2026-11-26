@@ -2176,14 +2176,14 @@
               }
             ]
           },
-          "technologies": {
+          "skillIds": {
             "default": [],
             "maxItems": 30,
             "type": "array",
             "items": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 50
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999999
             }
           },
           "repositoryUrl": {

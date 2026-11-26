@@ -138,3 +138,57 @@ test('the database itself refuses rows the API would refuse', { skip: !url }, as
   await insert('Git', 'tool', 3);
   await assert.rejects(insert('GIT', 'other', 2), /skills_name_unique/);
 });
+
+test(
+  'a skill lists the projects that used it and the months they cover (#225)',
+  { skip: !url },
+  async (t) => {
+    const pool = new Pool({ connectionString: url });
+    t.after(() => pool.end());
+    await pool.query("DELETE FROM skills WHERE name LIKE 'Zz Usage %'");
+    await pool.query("DELETE FROM projects WHERE name LIKE 'Zz Usage %'");
+    t.after(async () => {
+      await pool.query("DELETE FROM skills WHERE name LIKE 'Zz Usage %'");
+      await pool.query("DELETE FROM projects WHERE name LIKE 'Zz Usage %'");
+    });
+
+    await withApi(pool, async (call) => {
+      const skill = await call('/api/skills', {
+        method: 'POST',
+        body: { name: 'Zz Usage Skill', category: 'tool', proficiency: 3 },
+      });
+      const unused = await call('/api/skills', {
+        method: 'POST',
+        body: { name: 'Zz Usage Unused', category: 'tool', proficiency: 3 },
+      });
+      const skillId = (skill.data.skill as Skill).id;
+      const add = (name: string, startDate: string, endDate: string | null) =>
+        call('/api/projects', {
+          method: 'POST',
+          body: { name, startDate, endDate, skillIds: [skillId] },
+        });
+      // Two overlapping projects (Jan-Dec 2020 and Jul 2020-Jun 2021 cover 18 months) and a project still running.
+      await add('Zz Usage A', '2020-01-01', '2020-12-31');
+      await add('Zz Usage B', '2020-07-01', '2021-06-30');
+      const running = await add('Zz Usage C', '2026-01-01', null);
+      assert.equal(running.status, 201);
+
+      const list = await call('/api/skills');
+      type Used = Skill & {
+        usedMonths: number;
+        projects: { name: string; startDate: string; endDate: string | null }[];
+      };
+      const skills = list.data.skills as Used[];
+      const found = skills.find((row) => row.id === skillId);
+      assert.deepEqual(
+        found?.projects.map((project) => project.name),
+        ['Zz Usage C', 'Zz Usage B', 'Zz Usage A'],
+      );
+      // 18 months in 2020-2021, plus January of the current year up to today: at least one more month.
+      assert.ok((found?.usedMonths ?? 0) >= 19, `usedMonths was ${String(found?.usedMonths)}`);
+      const none = skills.find((row) => row.id === (unused.data.skill as Skill).id);
+      assert.deepEqual(none?.projects, []);
+      assert.equal(none?.usedMonths, 0);
+    });
+  },
+);

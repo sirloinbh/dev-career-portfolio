@@ -82,25 +82,16 @@ test('links must be http or https addresses', async () => {
   );
 });
 
-test('technology names are checked one by one and as a list', async () => {
-  await expectRefused({ ...valid, technologies: 'React' }, 'Technologies must be a list');
+test('skill ids are checked one by one and as a list', async () => {
+  await expectRefused({ ...valid, skillIds: 'React' }, 'Skills must be a list');
+  for (const skillIds of [['1'], [0], [1.5], [null]]) {
+    await expectRefused({ ...valid, skillIds }, 'Skills must be a list of skill ids');
+  }
   await expectRefused(
-    { ...valid, technologies: ['React', ' '] },
-    'Technologies items cannot be empty',
+    { ...valid, skillIds: Array.from({ length: 31 }, (_, index) => index + 1) },
+    'Skills can have at most 30 items',
   );
-  await expectRefused({ ...valid, technologies: [1] }, 'Technologies items must be text');
-  await expectRefused(
-    { ...valid, technologies: ['가'.repeat(51)] },
-    'Technologies items must be at most 50 characters',
-  );
-  await expectRefused(
-    { ...valid, technologies: Array.from({ length: 31 }, (_, index) => `기술${String(index)}`) },
-    'Technologies can have at most 30 items',
-  );
-  await expectRefused(
-    { ...valid, technologies: ['React', ' react '] },
-    'Technologies contain a duplicate item',
-  );
+  await expectRefused({ ...valid, skillIds: [3, 4, 3] }, 'Skills contain a duplicate item');
 });
 
 test('an update is validated the same way as a create', async () => {
@@ -141,18 +132,35 @@ test('a career that is not a positive whole number is refused', async () => {
   }
 });
 
-test('a career id with no matching career is answered as a bad input, not a server error', async () => {
-  const pool = {
-    query: async () => {
-      throw Object.assign(new Error('violates foreign key constraint'), { code: '23503' });
+/** A pool whose INSERT breaks the foreign key `constraint`, as PostgreSQL would for an id that matches nothing. */
+function brokenLinkPool(constraint: string) {
+  const client = {
+    query: async (text: string) => {
+      if (
+        text.startsWith('INSERT INTO projects') ||
+        text.startsWith('INSERT INTO project_skills')
+      ) {
+        throw Object.assign(new Error('violates foreign key constraint'), {
+          code: '23503',
+          constraint,
+        });
+      }
+      return { rows: [{ id: 1 }], rowCount: 1 };
     },
-  } as unknown as Pool;
-  await withApi(pool, async (call) => {
-    const { status, data } = await call('/api/projects', {
-      method: 'POST',
-      body: { ...valid, careerId: 9 },
+    release: () => undefined,
+  };
+  return { connect: async () => client, query: client.query } as unknown as Pool;
+}
+
+test('a career id or skill id with no match is answered as a bad input, not a server error', async () => {
+  for (const [constraint, message, body] of [
+    ['projects_career_id_fkey', 'Career not found', { ...valid, careerId: 9 }],
+    ['project_skills_skill_id_fkey', 'Skill not found', { ...valid, skillIds: [9] }],
+  ] as const) {
+    await withApi(brokenLinkPool(constraint), async (call) => {
+      const { status, data } = await call('/api/projects', { method: 'POST', body });
+      assert.equal(status, 400);
+      assert.equal(data.error, message);
     });
-    assert.equal(status, 400);
-    assert.equal(data.error, 'Career not found');
-  });
+  }
 });

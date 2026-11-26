@@ -57,7 +57,9 @@ function fakeApi(rows: Skill[]) {
         return json(refused, status);
       }
       const index = store.findIndex((row) => row.id === id);
-      if (method === 'GET') return json({ skills: store });
+      if (method === 'GET') {
+        return json({ skills: store.map((row) => ({ projects: [], usedMonths: 0, ...row })) });
+      }
       const saved = (input: Skill) => ({ ...input, memo: input.memo === '' ? null : input.memo });
       if (method === 'POST') {
         const skill = saved({ ...(body as Skill), id: nextId++ });
