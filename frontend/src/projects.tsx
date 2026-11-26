@@ -2,6 +2,7 @@ import { FolderKanban, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 
+import { type Career, careerList } from './career-data';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
@@ -12,7 +13,7 @@ import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
-import { useKnownValues } from './list-query';
+import { useKnownValues, useListQuery } from './list-query';
 import { projectTools } from './list-tools';
 import { OutLink } from './out-link';
 import {
@@ -50,15 +51,18 @@ function Technologies({ names }: { names: string[] }) {
 
 function ProjectItem({
   project,
+  careerCompany,
   paths,
   onDelete,
 }: {
   project: Project;
+  /** The company of the linked career, if there is one (#224). */
+  careerCompany?: string;
   paths: ProjectPaths;
   onDelete: (project: Project) => Promise<void>;
 }) {
   const titleId = `project-${project.id}`;
-  const roleText = projectRoleText(project);
+  const roleText = projectRoleText(project, careerCompany);
   const repository = webLink(project.repositoryUrl);
   const service = webLink(project.serviceUrl);
   return (
@@ -117,6 +121,33 @@ function ProjectItem({
   );
 }
 
+/** The rows, each with the company of its linked career. The career list loads beside the projects. */
+function ProjectRows({
+  rows,
+  paths,
+  onDelete,
+}: {
+  rows: Project[];
+  paths: ProjectPaths;
+  onDelete: (project: Project) => Promise<void>;
+}) {
+  const { rows: careers } = useListQuery(careerList);
+  const companies = new Map((careers ?? []).map((career) => [career.id, career.company]));
+  return (
+    <ItemUl label="Project list">
+      {rows.map((row) => (
+        <ProjectItem
+          key={row.id}
+          project={row}
+          careerCompany={row.careerId === null ? undefined : companies.get(row.careerId)}
+          paths={paths}
+          onDelete={onDelete}
+        />
+      ))}
+    </ItemUl>
+  );
+}
+
 export function ProjectList({ paths }: { paths: ProjectPaths }) {
   return (
     <ItemListPage<Project>
@@ -135,16 +166,13 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
       deleteName={(row) => row.name}
       removeRow={(row) => projectApi.remove(row.id)}
       tools={projectTools}
-      renderRows={(rows, onDelete) => (
-        <ItemUl label="Project list">
-          {rows.map((row) => (
-            <ProjectItem key={row.id} project={row} paths={paths} onDelete={onDelete} />
-          ))}
-        </ItemUl>
-      )}
+      renderRows={(rows, onDelete) => <ProjectRows rows={rows} paths={paths} onDelete={onDelete} />}
     />
   );
 }
+
+/** "Hanbit Soft (2024)": the company and the start year tell two jobs at one company apart. */
+const careerOption = (career: Career) => `${career.company} (${career.startDate.slice(0, 4)})`;
 
 const pickOrganization = (row: Project) => row.organization;
 const pickRole = (row: Project) => row.role;
@@ -169,6 +197,7 @@ function ProjectFields({
     organization: useKnownValues(projectList, pickOrganization),
     role: useKnownValues(projectList, pickRole),
   };
+  const { rows: careers } = useListQuery(careerList);
   const set = (field: keyof ProjectForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -243,9 +272,28 @@ function ProjectFields({
       aria-busy={pending || undefined}
     >
       {textField('name', 'Project name', { placeholder: 'e.g. Order settlement automation' })}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={fieldId('careerId')}>Career</Label>
+        <select
+          id={fieldId('careerId')}
+          className={cn(controlClass, 'h-9 sm:max-w-md')}
+          value={form.careerId}
+          onChange={(e) => set('careerId')(e.target.value)}
+          {...describe('careerId')}
+        >
+          <option value="">No career (side project, school)</option>
+          {(careers ?? []).map((career) => (
+            <option key={career.id} value={String(career.id)}>
+              {careerOption(career)}
+            </option>
+          ))}
+        </select>
+        {errorFor('careerId')}
+      </div>
       <div className="grid gap-5 sm:grid-cols-2">
         {textField('organization', 'Organization', {
-          placeholder: 'e.g. Hanbit Soft, side project',
+          placeholder: 'e.g. School, side project',
+          hint: 'Used only when no career is chosen above.',
         })}
         {textField('role', 'Role', { placeholder: 'e.g. Backend development' })}
       </div>

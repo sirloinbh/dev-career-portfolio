@@ -98,6 +98,7 @@ const careerPaths: CareerPaths = {
   list: pages.careers,
   create: pages.newCareer,
   edit: (id) => generatePath(pages.editCareer, { id: String(id) }),
+  projectEdit: projectPaths.edit,
 };
 
 // Main menu (LNB) items, in display order.
