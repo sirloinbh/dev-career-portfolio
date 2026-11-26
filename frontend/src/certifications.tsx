@@ -26,8 +26,10 @@ import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
+import { useKnownValues } from './list-query';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
+import { TextControl } from './text-control';
 
 function CertificationItem({
   certification,
@@ -117,6 +119,8 @@ export function CertificationList({ paths }: { paths: CertificationPaths }) {
   );
 }
 
+const pickIssuer = (row: Certification) => row.issuer;
+
 function CertificationFields({
   initial,
   submitLabel,
@@ -132,6 +136,10 @@ function CertificationFields({
   const expiryDateInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } =
     useServerForm(certificationFieldOf);
+  // Values already used, suggested while typing; a new value is still accepted (#247).
+  const known: Partial<Record<string, readonly string[]>> = {
+    issuer: useKnownValues(certificationList, pickIssuer),
+  };
   const set = (field: keyof CertificationForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -144,12 +152,13 @@ function CertificationFields({
   ) => (
     <div className="flex flex-col gap-2">
       <Label htmlFor={fieldId(field)}>{label}</Label>
-      <Input
+      <TextControl
         id={fieldId(field)}
         maxLength={maxLength}
         autoComplete="off"
         value={form[field]}
-        onChange={(e) => set(field)(e.target.value)}
+        onValueChange={set(field)}
+        known={known[field]}
         placeholder={placeholder}
         {...describe(field)}
       />

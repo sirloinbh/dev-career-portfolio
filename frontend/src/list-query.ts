@@ -27,3 +27,33 @@ export function useRefreshList(path: string) {
   const client = useQueryClient();
   return useCallback(() => client.invalidateQueries({ queryKey: apiKey(path) }), [client, path]);
 }
+
+/**
+ * The values already used in one field of a list (#247), most used first, for a Combobox to suggest. Empty until the
+ * list has loaded, so the field is a plain text field until then. Spaces and letter case do not make a new value.
+ */
+export function useKnownValues<Row>(
+  list: ListQuery<Row>,
+  pick: (row: Row) => string | null | undefined,
+) {
+  const { rows } = useListQuery(list);
+  return useMemo(() => knownValues(rows ?? [], pick), [rows, pick]);
+}
+
+export function knownValues<Row>(
+  rows: readonly Row[],
+  pick: (row: Row) => string | null | undefined,
+) {
+  const counts = new Map<string, { text: string; count: number }>();
+  for (const row of rows) {
+    const text = pick(row)?.trim();
+    if (!text) continue;
+    const key = text.toLowerCase();
+    const seen = counts.get(key);
+    if (seen) seen.count += 1;
+    else counts.set(key, { text, count: 1 });
+  }
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count || a.text.localeCompare(b.text))
+    .map((v) => v.text);
+}

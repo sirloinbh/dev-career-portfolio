@@ -28,9 +28,11 @@ import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
+import { useKnownValues } from './list-query';
 import { OutLink } from './out-link';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
+import { TextControl } from './text-control';
 import { webLink } from './web-link';
 
 function ApplicationItem({
@@ -178,6 +180,8 @@ export function ApplicationList({ paths }: { paths: ApplicationPaths }) {
   );
 }
 
+const pickPosition = (row: Application) => row.position;
+
 function ApplicationFields({
   initial,
   submitLabel,
@@ -193,6 +197,10 @@ function ApplicationFields({
   const deadlineInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } =
     useServerForm(applicationFieldOf);
+  // Values already used, suggested while typing; a new value is still accepted (#247).
+  const known: Partial<Record<string, readonly string[]>> = {
+    position: useKnownValues(applicationList, pickPosition),
+  };
   const set = (field: Exclude<keyof ApplicationForm, 'status'>) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
   // Only one of the three values is kept, so the status stays typed instead of any string.
@@ -211,13 +219,14 @@ function ApplicationFields({
   ) => (
     <div className="flex flex-col gap-2">
       <Label htmlFor={fieldId(field)}>{label}</Label>
-      <Input
+      <TextControl
         id={fieldId(field)}
         type={type}
         maxLength={maxLength}
         autoComplete="off"
         value={form[field]}
-        onChange={(e) => set(field)(e.target.value)}
+        onValueChange={set(field)}
+        known={known[field]}
         placeholder={placeholder}
         {...describe(field)}
       />
