@@ -63,7 +63,12 @@ export function ItemListPage<Row extends { id: number | string }>({
   /** What the toolbar above the list can search, filter, and sort by; without it the list has no toolbar. */
   tools?: ListTools<Row>;
   /** The rows (at least one) with the delete handler for each row's dialog. */
-  renderRows: (rows: Row[], onDelete: (row: Row) => Promise<void>) => ReactNode;
+  renderRows: (
+    rows: Row[],
+    onDelete: (row: Row) => Promise<void>,
+    /** Every row, before the search and filter, for a figure about the whole list. */
+    allRows: Row[],
+  ) => ReactNode;
 }) {
   const { query, rows: loadedRows } = useListQuery(list);
   const refresh = useRefreshList(list.path);
@@ -150,7 +155,7 @@ export function ItemListPage<Row extends { id: number | string }>({
           description={empty.description}
         />
       ) : null}
-      {rows.length > 0 ? renderRows(rows, remove) : null}
+      {rows.length > 0 ? renderRows(rows, remove, allRows) : null}
     </section>
   );
 }

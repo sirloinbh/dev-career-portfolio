@@ -258,6 +258,25 @@ test('the top of the list shows the total experience and the internship time apa
   }
 });
 
+test('searching or filtering the list keeps the total experience unchanged (#259)', async () => {
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-27T03:00:00Z') });
+  try {
+    serve({ status: 200, body: { careers: [current, past] } });
+    openCareers();
+    await screen.findByRole('list', { name: 'Career list' });
+    const total = () => screen.getByText('Total experience').nextElementSibling;
+    expect(total()).toHaveTextContent('2 years 10 months');
+    fireEvent.change(screen.getByLabelText('Employment type'), { target: { value: 'intern' } });
+    // Only the internship is listed, yet the total still counts every career.
+    expect(
+      within(screen.getByRole('list', { name: 'Career list' })).getAllByRole('listitem'),
+    ).toHaveLength(1);
+    expect(total()).toHaveTextContent('2 years 10 months');
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 test('a career lists the projects linked to it, and a project with no link appears nowhere', async () => {
   const project = (id: number, name: string, careerId: number | null): Project => ({
     id,
