@@ -2,7 +2,7 @@
 
 The career list now starts with "Total experience" as "N years M months".
 
-Counting rules (the recommended ones on the card; the user decision is pending, see the PR):
+Counting rules (user decision 2026-11-27: the recommended rules):
 
 - Overlapping or back-to-back periods count once.
 - Internships are left out of the total and shown as a separate number.
