@@ -1174,6 +1174,67 @@
         }
       }
     },
+    "/api/applications/{id}/status-history": {
+      "get": {
+        "summary": "List the hiring stage changes of an application, oldest first, each with its day",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Input validation failed or the ID is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in required (no session from the shared sign-in)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No target",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/careers": {
       "get": {
         "summary": "List careers, newest start first",
@@ -1811,7 +1872,12 @@
             "enum": [
               "drafting",
               "submitted",
-              "closed"
+              "document_passed",
+              "first_interview",
+              "second_interview",
+              "offer",
+              "rejected",
+              "withdrawn"
             ]
           },
           "memo": {
