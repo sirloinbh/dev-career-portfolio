@@ -12,6 +12,7 @@ import { useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
+import { skillTools } from './list-tools';
 import {
   emptySkillForm,
   groupSkills,
@@ -125,6 +126,7 @@ export function SkillList({ paths }: { paths: SkillPaths }) {
       deleteNoun="skill"
       deleteName={(row) => row.name}
       removeRow={(row) => skillApi.remove(row.id)}
+      tools={skillTools}
       renderRows={(rows, onDelete) =>
         groupSkills(rows).map((group) => (
           // A plain group, not a landmark: six category regions would crowd the landmark list, and

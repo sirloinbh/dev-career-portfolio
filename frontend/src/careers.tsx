@@ -30,6 +30,7 @@ import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { useKnownValues, useListQuery } from './list-query';
+import { careerTools } from './list-tools';
 import { type Project, projectList, projectPeriodText } from './project-data';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
@@ -178,6 +179,7 @@ export function CareerList({ paths }: { paths: CareerPaths }) {
       deleteNoun="career"
       deleteName={(row) => row.company}
       removeRow={(row) => careerApi.remove(row.id)}
+      tools={careerTools}
       renderRows={(rows, onDelete) => <CareerRows rows={rows} paths={paths} onDelete={onDelete} />}
     />
   );
