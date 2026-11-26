@@ -26,7 +26,7 @@ export type Skill = {
 };
 
 /** A project that used a skill (#225). */
-export type SkillProject = { id: number; name: string; startDate: string; endDate: string | null };
+type SkillProject = { id: number; name: string; startDate: string; endDate: string | null };
 
 /** A skill as the list gives it: the projects that used it and how many whole months they cover (#225). */
 export type SkillWithUsage = Skill & { projects: SkillProject[]; usedMonths: number };
