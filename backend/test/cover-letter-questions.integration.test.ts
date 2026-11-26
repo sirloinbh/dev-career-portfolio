@@ -226,3 +226,68 @@ test('the database itself refuses rows the API would refuse', { skip: !url }, as
   await insert('지원 동기', 5000, 0);
   await assert.rejects(insert('입사 후 포부', null, 0), /cover_letter_questions_order/);
 });
+
+test(
+  'earlier answers are searched by text, leaving out the current application',
+  { skip: !url },
+  async (t) => {
+    await lockApplications(t);
+    const pool = new Pool({ connectionString: url });
+    t.after(() => pool.end());
+    await pool.query('DELETE FROM applications');
+
+    await withApi(pool, async (call) => {
+      const add = async (companyName: string, position: string, questions: unknown[]) => {
+        const created = await call('/api/applications', {
+          method: 'POST',
+          body: { companyName, position, status: 'submitted' },
+        });
+        const id = (created.data.application as { id: number }).id;
+        const saved = await call(`/api/applications/${String(id)}/questions`, {
+          method: 'PUT',
+          body: { questions },
+        });
+        assert.equal(saved.status, 200);
+        return id;
+      };
+      const older = await add('한국소프트', '백엔드', [
+        { question: '지원 동기', answer: '데이터 플랫폼을 만들고 싶습니다.', charLimit: 500 },
+        { question: '협업 경험', answer: '100% 몰입했고 a_b 도구를 썼습니다.' },
+        { question: '입사 후 포부' },
+      ]);
+      const current = await add('카카오', '서버', [
+        { question: '지원 동기', answer: '플랫폼 팀에서 일하고 싶습니다.' },
+      ]);
+
+      type Match = { question: string; answer: string; applicationId: number; companyName: string };
+      const search = async (query: string) => {
+        const response = await call(`/api/cover-letter-answers?${query}`);
+        assert.equal(response.status, 200);
+        return response.data.matches as (Match & Record<string, unknown>)[];
+      };
+
+      // Korean text matches the question or the answer; the newest application comes first.
+      assert.deepEqual(
+        (await search(`q=${encodeURIComponent('플랫폼')}`)).map((m) => m.companyName),
+        ['카카오', '한국소프트'],
+      );
+      const [only] = await search(`q=${encodeURIComponent('플랫폼')}&exclude=${String(current)}`);
+      assert.equal(only.companyName, '한국소프트');
+      assert.equal(only.applicationId, older);
+      assert.equal(only.question, '지원 동기');
+      assert.equal(only.answer, '데이터 플랫폼을 만들고 싶습니다.');
+      assert.equal(only.position, '백엔드');
+      assert.match(String(only.date), /^\d{4}-\d{2}-\d{2}$/);
+
+      // No match, and a question without an answer is never offered.
+      assert.deepEqual(await search(`q=${encodeURIComponent('존재하지 않는 문장')}`), []);
+      assert.deepEqual(await search(`q=${encodeURIComponent('포부')}`), []);
+      // The question text is searched too.
+      assert.equal((await search(`q=${encodeURIComponent('협업')}`)).length, 1);
+      // % and _ are plain characters, not wildcards.
+      assert.equal((await search(`q=${encodeURIComponent('%')}`)).length, 1);
+      assert.equal((await search(`q=${encodeURIComponent('a_b')}`)).length, 1);
+      assert.deepEqual(await search(`q=${encodeURIComponent('a_c')}`), []);
+    });
+  },
+);

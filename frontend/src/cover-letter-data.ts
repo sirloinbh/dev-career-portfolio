@@ -132,3 +132,25 @@ export function useQuestions(applicationId: string, valid: boolean) {
     { enabled: valid },
   );
 }
+
+/** One earlier question with its answer, and the application it was written for (#231). */
+export type EarlierAnswer = {
+  id: number;
+  question: string;
+  answer: string;
+  applicationId: number;
+  companyName: string;
+  position: string | null;
+  /** The day the application was added, YYYY-MM-DD. */
+  date: string;
+};
+
+/** The earlier answers whose question or answer contains the text, leaving out the application being edited. */
+export const earlierAnswersPath = (text: string, applicationId: string) =>
+  `/api/cover-letter-answers?q=${encodeURIComponent(text)}&exclude=${encodeURIComponent(applicationId)}`;
+
+/** Earlier answers for the text last searched; nothing is fetched while the text is empty. */
+export function useEarlierAnswers(text: string, applicationId: string) {
+  const path = earlierAnswersPath(text, applicationId);
+  return useApiQuery<{ matches: EarlierAnswer[] }>(apiKey(path), path, { enabled: text !== '' });
+}
