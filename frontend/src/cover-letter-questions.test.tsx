@@ -3,7 +3,12 @@ import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
 import type { Application } from './application-data';
-import { answerLength, answerLengthText, type CoverLetterQuestion } from './cover-letter-data';
+import {
+  answerLength,
+  answerLengthText,
+  answerLengthWithoutSpaces,
+  type CoverLetterQuestion,
+} from './cover-letter-data';
 import { findLive, getLive } from './test/live';
 
 // All companies, questions, and answers here are made up for the test.
@@ -102,12 +107,12 @@ test('the Questions link on a list row opens that application’s questions in s
   expect(first).toHaveAccessibleName('지원 동기를\n적어 주세요');
   expect(first).toHaveTextContent('Question 1');
   expect(first).toHaveTextContent('데이터 플랫폼을 만들고 싶습니다.');
-  expect(first).toHaveTextContent('18 / 500 characters');
+  expect(first).toHaveTextContent('18 characters (15 without spaces) / 500');
   expect(second).toHaveTextContent('Question 2');
   expect(second).toHaveTextContent('No answer yet');
-  expect(second).toHaveTextContent('0 characters');
+  expect(second).toHaveTextContent('0 characters (0 without spaces)');
   // #37 stores an answer over the limit; the screen points it out.
-  expect(third).toHaveTextContent('12 / 10 characters · 2 over the limit');
+  expect(third).toHaveTextContent('12 characters (12 without spaces) / 10 · 2 over the limit');
 });
 
 test('the page shows the application it belongs to', async () => {
@@ -223,12 +228,26 @@ test('display rules: answer length counts every character, spaces and line break
   expect(answerLength('가 나\n다')).toBe(5);
   // One emoji is one character, not two UTF-16 units.
   expect(answerLength('좋아요👍')).toBe(4);
-  expect(answerLengthText({ answer: null, charLimit: null })).toBe('0 characters');
-  expect(answerLengthText({ answer: '가'.repeat(1204), charLimit: null })).toBe('1,204 characters');
+  expect(answerLengthText({ answer: null, charLimit: null })).toBe(
+    '0 characters (0 without spaces)',
+  );
+  expect(answerLengthText({ answer: '가'.repeat(1204), charLimit: null })).toBe(
+    '1,204 characters (1,204 without spaces)',
+  );
   expect(answerLengthText({ answer: '가'.repeat(1500), charLimit: 1500 })).toBe(
-    '1,500 / 1,500 characters',
+    '1,500 characters (1,500 without spaces) / 1,500',
   );
-  expect(answerLengthText({ answer: '가'.repeat(1620), charLimit: 1500 })).toBe(
-    '1,620 / 1,500 characters · 120 over the limit',
-  );
+  // The warning follows the count with spaces, not the count without.
+  expect(
+    answerLengthText({ answer: `${'가'.repeat(1000)}${' '.repeat(620)}`, charLimit: 1500 }),
+  ).toBe('1,620 characters (1,000 without spaces) / 1,500 · 120 over the limit');
+});
+
+test('display rules: the count without spaces leaves out spaces, tabs, line breaks and keeps emoji whole', () => {
+  expect(answerLengthWithoutSpaces(null)).toBe(0);
+  expect(answerLengthWithoutSpaces('')).toBe(0);
+  expect(answerLengthWithoutSpaces('가 나\n다')).toBe(3);
+  expect(answerLengthWithoutSpaces('a\tb\r\nc\u3000d')).toBe(4);
+  expect(answerLengthWithoutSpaces(' \n\t ')).toBe(0);
+  expect(answerLengthWithoutSpaces('좋아요 👍 👍')).toBe(5);
 });
