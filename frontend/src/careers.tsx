@@ -29,17 +29,40 @@ import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
-import { useKnownValues } from './list-query';
+import { useKnownValues, useListQuery } from './list-query';
+import { type Project, projectList, projectPeriodText } from './project-data';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
 
+/** The projects linked to a career (#224), newest start first as the project list gives them. */
+function LinkedProjects({ projects, paths }: { projects: Project[]; paths: CareerPaths }) {
+  if (projects.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      <h3 className="text-caption font-medium text-muted-foreground">Projects</h3>
+      <ul aria-label="Linked projects" className="flex flex-col gap-1">
+        {projects.map((project) => (
+          <li key={project.id} className="text-body-sm wrap-break-word break-keep">
+            <Link to={paths.projectEdit(project.id)} className="underline underline-offset-2">
+              {project.name}
+            </Link>
+            <span className="text-muted-foreground"> · {projectPeriodText(project)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function CareerItem({
   career,
+  projects,
   paths,
   onDelete,
 }: {
   career: Career;
+  projects: Project[];
   paths: CareerPaths;
   onDelete: (career: Career) => Promise<void>;
 }) {
@@ -62,6 +85,7 @@ function CareerItem({
           ['Achievements', career.achievements],
         ]}
       />
+      <LinkedProjects projects={projects} paths={paths} />
       <div className="flex flex-wrap gap-2 pt-1">
         <Button asChild variant="outline" size="sm">
           <Link to={paths.edit(career.id)} aria-label={`Edit ${career.company}`}>
@@ -108,6 +132,35 @@ function ExperienceTotal({ careers }: { careers: Career[] }) {
   );
 }
 
+/** The total, then the careers, each with its linked projects. The project list loads beside the careers. */
+function CareerRows({
+  rows,
+  paths,
+  onDelete,
+}: {
+  rows: Career[];
+  paths: CareerPaths;
+  onDelete: (career: Career) => Promise<void>;
+}) {
+  const { rows: projects } = useListQuery(projectList);
+  return (
+    <>
+      <ExperienceTotal careers={rows} />
+      <ItemUl label="Career list">
+        {rows.map((row) => (
+          <CareerItem
+            key={row.id}
+            career={row}
+            projects={(projects ?? []).filter((project) => project.careerId === row.id)}
+            paths={paths}
+            onDelete={onDelete}
+          />
+        ))}
+      </ItemUl>
+    </>
+  );
+}
+
 export function CareerList({ paths }: { paths: CareerPaths }) {
   return (
     <ItemListPage<Career>
@@ -125,16 +178,7 @@ export function CareerList({ paths }: { paths: CareerPaths }) {
       deleteNoun="career"
       deleteName={(row) => row.company}
       removeRow={(row) => careerApi.remove(row.id)}
-      renderRows={(rows, onDelete) => (
-        <>
-          <ExperienceTotal careers={rows} />
-          <ItemUl label="Career list">
-            {rows.map((row) => (
-              <CareerItem key={row.id} career={row} paths={paths} onDelete={onDelete} />
-            ))}
-          </ItemUl>
-        </>
-      )}
+      renderRows={(rows, onDelete) => <CareerRows rows={rows} paths={paths} onDelete={onDelete} />}
     />
   );
 }

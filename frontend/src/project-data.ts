@@ -9,7 +9,10 @@ import { formatDate } from './service-date';
 export type Project = {
   id: number;
   name: string;
+  /** Free text for a project outside any career; used only when `careerId` is null (#224). */
   organization: string | null;
+  /** The career this project was done at, or null. */
+  careerId: number | null;
   startDate: string;
   /** null means the project is still running (#33: there is no separate status field). */
   endDate: string | null;
@@ -29,9 +32,15 @@ export function projectPeriodText(project: Pick<Project, 'startDate' | 'endDate'
   return `${formatDate(project.startDate)} – ${project.endDate ? formatDate(project.endDate) : 'Present'}`;
 }
 
-/** "Commerce team · Backend development": the organization and role that were entered. */
-export function projectRoleText(project: Pick<Project, 'organization' | 'role'>) {
-  return [project.organization, project.role].filter(Boolean).join(' · ');
+/**
+ * "Hanbit Soft · Backend development": the company of the linked career, or the free-text organization
+ * when no career is linked, then the role. `careerCompany` is the linked career's name, if it is known.
+ */
+export function projectRoleText(
+  project: Pick<Project, 'organization' | 'role'>,
+  careerCompany?: string | null,
+) {
+  return [careerCompany || project.organization, project.role].filter(Boolean).join(' · ');
 }
 
 export type ProjectPaths = {
@@ -46,6 +55,8 @@ type ProjectInput = Omit<Project, 'id'>;
 export type ProjectForm = {
   name: string;
   organization: string;
+  /** The picked career's id as the select's text; '' means none. */
+  careerId: string;
   startDate: string;
   endDate: string;
   role: string;
@@ -59,6 +70,7 @@ export type ProjectForm = {
 export const emptyProjectForm: ProjectForm = {
   name: '',
   organization: '',
+  careerId: '',
   startDate: '',
   endDate: '',
   role: '',
@@ -73,6 +85,7 @@ export function toProjectForm(project: Project): ProjectForm {
   return {
     name: project.name,
     organization: project.organization ?? '',
+    careerId: project.careerId === null ? '' : String(project.careerId),
     startDate: project.startDate,
     endDate: project.endDate ?? '',
     role: project.role ?? '',
@@ -102,6 +115,7 @@ export function splitTechnologies(text: string) {
 export function toProjectInput(form: ProjectForm): ProjectInput {
   return {
     ...form,
+    careerId: form.careerId === '' ? null : Number(form.careerId),
     endDate: form.endDate === '' ? null : form.endDate,
     technologies: splitTechnologies(form.technologies),
   };
