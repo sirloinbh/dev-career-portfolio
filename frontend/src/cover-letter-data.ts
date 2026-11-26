@@ -146,7 +146,7 @@ export type EarlierAnswer = {
 };
 
 /** The earlier answers whose question or answer contains the text, leaving out the application being edited. */
-export const earlierAnswersPath = (text: string, applicationId: string) =>
+const earlierAnswersPath = (text: string, applicationId: string) =>
   `/api/cover-letter-answers?q=${encodeURIComponent(text)}&exclude=${encodeURIComponent(applicationId)}`;
 
 /** Earlier answers for the text last searched; nothing is fetched while the text is empty. */
