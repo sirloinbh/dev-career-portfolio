@@ -48,6 +48,27 @@ export function deadlineText(application: Pick<Application, 'deadline' | 'status
   return `${date} · ${days === 0 ? 'Due today' : 'Overdue'}`;
 }
 
+/** How many days ahead the Today page looks (#245). */
+export const todayWindowDays = 7;
+
+/**
+ * The applications the Today page shows (#245): drafts whose deadline is overdue, today, or within the next
+ * `todayWindowDays` days. A submitted or closed application no longer needs its letter written, and one
+ * without a deadline has nothing to be late for. Earliest deadline first, so the most overdue comes first.
+ */
+export function dueApplications(rows: readonly Application[], today: string) {
+  const due = rows
+    .filter((row) => row.status === 'drafting' && row.deadline !== null)
+    .map((row) => ({ row, days: daysUntil(row.deadline as string, today) }))
+    .filter(({ days }) => days <= todayWindowDays)
+    .sort((a, b) => a.days - b.days || a.row.companyName.localeCompare(b.row.companyName));
+  return {
+    overdue: due.filter(({ days }) => days < 0).map(({ row }) => row),
+    today: due.filter(({ days }) => days === 0).map(({ row }) => row),
+    soon: due.filter(({ days }) => days > 0).map(({ row }) => row),
+  };
+}
+
 export type ApplicationPaths = {
   list: string;
   create: string;
