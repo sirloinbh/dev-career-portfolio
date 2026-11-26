@@ -23,6 +23,7 @@ import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
+import { experienceOf, monthsText } from './experience';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
@@ -30,6 +31,7 @@ import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { useKnownValues } from './list-query';
 import { careerTools } from './list-tools';
+import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
 
@@ -88,6 +90,25 @@ function CareerItem({
   );
 }
 
+/** Total experience at the top of the list (#226): overlaps once, internships apart. */
+function ExperienceTotal({ careers }: { careers: Career[] }) {
+  const { workMonths, internMonths } = experienceOf(careers, serviceToday());
+  return (
+    <dl className="flex flex-wrap gap-x-8 gap-y-2 rounded-xl border bg-card p-4 text-card-foreground shadow-sm">
+      <div>
+        <dt className="text-body-sm text-muted-foreground">Total experience</dt>
+        <dd className="text-body font-semibold">{monthsText(workMonths)}</dd>
+      </div>
+      {internMonths > 0 ? (
+        <div>
+          <dt className="text-body-sm text-muted-foreground">Internships (not in the total)</dt>
+          <dd className="text-body font-semibold">{monthsText(internMonths)}</dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
 export function CareerList({ paths }: { paths: CareerPaths }) {
   return (
     <ItemListPage<Career>
@@ -107,11 +128,14 @@ export function CareerList({ paths }: { paths: CareerPaths }) {
       removeRow={(row) => careerApi.remove(row.id)}
       tools={careerTools}
       renderRows={(rows, onDelete) => (
-        <ItemUl label="Career list">
-          {rows.map((row) => (
-            <CareerItem key={row.id} career={row} paths={paths} onDelete={onDelete} />
-          ))}
-        </ItemUl>
+        <>
+          <ExperienceTotal careers={rows} />
+          <ItemUl label="Career list">
+            {rows.map((row) => (
+              <CareerItem key={row.id} career={row} paths={paths} onDelete={onDelete} />
+            ))}
+          </ItemUl>
+        </>
       )}
     />
   );

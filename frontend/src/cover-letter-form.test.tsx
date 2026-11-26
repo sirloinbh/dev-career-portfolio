@@ -224,18 +224,18 @@ test('the answer count follows the typing, and an answer over the limit is still
   const api = fakeApi(saved);
   await openForm();
   const answer = fieldIn(1, 'Answer');
-  expect(answer).toHaveAccessibleDescription('18 / 500 characters');
+  expect(answer).toHaveAccessibleDescription('18 characters (15 without spaces) / 500');
   type(fieldIn(1, 'Character limit'), '10');
   expect(answer).toHaveAccessibleDescription(
-    '18 / 10 characters · 8 over the limit. It can still be saved.',
+    '18 characters (15 without spaces) / 10 · 8 over the limit. It can still be saved.',
   );
   type(answer, '가 나 다');
-  expect(answer).toHaveAccessibleDescription('5 / 10 characters');
+  expect(answer).toHaveAccessibleDescription('5 characters (3 without spaces) / 10');
   // No limit, or one the server would refuse, counts without a limit.
   type(fieldIn(1, 'Character limit'), '');
-  expect(answer).toHaveAccessibleDescription('5 characters');
+  expect(answer).toHaveAccessibleDescription('5 characters (3 without spaces)');
   type(fieldIn(1, 'Character limit'), '0');
-  expect(answer).toHaveAccessibleDescription('5 characters');
+  expect(answer).toHaveAccessibleDescription('5 characters (3 without spaces)');
 
   // #37: over the limit does not block saving.
   type(fieldIn(1, 'Character limit'), '3');
