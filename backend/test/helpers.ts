@@ -18,6 +18,17 @@ export async function lockApplications(t: TestContext) {
   t.after(() => client.end());
 }
 
+// Projects tests also run in parallel processes: one empties the table and counts on the next id while
+// another inserts rows, so every test that writes projects holds this lock for its whole run.
+const projectsLock = 37_037;
+
+export async function lockProjects(t: TestContext) {
+  const client = new Client({ connectionString: testDatabaseUrl() });
+  await client.connect();
+  await client.query('SELECT pg_advisory_lock($1)', [projectsLock]);
+  t.after(() => client.end());
+}
+
 // TEST_DATABASE_URL is often a machine-wide variable set for another project. These tests delete
 // rows, so they only ever run against this app's dedicated test database and skip anywhere else.
 export function testDatabaseUrl() {

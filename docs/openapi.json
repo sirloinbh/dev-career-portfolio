@@ -1390,6 +1390,36 @@
         }
       }
     },
+    "/api/dashboard": {
+      "get": {
+        "summary": "Summarize item counts, upcoming deadlines, expiring certifications and recent changes",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Sign-in required (no session from the shared sign-in)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/educations": {
       "get": {
         "summary": "List educations, newest start first",

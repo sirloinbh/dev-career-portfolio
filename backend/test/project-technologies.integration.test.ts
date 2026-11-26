@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { testDatabaseUrl } from './helpers.js';
+import { lockProjects, testDatabaseUrl } from './helpers.js';
 
 const url = testDatabaseUrl();
 
@@ -12,6 +12,7 @@ test(
   'the database refuses blank and over-length technology items that skip the API (#191)',
   { skip: !url },
   async (t) => {
+    await lockProjects(t);
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
     const insert = (technologies: (string | null)[]) =>

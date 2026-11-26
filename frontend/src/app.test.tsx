@@ -4,7 +4,18 @@ import { expect, test, vi } from 'vitest';
 import { App } from './app';
 import { findLive } from './test/live';
 
-// Answers /api/health with `body`; the start page's /api/applications always gets an empty list.
+// The overview also loads its summary (#221); an empty one keeps these tests about the shell.
+const emptySummary = {
+  today: '2026-10-26',
+  windows: { deadlineDays: 14, expiryDays: 90 },
+  counts: { educations: 0, careers: 0, projects: 0, skills: 0, certifications: 0, applications: 0 },
+  upcomingDeadlines: [],
+  expiringCertifications: [],
+  recentlyChanged: [],
+};
+
+// Answers /api/health with `body`; the start page's /api/applications gets an empty list and the Dashboard's
+// /api/dashboard an empty summary.
 const health = (body: object, status = 200) =>
   vi.stubGlobal(
     'fetch',
@@ -12,7 +23,9 @@ const health = (body: object, status = 200) =>
       Promise.resolve(
         new URL(String(input), 'http://localhost').pathname === '/api/applications'
           ? new Response(JSON.stringify({ applications: [] }))
-          : new Response(JSON.stringify(body), { status }),
+          : new URL(String(input), 'http://localhost').pathname === '/api/dashboard'
+            ? new Response(JSON.stringify(emptySummary))
+            : new Response(JSON.stringify(body), { status }),
       ),
     ),
   );
@@ -95,6 +108,8 @@ function deployedPage(me: () => Response) {
       if (path === '/api/me') return Promise.resolve(me());
       if (path === '/api/health')
         return Promise.resolve(new Response(JSON.stringify({ today: '2026-10-26' })));
+      if (path === '/api/dashboard')
+        return Promise.resolve(new Response(JSON.stringify(emptySummary)));
       if (path === '/api/applications') return Promise.resolve(json({ applications: [] }));
       throw new Error(`Unexpected request to ${path}`);
     }),
