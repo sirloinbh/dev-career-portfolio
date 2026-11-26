@@ -47,7 +47,7 @@ const project = {
   role: null,
   summary: null,
   contributions: null,
-  technologies: [],
+  skillIds: [],
   repositoryUrl: null,
   serviceUrl: null,
 };
