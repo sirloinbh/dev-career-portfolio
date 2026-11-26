@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { lockPortfolio,testDatabaseUrl } from './helpers.js';
+import { lockPortfolio, testDatabaseUrl } from './helpers.js';
 
 const url = testDatabaseUrl();
 
