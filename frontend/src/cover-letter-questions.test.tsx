@@ -69,6 +69,7 @@ function serve(override?: Reply, hold?: string) {
       urls.push(url);
       if (url === '/api/applications') return json({ applications: [cloud, sea] });
       if (/^\/api\/applications\/\d+\/status-history$/.test(url)) return json({ history: stages });
+      if (/^\/api\/applications\/\d+\/interviews$/.test(url)) return json({ interviews: [] });
       const id = /^\/api\/applications\/([^/]+)\/questions$/.exec(url)?.[1];
       if (id === undefined) return json({ error: 'API not found' }, 404);
       if (override === 'offline') return Promise.reject(new TypeError('Failed to fetch'));

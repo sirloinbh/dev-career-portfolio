@@ -6,6 +6,7 @@ import { careerInput } from './routes/careers.js';
 import { certificationInput } from './routes/certifications.js';
 import { questionsInput } from './routes/cover-letter-questions.js';
 import { educationInput } from './routes/educations.js';
+import { interviewInput } from './routes/interviews.js';
 import { projectInput } from './routes/projects.js';
 import { skillInput } from './routes/skills.js';
 import { buildOpenApi, type Operation } from './standard/openapi.js';
@@ -127,6 +128,25 @@ export const operations: Record<string, Operation> = {
   },
   'DELETE /api/applications/:id/questions/:questionId': {
     summary: 'Delete one cover letter question',
+    status: [204, 400, 404],
+  },
+
+  'GET /api/applications/:id/interviews': {
+    summary: 'List the interviews of an application, in the order they happen',
+    status: [200, 400, 404],
+  },
+  'POST /api/applications/:id/interviews': {
+    summary: 'Add an interview (day and time in Asia/Seoul) to an application',
+    body: ['Interview', interviewInput],
+    status: [201, 400, 404],
+  },
+  'PUT /api/applications/:id/interviews/:interviewId': {
+    summary: 'Replace an interview of an application',
+    body: ['Interview', interviewInput],
+    status: [200, 400, 404],
+  },
+  'DELETE /api/applications/:id/interviews/:interviewId': {
+    summary: 'Delete one interview of an application',
     status: [204, 400, 404],
   },
 };

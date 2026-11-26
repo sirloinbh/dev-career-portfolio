@@ -10,6 +10,7 @@ import { registerCertificationRoutes } from './routes/certifications.js';
 import { registerCoverLetterQuestionRoutes } from './routes/cover-letter-questions.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerEducationRoutes } from './routes/educations.js';
+import { registerInterviewRoutes } from './routes/interviews.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerSkillRoutes } from './routes/skills.js';
 import { setInt8Parser } from './standard/db.js';
@@ -59,6 +60,7 @@ export function createApp(
   registerCertificationRoutes(app, pool);
   registerApplicationRoutes(app, pool, today);
   registerCoverLetterQuestionRoutes(app, pool);
+  registerInterviewRoutes(app, pool);
   registerDashboardRoutes(app, pool, today);
   // #711: shared-ai calls the AI tools here with a signed token. Outside /api, so the proxy never reaches it.
   registerToolRoutes(app, {
