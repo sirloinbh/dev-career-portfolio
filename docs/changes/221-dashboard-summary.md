@@ -22,3 +22,7 @@ Every table already has `updated_at` and each update route sets it, so no migrat
 - `backend/test/dashboard.integration.test.ts`: counts; deadline edges (past, today, day 14, day 15, submitted, none); expiry edges (past, today, day 90, day 91, none); recent order. Runs in a rolled-back transaction under table locks. **Skipped locally (no PostgreSQL); CI is the DB proof.**
 - `frontend/src/dashboard.test.tsx`: cards and links, countdown text, empty messages, failed load.
 - Browser check (mock API + vite, Chrome via Playwright): 390x844 and 1440x900 show the cards, no "No features yet", no horizontal scroll.
+
+## Test race fixed on the way
+
+`projects.integration.test.ts` empties `projects` and expects the next id to be 9, while `project-technologies.integration.test.ts` inserts projects in a parallel process. It passed on main by timing; adding a test file shifted the timing and it failed in CI. `backend/test/helpers.ts` gets `lockProjects` (an advisory lock, like `lockApplications`), and both files hold it. The dashboard test locks only the four tables it writes to.
