@@ -31,6 +31,7 @@ import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { useKnownValues } from './list-query';
+import { educationTools } from './list-tools';
 
 function EducationItem({
   education,
@@ -112,6 +113,7 @@ export function EducationList({ paths }: { paths: EducationPaths }) {
       deleteNoun="education"
       deleteName={(row) => row.school}
       removeRow={(row) => educationApi.remove(row.id)}
+      tools={educationTools}
       renderRows={(rows, onDelete) => (
         <ItemUl label="Education list">
           {rows.map((row) => (
