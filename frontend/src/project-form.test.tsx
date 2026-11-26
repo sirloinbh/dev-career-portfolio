@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, expect, test, vi } from 'vitest';
 
 import { App } from './app';
+import type { Career } from './career-data';
 import { toast } from './components/ui/sonner';
 import type { Project } from './project-data';
 import { findLive } from './test/live';
@@ -11,6 +12,7 @@ import { type ErrorBody, validation } from './test/server-errors';
 // All projects here are made up for the test.
 
 afterEach(() => {
+  careerRows = [];
   act(() => {
     toast.dismiss();
   });
@@ -20,6 +22,7 @@ const past: Project = {
   id: 1,
   name: '사내 위키 검색',
   organization: '한빛소프트',
+  careerId: null,
   startDate: '2021-03-02',
   endDate: '2021-08-31',
   role: '프론트엔드',
@@ -29,6 +32,9 @@ const past: Project = {
   repositoryUrl: 'https://github.com/example/wiki',
   serviceUrl: null,
 };
+
+/** The careers the fake API lists for the Career picker. */
+let careerRows: Career[] = [];
 
 type Call = { method: string; url: string; body: unknown };
 
@@ -51,6 +57,7 @@ function fakeApi(rows: Project[]) {
       const { method, path: url, id } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
       if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/careers') return json({ careers: careerRows });
       const known =
         (url === '/api/projects' && (method === 'GET' || method === 'POST')) ||
         (id !== null && url === `/api/projects/${id}` && (method === 'PUT' || method === 'DELETE'));
@@ -123,6 +130,7 @@ test('a new project with no end date is sent as running and listed as Ongoing', 
   expect(postBody(api)).toEqual({
     name: '주문 정산 자동화',
     organization: '',
+    careerId: null,
     startDate: '2024-05-01',
     endDate: null,
     role: '백엔드 개발',
@@ -309,4 +317,38 @@ test('a failed delete keeps the dialog open and the row on screen', async () => 
   expect(
     screen.getByRole('listitem', { hidden: true, name: '사내 위키 검색' }),
   ).toBeInTheDocument();
+});
+
+test("a project is linked to a career picked in the form, and the list shows that career's company", async () => {
+  careerRows = [
+    {
+      id: 5,
+      company: '한빛소프트',
+      department: null,
+      position: null,
+      employmentType: 'full_time',
+      startDate: '2024-01-02',
+      endDate: null,
+      duties: null,
+      achievements: null,
+    },
+  ];
+  const api = fakeApi([]);
+  open('/projects/new');
+  expect(await screen.findByRole('heading', { level: 1, name: 'Add project' })).toBeInTheDocument();
+
+  type('Project name', '결제 리뉴얼');
+  type('Start date', '2024-02-01');
+  const picker = screen.getByLabelText('Career');
+  // The option appears once the career list has loaded.
+  await within(picker).findByRole('option', { name: '한빛소프트 (2024)' });
+  expect(
+    within(picker).getByRole('option', { name: 'No career (side project, school)' }),
+  ).toBeInTheDocument();
+  fireEvent.change(picker, { target: { value: '5' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+  const item = await screen.findByRole('listitem', { name: '결제 리뉴얼' });
+  expect(postBody(api)).toMatchObject({ careerId: 5 });
+  expect(item).toHaveTextContent('한빛소프트');
 });

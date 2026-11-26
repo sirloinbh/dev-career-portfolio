@@ -15,6 +15,7 @@ const past: Project = {
   id: 1,
   name: '사내 위키 검색',
   organization: '한빛소프트',
+  careerId: null,
   startDate: '2021-03-02',
   endDate: '2021-08-31',
   role: '프론트엔드',

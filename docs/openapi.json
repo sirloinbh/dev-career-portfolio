@@ -2069,6 +2069,19 @@
               }
             ]
           },
+          "careerId": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999999999999999
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "startDate": {
             "type": "string",
             "format": "date",

@@ -3,6 +3,7 @@ import { expect, test, vi } from 'vitest';
 
 import { App } from './app';
 import { type Career, careerPeriodText, roleText } from './career-data';
+import type { Project } from './project-data';
 import { findLive, getLive } from './test/live';
 
 // All companies here are made up for the test.
@@ -31,6 +32,9 @@ const past: Career = {
   achievements: null,
 };
 
+/** Projects the fake API lists: one linked to `current`, one linked to nothing. */
+let linkedProjects: Project[] = [];
+
 /** Answers /api/careers with `careers` (or an error) and /api/health with a date. */
 function serve(careers: { status: number; body: object } | 'offline') {
   vi.stubGlobal(
@@ -39,6 +43,9 @@ function serve(careers: { status: number; body: object } | 'offline') {
       const url = String(input);
       if (url === '/api/health') {
         return Promise.resolve(new Response(JSON.stringify({ today: '2026-11-05' })));
+      }
+      if (url === '/api/projects') {
+        return Promise.resolve(new Response(JSON.stringify({ projects: linkedProjects })));
       }
       if (careers === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
       return Promise.resolve(
@@ -183,6 +190,9 @@ function serveReloads(...gets: Array<{ status: number; body: object }>) {
         return Promise.resolve(new Response(JSON.stringify({ today: '2026-11-05' })));
       }
       if (init?.method === 'DELETE') return Promise.resolve(new Response(null, { status: 204 }));
+      if (String(input) === '/api/projects') {
+        return Promise.resolve(new Response(JSON.stringify({ projects: [] })));
+      }
       const next = queue.shift() ?? gets[gets.length - 1];
       return Promise.resolve(new Response(JSON.stringify(next.body), { status: next.status }));
     }),
@@ -245,5 +255,42 @@ test('the top of the list shows the total experience and the internship time apa
     );
   } finally {
     vi.useRealTimers();
+  }
+});
+
+test('a career lists the projects linked to it, and a project with no link appears nowhere', async () => {
+  const project = (id: number, name: string, careerId: number | null): Project => ({
+    id,
+    name,
+    organization: null,
+    careerId,
+    startDate: '2024-02-01',
+    endDate: null,
+    role: null,
+    summary: null,
+    contributions: null,
+    technologies: [],
+    repositoryUrl: null,
+    serviceUrl: null,
+  });
+  linkedProjects = [project(7, '결제 리뉴얼', current.id), project(8, 'Side project', null)];
+  try {
+    serve({ status: 200, body: { careers: [current, past] } });
+    openCareers();
+    const list = await screen.findByRole('list', { name: 'Career list' });
+    const held = within(list).getByRole('listitem', { name: '한빛소프트' });
+    const linked = await within(held).findByRole('list', { name: 'Linked projects' });
+    expect(within(linked).getByRole('link', { name: '결제 리뉴얼' })).toHaveAttribute(
+      'href',
+      '/projects/7/edit',
+    );
+    expect(linked).toHaveTextContent('February 1, 2024 – Present');
+    // The other career has no linked project, so it shows no Projects block.
+    expect(
+      within(within(list).getByRole('listitem', { name: '새벽랩' })).queryByText('Projects'),
+    ).toBeNull();
+    expect(screen.queryByText('Side project')).not.toBeInTheDocument();
+  } finally {
+    linkedProjects = [];
   }
 });
