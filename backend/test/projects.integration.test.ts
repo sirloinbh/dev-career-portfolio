@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Pool } from 'pg';
 
-import { testDatabaseUrl, withApi } from './helpers.js';
+import { lockProjects, testDatabaseUrl, withApi } from './helpers.js';
 
 const url = testDatabaseUrl();
 
@@ -23,6 +23,7 @@ const shop = {
 
 // Requires career_test with database/migrations applied. Skipped (not passed) without it.
 test('projects are stored, listed newest first, updated and deleted', { skip: !url }, async (t) => {
+  await lockProjects(t);
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
   await pool.query('DELETE FROM projects');
@@ -127,6 +128,7 @@ test('projects are stored, listed newest first, updated and deleted', { skip: !u
 });
 
 test('the database itself refuses rows the API would refuse', { skip: !url }, async (t) => {
+  await lockProjects(t);
   const pool = new Pool({ connectionString: url });
   t.after(() => pool.end());
   const insert = (fields: { end?: string; technologies?: string[]; link?: string }) =>
@@ -147,6 +149,7 @@ test(
   'a project links to a career, unlinks, and keeps living when the career is deleted',
   { skip: !url },
   async (t) => {
+    await lockProjects(t);
     const pool = new Pool({ connectionString: url });
     t.after(() => pool.end());
 
