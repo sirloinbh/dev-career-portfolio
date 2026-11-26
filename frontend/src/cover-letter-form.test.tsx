@@ -6,6 +6,7 @@ import type { Application } from './application-data';
 import { toast } from './components/ui/sonner';
 import {
   type CoverLetterQuestion,
+  type EarlierAnswer,
   questionFieldOf,
   toQuestionsInput,
   typedLimit,
@@ -43,7 +44,7 @@ type Call = { method: string; url: string; body: unknown };
  * An in-memory question API for application 1: GET lists, PUT replaces the list as the server does
  * (new questions get ids). `refuseNext` answers the next PUT with that status and message.
  */
-function fakeApi(rows: CoverLetterQuestion[]) {
+function fakeApi(rows: CoverLetterQuestion[], earlier: EarlierAnswer[] = []) {
   let store = [...rows];
   const calls: Call[] = [];
   let refuse: { status: number; body: ErrorBody } | undefined;
@@ -57,6 +58,14 @@ function fakeApi(rows: CoverLetterQuestion[]) {
       const { method, path: url } = request;
       const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
       if (method === 'GET' && url === '/api/health') return json({ today: '2026-11-05' });
+      if (method === 'GET' && url === '/api/cover-letter-answers') {
+        const raw = String(input);
+        calls.push({ method, url: raw, body });
+        const text = new URL(raw, 'http://localhost').searchParams.get('q') ?? '';
+        return json({
+          matches: earlier.filter((item) => (item.question + item.answer).includes(text)),
+        });
+      }
       const known =
         (method === 'GET' && url === '/api/applications') ||
         (/^\/api\/applications\/\d+\/questions$/.test(url) &&
@@ -446,4 +455,43 @@ test('form rules: the list as the API takes it, typed limits, and message fields
   expect(fieldOf('questions.0.id')).toBeUndefined();
   expect(fieldOf('questions.12.answer')).toBeUndefined();
   expect(fieldOf('questions')).toBeUndefined();
+});
+
+test('Find earlier answers searches other applications and copies one into the field without saving', async () => {
+  const earlier: EarlierAnswer[] = [
+    {
+      id: 41,
+      question: '지원 동기',
+      answer: '사용자 데이터를 다루는 일이 즐겁습니다.',
+      applicationId: 2,
+      companyName: '바다물류',
+      position: '백엔드',
+      date: '2026-10-02',
+    },
+  ];
+  const api = fakeApi(saved, earlier);
+  await openForm();
+  fireEvent.click(screen.getByRole('button', { name: 'Find earlier answers for question 2' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Find earlier answers' });
+
+  fireEvent.change(within(dialog).getByLabelText('Search text'), { target: { value: '없는말' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Search' }));
+  expect(await within(dialog).findByText(/No earlier answers match/)).toBeInTheDocument();
+
+  fireEvent.change(within(dialog).getByLabelText('Search text'), { target: { value: '데이터' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Search' }));
+  const list = await within(dialog).findByRole('list', { name: 'Earlier answers' });
+  expect(list).toHaveTextContent('바다물류 · 백엔드 · 2026-10-02');
+  expect(api.calls.some((call) => call.url.includes('exclude=1'))).toBe(true);
+
+  fireEvent.click(within(list).getByRole('button', { name: /Use this answer from 바다물류/ }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(fieldIn(2, 'Answer')).toHaveValue('사용자 데이터를 다루는 일이 즐겁습니다.');
+  // Question 1 is untouched, and nothing was saved until Save.
+  expect(fieldIn(1, 'Answer')).toHaveValue('데이터 플랫폼을 만들고 싶습니다.');
+  expect(api.puts()).toHaveLength(0);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(api.puts()).toHaveLength(1));
+  expect(api.store()[1].answer).toBe('사용자 데이터를 다루는 일이 즐겁습니다.');
 });

@@ -127,3 +127,32 @@ test('a malformed id is refused before any query', async () => {
     }
   });
 });
+
+test('a career that is not a positive whole number is refused', async () => {
+  for (const careerId of ['3', 1.5, 0, -2, true]) {
+    await expectRefused(
+      { ...valid, careerId },
+      careerId === 1.5
+        ? 'Career must be a whole number'
+        : typeof careerId === 'number'
+          ? 'Career must be a positive number'
+          : 'Career must be a number',
+    );
+  }
+});
+
+test('a career id with no matching career is answered as a bad input, not a server error', async () => {
+  const pool = {
+    query: async () => {
+      throw Object.assign(new Error('violates foreign key constraint'), { code: '23503' });
+    },
+  } as unknown as Pool;
+  await withApi(pool, async (call) => {
+    const { status, data } = await call('/api/projects', {
+      method: 'POST',
+      body: { ...valid, careerId: 9 },
+    });
+    assert.equal(status, 400);
+    assert.equal(data.error, 'Career not found');
+  });
+});

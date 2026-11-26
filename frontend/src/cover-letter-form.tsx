@@ -23,6 +23,7 @@ import {
   typedLimit,
   useQuestions,
 } from './cover-letter-data';
+import { FindEarlierAnswers } from './cover-letter-earlier-answers';
 import { invalidAddressText, isValidId } from './entity-id';
 import { controlClass } from './form-fields';
 import { useServerForm } from './form-state';
@@ -203,6 +204,17 @@ function QuestionsForm({
                       {over ? '. It can still be saved.' : ''}
                     </p>
                     {errorFor(`${draft.key}:answer`)}
+                    <FindEarlierAnswers
+                      applicationId={applicationId}
+                      label={`question ${String(index + 1)}`}
+                      onPick={(picked) => {
+                        markDirty();
+                        update(draft.key, 'answer', picked.slice(0, 5000));
+                        requestAnimationFrame(() =>
+                          document.getElementById(field('answer'))?.focus(),
+                        );
+                      }}
+                    />
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button

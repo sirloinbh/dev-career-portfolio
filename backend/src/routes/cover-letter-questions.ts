@@ -49,6 +49,24 @@ export const questionsInput = z.object(
   objectBodyError,
 );
 
+// Search for earlier answers (#231): text to find, and the application being edited, which is left out.
+const searchInput = z.object({
+  q: z
+    .string({ error: 'Search text is required' })
+    .trim()
+    .min(1, 'Search text is required')
+    .max(100, 'Search text must be at most 100 characters'),
+  exclude: z
+    .string()
+    .regex(/^[1-9]\d{0,14}$/, 'Invalid application ID')
+    .optional(),
+});
+
+/** `%`, `_` and `\` are plain text in a search, not LIKE wildcards. */
+const escapeLike = (text: string) => text.replace(/[\\%_]/g, '\\$&');
+
+const maxMatches = 20;
+
 type QuestionsInput = z.infer<typeof questionsInput>;
 
 // The field messages do not say which question they are about, so the position is added in front.
@@ -93,6 +111,26 @@ const inTransaction = <T>(pool: Pool, run: (client: PoolClient) => Promise<T>) =
   withTransaction<T, PoolClient>(pool, run);
 
 export function registerCoverLetterQuestionRoutes(app: Express, pool: Pool) {
+  // Earlier questions and answers whose question or answer contains the text, newest application
+  // first. Questions without an answer have nothing to reuse and are skipped.
+  app.get('/api/cover-letter-answers', async (req, res) => {
+    const { q, exclude } = searchInput.parse(req.query);
+    const { rows } = await pool.query(
+      `SELECT cq.id, cq.question, cq.answer, cq.char_limit AS "charLimit",
+              a.id AS "applicationId", a.company_name AS "companyName", a.position,
+              to_char(a.created_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') AS date
+       FROM cover_letter_questions cq
+       JOIN applications a ON a.id = cq.application_id
+       WHERE cq.answer IS NOT NULL
+         AND (cq.question ILIKE $1 OR cq.answer ILIKE $1)
+         AND ($2::bigint IS NULL OR a.id <> $2::bigint)
+       ORDER BY a.created_at DESC, a.id DESC, cq.display_order
+       LIMIT $3`,
+      [`%${escapeLike(q)}%`, exclude ?? null, maxMatches],
+    );
+    res.json({ matches: rows });
+  });
+
   app.get('/api/applications/:id/questions', async (req, res) => {
     const applicationId = parseId(req.params.id, 'application');
     const found = await pool.query('SELECT 1 FROM applications WHERE id = $1', [applicationId]);

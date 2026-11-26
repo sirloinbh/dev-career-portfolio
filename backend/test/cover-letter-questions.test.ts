@@ -92,3 +92,22 @@ test('malformed ids in the path are refused before any query', async () => {
     }
   });
 });
+
+test('searching earlier answers needs text and a valid application to leave out', async () => {
+  await withApi(refusingPool(), async (call) => {
+    for (const [path, message] of [
+      ['/api/cover-letter-answers', 'Search text is required'],
+      ['/api/cover-letter-answers?q=%20%20', 'Search text is required'],
+      [
+        `/api/cover-letter-answers?q=${'a'.repeat(101)}`,
+        'Search text must be at most 100 characters',
+      ],
+      ['/api/cover-letter-answers?q=a&exclude=abc', 'Invalid application ID'],
+      ['/api/cover-letter-answers?q=a&exclude=0', 'Invalid application ID'],
+    ] as const) {
+      const { status, data } = await call(path);
+      assert.equal(status, 400);
+      assert.equal(data.error, message);
+    }
+  });
+});
