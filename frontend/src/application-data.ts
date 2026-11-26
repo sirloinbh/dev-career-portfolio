@@ -168,7 +168,7 @@ export type StatusChange = {
   date: string;
 };
 
-export const statusHistoryPath = (applicationId: string) =>
+const statusHistoryPath = (applicationId: string) =>
   `/api/applications/${encodeURIComponent(applicationId)}/status-history`;
 
 /** The stage changes of one application, oldest first, through the shared query layer. */
