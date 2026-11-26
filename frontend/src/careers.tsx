@@ -28,7 +28,9 @@ import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
+import { useKnownValues } from './list-query';
 import { TextBlocks } from './text-blocks';
+import { TextControl } from './text-control';
 
 function CareerItem({
   career,
@@ -113,6 +115,10 @@ export function CareerList({ paths }: { paths: CareerPaths }) {
   );
 }
 
+const pickCompany = (row: Career) => row.company;
+const pickDepartment = (row: Career) => row.department;
+const pickPosition = (row: Career) => row.position;
+
 function CareerFields({
   initial,
   submitLabel,
@@ -128,6 +134,12 @@ function CareerFields({
   const endDateInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } =
     useServerForm(careerFieldOf);
+  // Values already used, suggested while typing; a new value is still accepted (#247).
+  const known: Partial<Record<string, readonly string[]>> = {
+    company: useKnownValues(careerList, pickCompany),
+    department: useKnownValues(careerList, pickDepartment),
+    position: useKnownValues(careerList, pickPosition),
+  };
   const set = (field: keyof CareerForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -135,12 +147,13 @@ function CareerFields({
   const textField = (field: keyof CareerForm, label: string, placeholder: string) => (
     <div className="flex flex-col gap-2">
       <Label htmlFor={fieldId(field)}>{label}</Label>
-      <Input
+      <TextControl
         id={fieldId(field)}
         maxLength={100}
         autoComplete="off"
         value={form[field]}
-        onChange={(e) => set(field)(e.target.value)}
+        onValueChange={set(field)}
+        known={known[field]}
         placeholder={placeholder}
         {...describe(field)}
       />

@@ -12,6 +12,7 @@ import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
+import { useKnownValues } from './list-query';
 import { OutLink } from './out-link';
 import {
   emptyProjectForm,
@@ -28,6 +29,7 @@ import {
   toProjectInput,
 } from './project-data';
 import { TextBlocks } from './text-blocks';
+import { TextControl } from './text-control';
 import { webLink } from './web-link';
 
 /** Technology names as tags. A long unspaced name wraps instead of widening the page at 390px. */
@@ -142,6 +144,9 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
   );
 }
 
+const pickOrganization = (row: Project) => row.organization;
+const pickRole = (row: Project) => row.role;
+
 function ProjectFields({
   initial,
   submitLabel,
@@ -157,6 +162,11 @@ function ProjectFields({
   const endDateInput = useRef<HTMLInputElement>(null);
   const { fieldId, describe, errorFor, clearOnEdit, submit, actions, pending } =
     useServerForm(projectFieldOf);
+  // Values already used, suggested while typing; a new value is still accepted (#247).
+  const known: Partial<Record<string, readonly string[]>> = {
+    organization: useKnownValues(projectList, pickOrganization),
+    role: useKnownValues(projectList, pickRole),
+  };
   const set = (field: keyof ProjectForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -173,7 +183,7 @@ function ProjectFields({
   ) => (
     <div className="flex flex-col gap-2">
       <Label htmlFor={fieldId(field)}>{label}</Label>
-      <Input
+      <TextControl
         id={fieldId(field)}
         type={type}
         maxLength={maxLength}
@@ -182,7 +192,8 @@ function ProjectFields({
         autoCapitalize={type === 'url' ? 'off' : undefined}
         spellCheck={type === 'url' ? false : undefined}
         value={form[field]}
-        onChange={(e) => set(field)(e.target.value)}
+        onValueChange={set(field)}
+        known={known[field]}
         placeholder={placeholder}
         {...(hint ? describe(field, `${fieldId(field)}-hint`) : describe(field))}
       />

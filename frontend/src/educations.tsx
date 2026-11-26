@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
+import { Combobox } from './components/ui/combobox';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
@@ -29,6 +30,7 @@ import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
+import { useKnownValues } from './list-query';
 
 function EducationItem({
   education,
@@ -121,6 +123,9 @@ export function EducationList({ paths }: { paths: EducationPaths }) {
   );
 }
 
+const pickSchool = (row: Education) => row.school;
+const pickMajor = (row: Education) => row.major;
+
 function EducationFields({
   initial,
   submitLabel,
@@ -139,6 +144,9 @@ function EducationFields({
   const set = (field: keyof EducationForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
+  const knownSchool = useKnownValues(educationList, pickSchool);
+  const knownMajor = useKnownValues(educationList, pickMajor);
+
   const enrolled = form.status === 'enrolled';
   return (
     // The server checks every rule and answers in English, so the browser's own checks are off.
@@ -153,12 +161,14 @@ function EducationFields({
     >
       <div className="flex flex-col gap-2">
         <Label htmlFor={fieldId('school')}>School</Label>
-        <Input
+        <Combobox
           id={fieldId('school')}
           maxLength={100}
           autoComplete="off"
           value={form.school}
-          onChange={(e) => set('school')(e.target.value)}
+          onValueChange={set('school')}
+          options={knownSchool}
+          listLabel="Earlier schools"
           placeholder="e.g. Hanguk University"
           {...describe('school')}
         />
@@ -166,12 +176,14 @@ function EducationFields({
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor={fieldId('major')}>Major</Label>
-        <Input
+        <Combobox
           id={fieldId('major')}
           maxLength={100}
           autoComplete="off"
           value={form.major}
-          onChange={(e) => set('major')(e.target.value)}
+          onValueChange={set('major')}
+          options={knownMajor}
+          listLabel="Earlier majors"
           placeholder="e.g. Computer Science"
           {...describe('major')}
         />
