@@ -29,6 +29,7 @@ import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { useKnownValues } from './list-query';
+import { careerTools } from './list-tools';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
 
@@ -104,6 +105,7 @@ export function CareerList({ paths }: { paths: CareerPaths }) {
       deleteNoun="career"
       deleteName={(row) => row.company}
       removeRow={(row) => careerApi.remove(row.id)}
+      tools={careerTools}
       renderRows={(rows, onDelete) => (
         <ItemUl label="Career list">
           {rows.map((row) => (

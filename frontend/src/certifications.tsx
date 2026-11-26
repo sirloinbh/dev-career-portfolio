@@ -27,6 +27,7 @@ import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { useKnownValues } from './list-query';
+import { certificationTools } from './list-tools';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
@@ -102,6 +103,7 @@ export function CertificationList({ paths }: { paths: CertificationPaths }) {
       deleteNoun="certification"
       deleteName={(row) => row.name}
       removeRow={(row) => certificationApi.remove(row.id)}
+      tools={certificationTools(today)}
       renderRows={(rows, onDelete) => (
         <ItemUl label="Certification list">
           {rows.map((row) => (

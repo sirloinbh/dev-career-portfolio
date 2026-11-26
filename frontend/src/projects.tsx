@@ -13,6 +13,7 @@ import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { useKnownValues } from './list-query';
+import { projectTools } from './list-tools';
 import { OutLink } from './out-link';
 import {
   emptyProjectForm,
@@ -133,6 +134,7 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
       deleteNoun="project"
       deleteName={(row) => row.name}
       removeRow={(row) => projectApi.remove(row.id)}
+      tools={projectTools}
       renderRows={(rows, onDelete) => (
         <ItemUl label="Project list">
           {rows.map((row) => (
