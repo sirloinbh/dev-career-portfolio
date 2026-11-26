@@ -19,7 +19,7 @@ test(
   async (t) => {
     const client = new Client({ connectionString: url });
     await client.connect();
-    const schema = 'migration_013_test';
+    const schema = 'migration_014_test';
     t.after(async () => {
       await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
       await client.end();
@@ -53,7 +53,7 @@ test(
       );
     }
 
-    const sql = await migration('013_project_skills.sql');
+    const sql = await migration('014_project_skills.sql');
     await client.query(sql);
 
     const skills = await client.query<{ name: string; category: string; proficiency: number }>(
