@@ -64,6 +64,24 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
       await application('Open', 'drafting', null);
       await application('Soon', 'drafting', '2026-11-18');
 
+      // Interviews: the window is by day in Asia/Seoul, so midnight just after the start and 23:59 on the last day
+      // count, and the minute before the start and the first minute after the end do not (#271).
+      const owner = (
+        await client.query<{ id: number }>(
+          `SELECT id FROM applications WHERE company_name = 'Soon'`,
+        )
+      ).rows[0].id;
+      const interview = (round: number, local: string) =>
+        client.query(
+          `INSERT INTO interviews (application_id, round, scheduled_at, format)
+           VALUES ($1, $2, $3::timestamp AT TIME ZONE 'Asia/Seoul', 'video')`,
+          [owner, round, local],
+        );
+      await interview(1, '2026-11-15 23:59');
+      await interview(2, '2026-11-16 00:00');
+      await interview(3, '2026-11-30 23:59');
+      await interview(4, '2026-12-01 00:00');
+
       // Expiry: 2026-11-16 + 90 days = 2027-02-14.
       const certification = (name: string, expiry: string | null) =>
         client.query(
@@ -103,6 +121,18 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
           ['Edge', '2026-11-30'],
         ],
       );
+      assert.deepEqual(
+        (data.upcomingInterviews as { round: number; date: string; time: string }[]).map((row) => [
+          row.round,
+          row.date,
+          row.time,
+        ]),
+        [
+          [2, '2026-11-16', '00:00'],
+          [3, '2026-11-30', '23:59'],
+        ],
+      );
+      assert.equal((data.upcomingInterviews as { companyName: string }[])[0].companyName, 'Soon');
       assert.deepEqual(
         (data.expiringCertifications as { name: string; expiryDate: string }[]).map((row) => [
           row.name,

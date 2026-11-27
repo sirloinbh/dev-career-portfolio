@@ -6,11 +6,13 @@ import type { Pool } from 'pg';
 const deadlineWindowDays = 14;
 const expiryWindowDays = 90;
 const recentLimit = 5;
+// Upcoming interviews (#271) use the same window as the deadlines.
+const interviewWindowDays = deadlineWindowDays;
 
 export function registerDashboardRoutes(app: Express, pool: Pool, today: () => string) {
   app.get('/api/dashboard', async (_req, res) => {
     const date = today();
-    const [counts, deadlines, expiries, recent] = await Promise.all([
+    const [counts, deadlines, interviews, expiries, recent] = await Promise.all([
       pool.query<Record<string, number>>(
         `SELECT
            (SELECT count(*)::int FROM educations) AS educations,
@@ -27,6 +29,17 @@ export function registerDashboardRoutes(app: Express, pool: Pool, today: () => s
          WHERE status = 'drafting' AND deadline BETWEEN $1::date AND $1::date + $2::int
          ORDER BY deadline, id`,
         [date, deadlineWindowDays],
+      ),
+      // Interviews of the day and later, by their day in the service time zone, soonest first (#271).
+      pool.query(
+        `SELECT i.id, a.id AS "applicationId", a.company_name AS "companyName", a.position, i.round,
+                to_char(i.scheduled_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') AS date,
+                to_char(i.scheduled_at AT TIME ZONE 'Asia/Seoul', 'HH24:MI') AS time
+         FROM interviews i
+         JOIN applications a ON a.id = i.application_id
+         WHERE (i.scheduled_at AT TIME ZONE 'Asia/Seoul')::date BETWEEN $1::date AND $1::date + $2::int
+         ORDER BY i.scheduled_at, i.id`,
+        [date, interviewWindowDays],
       ),
       // The expiry date itself still counts as valid, so it is in the window; a past date is not.
       pool.query(
@@ -52,9 +65,14 @@ export function registerDashboardRoutes(app: Express, pool: Pool, today: () => s
     ]);
     res.json({
       today: date,
-      windows: { deadlineDays: deadlineWindowDays, expiryDays: expiryWindowDays },
+      windows: {
+        deadlineDays: deadlineWindowDays,
+        interviewDays: interviewWindowDays,
+        expiryDays: expiryWindowDays,
+      },
       counts: counts.rows[0],
       upcomingDeadlines: deadlines.rows,
+      upcomingInterviews: interviews.rows,
       expiringCertifications: expiries.rows,
       recentlyChanged: recent.rows,
     });
