@@ -158,6 +158,31 @@ export const operations: Record<string, Operation> = {
     status: [204, 400, 404],
   },
 
+  'GET /api/certifications/:id/attachments': {
+    summary: 'List the files attached to a certification (names and sizes, not the bytes)',
+    status: [200, 400, 404],
+  },
+  'POST /api/certifications/:id/attachments': {
+    summary:
+      'Attach a file to a certification: multipart form with one "file" field, PDF, PNG or JPEG, at most 5 MB',
+    status: [201, 400, 404],
+  },
+  'GET /api/projects/:id/attachments': {
+    summary: 'List the files attached to a project (names and sizes, not the bytes)',
+    status: [200, 400, 404],
+  },
+  'POST /api/projects/:id/attachments': {
+    summary:
+      'Attach a file to a project: multipart form with one "file" field, PDF, PNG or JPEG, at most 5 MB',
+    status: [201, 400, 404],
+  },
+  'GET /api/attachments/:id': {
+    summary: 'Download an attached file',
+    status: [200, 400, 404],
+    produces: 'application/pdf, image/png or image/jpeg',
+  },
+  'DELETE /api/attachments/:id': { summary: 'Delete an attached file', status: [204, 400, 404] },
+
   'GET /api/applications/:id/projects': {
     summary: 'List the ids of the projects an application highlights, newest project first',
     status: [200, 400, 404],
