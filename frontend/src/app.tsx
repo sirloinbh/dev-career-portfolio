@@ -10,6 +10,7 @@ import {
   History,
   LayoutDashboard,
   Settings2,
+  Share2,
   Wrench,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -34,6 +35,8 @@ import type { ProjectPaths } from './project-data';
 import { EditProject, NewProject, ProjectList } from './projects';
 import { ResumeScreen } from './resume';
 import { SettingsScreen } from './settings';
+import { ShareScreen } from './share';
+import { SharedPortfolioPage } from './share-page';
 import { AccountActions, SignInGate } from './sign-in';
 import type { SkillPaths } from './skill-data';
 import { EditSkill, NewSkill, SkillList } from './skills';
@@ -66,6 +69,8 @@ const pages = {
   editApplication: '/applications/:id/edit',
   timeline: '/timeline',
   resume: '/resume',
+  share: '/share',
+  sharedPage: '/share/:token',
   settings: '/settings',
 } as const;
 
@@ -134,6 +139,7 @@ const nav: NavItem[] = [
   { to: pages.timeline, label: 'Timeline', icon: History },
   { to: pages.applications, label: 'Cover letters', icon: FileText },
   { to: pages.resume, label: 'Resume', icon: FileUser },
+  { to: pages.share, label: 'Share', icon: Share2 },
   { to: pages.dashboard, label: 'Dashboard', icon: LayoutDashboard },
   { to: pages.settings, label: 'Settings', icon: Settings2 },
 ];
@@ -156,9 +162,21 @@ function useHealth() {
 }
 
 function AppRoutes() {
-  const health = useHealth();
   return (
     <BrowserRouter>
+      <Routes>
+        {/* #236: the public shared page sits outside the sign-in gate; everything else is behind it. */}
+        <Route path={pages.sharedPage} element={<SharedPortfolioPage />} />
+        <Route path="*" element={<PrivateApp />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function PrivateApp() {
+  const health = useHealth();
+  return (
+    <>
       <SignInGate>
         <AppShell appName="Dev Career Portfolio" nav={nav} actions={<AccountActions />}>
           <Routes>
@@ -213,13 +231,14 @@ function AppRoutes() {
               element={<EditQuestions paths={applicationPaths} />}
             />
             <Route path={pages.resume} element={<ResumeScreen />} />
+            <Route path={pages.share} element={<ShareScreen />} />
             <Route path={pages.settings} element={<SettingsScreen health={health} />} />
             <Route path="*" element={<Navigate to={pages.today} replace />} />
           </Routes>
         </AppShell>
         <Toaster />
       </SignInGate>
-    </BrowserRouter>
+    </>
   );
 }
 
