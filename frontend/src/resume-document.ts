@@ -35,7 +35,7 @@ export type ResumeData = {
 /** The ids chosen in each section. A section with nothing chosen is left out of the document. */
 export type ResumeSelection = Record<ResumeSectionKey, ReadonlySet<number>>;
 
-export type ResumeEntry = {
+type ResumeEntry = {
   heading: string;
   /** Short facts under the heading (period, role, issuer), joined with " · " when shown. */
   meta: string[];
