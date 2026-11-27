@@ -76,6 +76,10 @@ async function seed(pool: Pool) {
     `INSERT INTO project_skills (project_id, skill_id)
      VALUES ((SELECT id FROM projects LIMIT 1), (SELECT id FROM skills LIMIT 1))`,
   );
+  await pool.query(
+    `INSERT INTO application_projects (application_id, project_id)
+     VALUES ((SELECT id FROM applications LIMIT 1), (SELECT id FROM projects LIMIT 1))`,
+  );
 }
 
 const exportAll = async (call: Call) => {
