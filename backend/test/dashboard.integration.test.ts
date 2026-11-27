@@ -42,7 +42,7 @@ test('the dashboard counts, windows and recent changes (#221)', { skip: !url }, 
       const none = await call('/api/dashboard');
       assert.equal(none.status, 200);
       assert.equal(none.data.today, today);
-      assert.deepEqual(none.data.windows, { deadlineDays: 14, expiryDays: 90 });
+      assert.deepEqual(none.data.windows, { deadlineDays: 14, interviewDays: 14, expiryDays: 90 });
       assert.deepEqual(none.data.upcomingDeadlines, []);
       assert.deepEqual(none.data.expiringCertifications, []);
       const empty = none.data.counts as Record<string, number>;
