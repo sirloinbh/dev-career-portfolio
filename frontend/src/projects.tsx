@@ -1,5 +1,5 @@
 import { FolderKanban, Pencil, Trash2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 
 import { type Career, careerList } from './career-data';
@@ -154,6 +154,12 @@ function ProjectRows({
 }
 
 export function ProjectList({ paths }: { paths: ProjectPaths }) {
+  // The search also looks in the names of the skills a project used; the skills load beside the projects.
+  const { rows: skills } = useListQuery(skillList);
+  const tools = useMemo(
+    () => projectTools(new Map((skills ?? []).map((skill) => [skill.id, skill.name]))),
+    [skills],
+  );
   return (
     <ItemListPage<Project>
       list={projectList}
@@ -170,7 +176,7 @@ export function ProjectList({ paths }: { paths: ProjectPaths }) {
       deleteNoun="project"
       deleteName={(row) => row.name}
       removeRow={(row) => projectApi.remove(row.id)}
-      tools={projectTools}
+      tools={tools}
       renderRows={(rows, onDelete) => <ProjectRows rows={rows} paths={paths} onDelete={onDelete} />}
     />
   );
