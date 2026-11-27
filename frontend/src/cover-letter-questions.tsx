@@ -17,6 +17,7 @@ import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { answerLengthText, type CoverLetterQuestion, useQuestions } from './cover-letter-data';
 import { invalidAddressText, isValidId } from './entity-id';
+import { InterviewSection } from './interview-section';
 import { errorText } from './lib/use-notice';
 import { useListQuery } from './list-query';
 import { BackLink, PageHeader } from './page-header';
@@ -92,6 +93,7 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
         </p>
       </PageHeader>
       {missing || !valid ? null : <StatusHistory applicationId={id} enabled />}
+      {missing || !valid ? null : <InterviewSection applicationId={id} />}
       {missing || !valid ? null : (
         <Button asChild className="w-fit">
           <Link to={paths.editQuestions(id)}>
