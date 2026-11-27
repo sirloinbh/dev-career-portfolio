@@ -197,3 +197,44 @@ test('display rules: deadline countdown and day counts', () => {
   expect(daysUntil('2028-03-01', '2028-02-28')).toBe(2);
   expect(daysUntil('2026-11-01', '2026-11-05')).toBe(-4);
 });
+
+test('the list is searched by company or position and filtered by stage, then cleared', async () => {
+  serve({ status: 200, body: { applications: [near, today, open, sent, done] } });
+  openApplications();
+  await screen.findByRole('list', { name: 'Application list' });
+  const names = () =>
+    screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+
+  // The position is searched too.
+  fireEvent.change(screen.getByLabelText('Search'), { target: { value: '백엔드' } });
+  expect(names()).toEqual(['구름데이터']);
+  fireEvent.change(screen.getByLabelText('Search'), { target: { value: '물류' } });
+  expect(names()).toEqual(['바다물류']);
+  fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+
+  // The stage filter offers every stage; the rows keep the API order.
+  const stage = screen.getByLabelText('Stage');
+  expect(within(stage).getAllByRole('option')).toHaveLength(9);
+  fireEvent.change(stage, { target: { value: 'drafting' } });
+  expect(names()).toEqual(['구름데이터', '한빛소프트', '새벽커머스']);
+  fireEvent.change(stage, { target: { value: 'rejected' } });
+  expect(names()).toEqual(['숲게임즈']);
+
+  // Search and stage together, with nothing left.
+  fireEvent.change(screen.getByLabelText('Search'), { target: { value: '구름' } });
+  expect(screen.getByText('No entries match')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+  expect(names()).toEqual(['구름데이터', '한빛소프트', '새벽커머스', '바다물류', '숲게임즈']);
+});
+
+test('the sort choice orders by deadline with no deadline last, or by company', async () => {
+  serve({ status: 200, body: { applications: [near, today, open, sent, done] } });
+  openApplications();
+  await screen.findByRole('list', { name: 'Application list' });
+  const names = () =>
+    screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+  fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'deadline' } });
+  expect(names()).toEqual(['숲게임즈', '바다물류', '한빛소프트', '구름데이터', '새벽커머스']);
+  fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'company' } });
+  expect(names()).toEqual(['구름데이터', '바다물류', '새벽커머스', '숲게임즈', '한빛소프트']);
+});
