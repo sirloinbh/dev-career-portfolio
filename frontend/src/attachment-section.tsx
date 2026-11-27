@@ -112,8 +112,7 @@ export function AttachmentSection({ owner, id }: { owner: AttachmentOwner; id: s
           id="attachment-file"
           type="file"
           accept={attachmentAccept}
-          className="sr-only"
-          tabIndex={-1}
+          hidden
           aria-label="Choose a file to attach"
           onChange={(e) => void choose(e.target.files?.[0])}
         />
@@ -129,7 +128,7 @@ export function AttachmentSection({ owner, id }: { owner: AttachmentOwner; id: s
       </div>
       <p className="text-caption break-keep text-muted-foreground">
         PDF, PNG or JPEG, up to 5 MB each. Files are saved at once and are not part of the form
-        below.
+        above.
       </p>
       <p role="alert" className="text-body-sm text-destructive">
         {problem}
