@@ -1,3 +1,4 @@
+import { type Application, applicationStatuses, applicationStatusLabels } from './application-data';
 import { type Career, employmentTypeLabels, employmentTypes } from './career-data';
 import { type Certification, isExpired } from './certification-data';
 import { degreeLabels, type Education, statuses, statusLabels } from './education-data';
@@ -142,3 +143,32 @@ export function certificationTools(today: string): ListTools<Certification> {
     ],
   };
 }
+
+// Applications (#239): search by company or position, filter by hiring stage. The first sort is the order the API sends
+// (stage, then deadline), so it stays the default.
+export const applicationTools: ListTools<Application> = {
+  searchText: (a) => [a.companyName, a.position],
+  filter: {
+    label: 'Stage',
+    options: () =>
+      applicationStatuses.map((s) => ({
+        value: s,
+        label: applicationStatusLabels[s],
+        matches: (a: Application) => a.status === s,
+      })),
+  },
+  sorts: [
+    { value: 'stage', label: 'Stage, then deadline' },
+    {
+      value: 'deadline',
+      label: 'Deadline, soonest first',
+      // An application without a deadline sorts last.
+      compare: (a, b) => byDate(a.deadline, b.deadline),
+    },
+    {
+      value: 'company',
+      label: 'Company A to Z',
+      compare: (a, b) => byText(a.companyName, b.companyName),
+    },
+  ],
+};

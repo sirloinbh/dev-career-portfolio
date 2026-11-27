@@ -29,6 +29,7 @@ import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { useKnownValues } from './list-query';
+import { applicationTools } from './list-tools';
 import { OutLink } from './out-link';
 import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
@@ -150,6 +151,7 @@ export function ApplicationList({ paths }: { paths: ApplicationPaths }) {
   return (
     <ItemListPage<Application>
       list={applicationList}
+      tools={applicationTools}
       title="Cover letters"
       description="See the companies you applied to by hiring stage (drafting, submitted, document passed, interviews, offer, rejected, withdrawn), earliest deadline first within each stage. Drafts past their deadline come after the other drafts."
       noun="applications"
