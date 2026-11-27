@@ -9,11 +9,22 @@ import { parseRequest, unexpectedRequest } from './test/route';
 
 const summary: Dashboard = {
   today: '2026-11-16',
-  windows: { deadlineDays: 14, expiryDays: 90 },
+  windows: { deadlineDays: 14, interviewDays: 14, expiryDays: 90 },
   counts: { educations: 1, careers: 2, projects: 3, skills: 4, certifications: 5, applications: 6 },
   upcomingDeadlines: [
     { id: 1, companyName: '구름데이터', position: '백엔드 개발', deadline: '2026-11-16' },
     { id: 2, companyName: '바다물류', position: null, deadline: '2026-11-20' },
+  ],
+  upcomingInterviews: [
+    {
+      id: 5,
+      applicationId: 2,
+      companyName: '바다물류',
+      position: null,
+      round: 2,
+      date: '2026-11-18',
+      time: '14:30',
+    },
   ],
   expiringCertifications: [
     { id: 7, name: '정보처리기사', issuer: '한국산업인력공단', expiryDate: '2026-12-01' },
@@ -58,6 +69,11 @@ test('the dashboard shows counts, deadlines, expiries and recent changes with li
   expect(within(deadlines).getByText('November 16, 2026 · Today')).toBeInTheDocument();
   expect(within(deadlines).getByText('November 20, 2026 · D-4')).toBeInTheDocument();
 
+  const interviews = screen.getByRole('region', { name: 'Upcoming interviews' });
+  expect(within(interviews).getByText('바다물류 · Round 2')).toBeInTheDocument();
+  expect(within(interviews).getByText('November 18, 2026 · D-2 · 14:30')).toBeInTheDocument();
+  expect(within(interviews).getByRole('link')).toHaveAttribute('href', '/applications/2');
+
   const expiring = screen.getByRole('region', { name: 'Expiring certifications' });
   expect(within(expiring).getByText('Expires December 1, 2026 · D-15')).toBeInTheDocument();
   const recent = screen.getByRole('region', { name: 'Recently changed' });
@@ -83,10 +99,12 @@ test('a card with nothing to show says so', async () => {
       applications: 0,
     },
     upcomingDeadlines: [],
+    upcomingInterviews: [],
     expiringCertifications: [],
     recentlyChanged: [],
   });
   expect(await screen.findByText('No deadlines in the next 14 days')).toBeInTheDocument();
+  expect(screen.getByText('No interviews in the next 14 days')).toBeInTheDocument();
   expect(screen.getByText('No certifications expire in the next 90 days')).toBeInTheDocument();
   expect(screen.getByText('Nothing has been added yet')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Nothing here yet' })).toBeInTheDocument();

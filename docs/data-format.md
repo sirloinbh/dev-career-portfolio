@@ -17,15 +17,17 @@ Settings can download every record as one JSON file (`GET /api/data/export`) and
     "skills": [],
     "certifications": [],
     "applications": [],
+    "interviews": [],
     "cover_letter_questions": [],
     "application_status_history": [],
-    "project_skills": []
+    "project_skills": [],
+    "application_projects": []
   }
 }
 ```
 
 - `format` and `version` identify the file. A file with another format or version is refused. A change to the columns or their meaning needs a new `version`.
-- `tables` has one key per table, in the order a table comes after the tables it points to. Each value is a list of rows. A row is an object whose keys are the database column names (`snake_case`) and whose values are the stored values: text, numbers, `true`/`false`, `null`, lists of text (`projects.technologies`), dates as `YYYY-MM-DD`, timestamps as ISO 8601 text. Ids and links (`projects.career_id`, `cover_letter_questions.application_id`) are kept as they are, so links survive the round trip.
+- `tables` has one key per table, in the order a table comes after the tables it points to. Each value is a list of rows. A row is an object whose keys are the database column names (`snake_case`) and whose values are the stored values: text, numbers, `true`/`false`, `null`, lists of text (`projects.technologies`), dates as `YYYY-MM-DD`, timestamps as ISO 8601 text. Ids and links (`projects.career_id`, `cover_letter_questions.application_id`, `interviews.application_id`, `application_projects.project_id`) are kept as they are, so links survive the round trip.
 - Text is UTF-8 JSON, so Korean text survives unchanged.
 
 ## What is not in the file

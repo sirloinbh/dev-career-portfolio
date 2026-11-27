@@ -7,9 +7,10 @@ import { findLive } from './test/live';
 // The overview also loads its summary (#221); an empty one keeps these tests about the shell.
 const emptySummary = {
   today: '2026-10-26',
-  windows: { deadlineDays: 14, expiryDays: 90 },
+  windows: { deadlineDays: 14, interviewDays: 14, expiryDays: 90 },
   counts: { educations: 0, careers: 0, projects: 0, skills: 0, certifications: 0, applications: 0 },
   upcomingDeadlines: [],
+  upcomingInterviews: [],
   expiringCertifications: [],
   recentlyChanged: [],
 };

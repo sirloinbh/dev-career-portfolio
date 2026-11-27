@@ -144,6 +144,22 @@ test('a running project shows "Ongoing" and every block that was filled in', asy
   ).toHaveAttribute('href', 'https://settlement.example.com');
 });
 
+test('the search finds a project by the name of a skill it used', async () => {
+  // `running` used skills 1-3 (TypeScript, PostgreSQL, AWS Lambda); `finished` used none.
+  serve({ status: 200, body: { projects: [running, finished] } });
+  openProjects();
+  const list = await screen.findByRole('list', { name: 'Project list' });
+  expect(rowsOf(list)).toHaveLength(2);
+  // The skill names load beside the projects, so wait until the tags show before searching.
+  await within(list).findByText('PostgreSQL');
+  fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'postgresql' } });
+  const found = await screen.findByRole('list', { name: 'Project list' });
+  await vi.waitFor(() => expect(rowsOf(found)).toHaveLength(1));
+  expect(within(rowsOf(found)[0]).getByRole('heading', { level: 2 })).toHaveTextContent(
+    '주문 정산 자동화',
+  );
+});
+
 test('a finished project with only the required fields shows no empty labels', async () => {
   serve({ status: 200, body: { projects: [running, finished] } });
   openProjects();

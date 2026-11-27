@@ -4,6 +4,7 @@ import {
   Briefcase,
   CalendarCheck,
   FileText,
+  FileUser,
   FolderKanban,
   GraduationCap,
   History,
@@ -31,6 +32,7 @@ import type { Health } from './health';
 import { createQueryClient } from './lib/query';
 import type { ProjectPaths } from './project-data';
 import { EditProject, NewProject, ProjectList } from './projects';
+import { ResumeScreen } from './resume';
 import { SettingsScreen } from './settings';
 import { AccountActions, SignInGate } from './sign-in';
 import type { SkillPaths } from './skill-data';
@@ -63,6 +65,7 @@ const pages = {
   editQuestions: '/applications/:id/questions/edit',
   editApplication: '/applications/:id/edit',
   timeline: '/timeline',
+  resume: '/resume',
   settings: '/settings',
 } as const;
 
@@ -130,6 +133,7 @@ const nav: NavItem[] = [
   { to: pages.certifications, label: 'Certifications', icon: Award },
   { to: pages.timeline, label: 'Timeline', icon: History },
   { to: pages.applications, label: 'Cover letters', icon: FileText },
+  { to: pages.resume, label: 'Resume', icon: FileUser },
   { to: pages.dashboard, label: 'Dashboard', icon: LayoutDashboard },
   { to: pages.settings, label: 'Settings', icon: Settings2 },
 ];
@@ -208,6 +212,7 @@ function AppRoutes() {
               path={pages.editQuestions}
               element={<EditQuestions paths={applicationPaths} />}
             />
+            <Route path={pages.resume} element={<ResumeScreen />} />
             <Route path={pages.settings} element={<SettingsScreen health={health} />} />
             <Route path="*" element={<Navigate to={pages.today} replace />} />
           </Routes>

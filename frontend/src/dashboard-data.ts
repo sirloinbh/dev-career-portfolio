@@ -14,13 +14,23 @@ export type DashboardSection = (typeof dashboardSections)[number];
 
 export type Dashboard = {
   today: string;
-  windows: { deadlineDays: number; expiryDays: number };
+  windows: { deadlineDays: number; interviewDays: number; expiryDays: number };
   counts: Record<DashboardSection, number>;
   upcomingDeadlines: {
     id: number;
     companyName: string;
     position: string | null;
     deadline: string;
+  }[];
+  upcomingInterviews: {
+    id: number;
+    applicationId: number;
+    companyName: string;
+    position: string | null;
+    round: number;
+    /** YYYY-MM-DD and HH:MM in the service time zone. */
+    date: string;
+    time: string;
   }[];
   expiringCertifications: { id: number; name: string; issuer: string; expiryDate: string }[];
   recentlyChanged: { section: DashboardSection; id: number; title: string; updatedAt: string }[];

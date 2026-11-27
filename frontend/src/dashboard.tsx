@@ -108,6 +108,29 @@ export function DashboardScreen({ paths, health }: { paths: DashboardPaths; heal
                 </ul>
               )}
             </Block>
+            <Block title="Upcoming interviews">
+              {data.upcomingInterviews.length === 0 ? (
+                emptyText(`No interviews in the next ${String(data.windows.interviewDays)} days`)
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {data.upcomingInterviews.map((row) => (
+                    <li key={row.id}>
+                      <Link
+                        to={`${paths.applications}/${String(row.applicationId)}`}
+                        className="flex flex-col underline-offset-4 hover:underline"
+                      >
+                        <span className="text-body wrap-anywhere break-keep">
+                          {row.companyName} · Round {row.round}
+                        </span>
+                        <span className="text-body-sm text-muted-foreground">
+                          {`${dateWithCountdown(row.date, daysUntil(row.date, data.today))} · ${row.time}`}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Block>
             <Block title="Expiring certifications">
               {data.expiringCertifications.length === 0 ? (
                 emptyText(

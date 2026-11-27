@@ -113,13 +113,15 @@ test('projects filter by a year they ran in, and search their technologies', () 
   const rows = [
     project(1, 'Old', '2019-05-01', '2020-02-01'),
     project(2, 'Long', '2020-06-01', '2022-01-01', 'Rust backend'),
-    project(3, 'Running', '2024-01-01', null),
+    { ...project(3, 'Running', '2024-01-01', null), skillIds: [7, 99] },
   ];
+  const tools = projectTools(new Map([[7, 'Rust']]));
   expect(projectYears(rows, 2025)).toEqual([2025, 2024, 2022, 2021, 2020, 2019]);
-  expect(ids(applyListView(rows, projectTools, view({ filter: '2020' })))).toEqual([1, 2]);
-  expect(ids(applyListView(rows, projectTools, view({ filter: '2025' })))).toEqual([3]);
-  expect(ids(applyListView(rows, projectTools, view({ q: 'rust' })))).toEqual([2]);
-  expect(ids(applyListView(rows, projectTools, view({ sort: 'name' })))).toEqual([2, 1, 3]);
+  expect(ids(applyListView(rows, tools, view({ filter: '2020' })))).toEqual([1, 2]);
+  expect(ids(applyListView(rows, tools, view({ filter: '2025' })))).toEqual([3]);
+  expect(ids(applyListView(rows, tools, view({ q: 'rust' })))).toEqual([2, 3]);
+  expect(ids(applyListView(rows, tools, view({ q: 'rust running' })))).toEqual([3]);
+  expect(ids(applyListView(rows, tools, view({ sort: 'name' })))).toEqual([2, 1, 3]);
 });
 
 test('skills filter by category and sort by proficiency or name', () => {

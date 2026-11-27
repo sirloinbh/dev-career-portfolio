@@ -71,6 +71,7 @@ test('a type JSON Schema cannot express fails instead of being skipped', () => {
 const pathOf: Record<string, string> = {
   'cover-letter-questions.ts': '/api/applications/:id/questions',
   'interviews.ts': '/api/applications/:id/interviews',
+  'application-projects.ts': '/api/applications/:id/projects',
 };
 
 test('every status a route file throws is listed by an operation of that route', async () => {

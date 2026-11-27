@@ -23,11 +23,11 @@ test('the dashboard reads with the service date and the windows, and writes noth
       assert.equal(status, 200);
       assert.equal(data.today, '2026-11-16');
       assert.deepEqual(data.counts, { educations: 2 });
-      assert.deepEqual(data.windows, { deadlineDays: 14, expiryDays: 90 });
+      assert.deepEqual(data.windows, { deadlineDays: 14, interviewDays: 14, expiryDays: 90 });
     },
     { today: () => '2026-11-16' },
   );
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 5);
   assert.ok(calls.every((c) => /^\s*SELECT/i.test(c.text)));
   assert.ok(calls.some((c) => c.values[0] === '2026-11-16' && c.values[1] === 14));
   assert.ok(calls.some((c) => c.values[0] === '2026-11-16' && c.values[1] === 90));
