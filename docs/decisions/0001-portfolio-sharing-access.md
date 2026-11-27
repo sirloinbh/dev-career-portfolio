@@ -1,6 +1,6 @@
 # Decision: how a read-only portfolio page is shared (#235)
 
-Status: chosen by the user on 2026-11-27 (access model); link mechanism proposed, waiting for the user's answer.
+Status: chosen by the user on 2026-11-27 (access model and link mechanism).
 
 ## Current state
 
@@ -23,15 +23,15 @@ Put the whole app behind a login first, then make the shared portfolio page a pu
 
 The first part is already true on main (#106), so no new login is built. Password storage, session length and where the password comes from are owned by shared-auth, so this project adds no password code, session table or auth secret.
 
-## Share link mechanism (proposal for #236, option A)
+## Share link mechanism (chosen for #236: option A)
 
 - A `share_links` table holds a SHA-256 hash of a random 256-bit token (the token itself is shown once), the chosen item ids, `created_at` and `revoked_at`.
 - `GET /api/share/:token` is registered in `app.ts` before the `/api` guard. It returns only the chosen items, read-only, and answers 404 for an unknown, malformed or revoked token (the same answer for all three, so a token cannot be probed).
 - Creating, listing and revoking links stay behind the login.
 - No other public route exists; only `GET` is served on the share path, so the shared page cannot call any edit API.
 - `share_links` holds credentials, so it is excluded from the JSON export.
-- Open variants: an expiry date on each link (option B); no token at all is not recommended.
+- Links do not expire; they stop working only when revoked (user decision 2026-11-27: option A, no expiry).
 
 ## Done by this decision
 
-The access model is recorded. The mechanism above becomes final when the user answers the choice sent through the coordinator.
+The access model and the link mechanism are recorded. #236 implements them.
