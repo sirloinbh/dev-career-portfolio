@@ -1,0 +1,16 @@
+# Interviews for an application (#230)
+
+Each application can hold interviews: round, date and time (Asia/Seoul), format (phone, video call, on site), the questions asked and a retrospective note.
+
+Decisions the card left open (recorded on the issue): the round is a whole number from 1 to 20; the format is one of three values; questions and retrospective are free text up to 5000 characters each; the time is a clock time in Asia/Seoul. Showing upcoming interviews on the dashboard is not part of this PR (the dashboard belongs to another lane); a follow-up issue tracks it.
+
+| File                                                                | Change                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `database/migrations/015_interviews.sql`                            | New `interviews` table, deleted with its application, with checks on round, format and text. Safe to run again                                                                                                                                                          |
+| `backend/src/routes/interviews.ts`                                  | `GET`, `POST` on `/api/applications/:id/interviews` and `PUT`, `DELETE` on `.../:interviewId`. The Seoul day and time become one instant in SQL and are read back the same way; the add is one statement, so a deleted application gives a 404, not a foreign key error |
+| `backend/src/app.ts`, `backend/src/openapi.ts`, `docs/openapi.json` | Route registration and the four operations                                                                                                                                                                                                                              |
+| `frontend/src/interview-data.ts`, `interview-section.tsx`           | An "Interviews" section on the application page (below the status history): list by date with Upcoming / Done, add and edit form in place, delete with confirmation                                                                                                     |
+| `frontend/src/cover-letter-questions.tsx`                           | Mounts the section                                                                                                                                                                                                                                                      |
+| Tests                                                               | Validation tests, DB test (create, order, update, wrong owner, 404, delete, cascade), screen tests (add, server message, edit, delete), helper tests                                                                                                                    |
+
+DB tests run in CI only (no local PostgreSQL).

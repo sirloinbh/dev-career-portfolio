@@ -10,7 +10,7 @@ import {
   Settings2,
   Wrench,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, generatePath, Navigate, Route, Routes } from 'react-router';
 
 import type { ApplicationPaths } from './application-data';
@@ -20,17 +20,17 @@ import { CareerList, EditCareer, NewCareer } from './careers';
 import type { CertificationPaths } from './certification-data';
 import { CertificationList, EditCertification, NewCertification } from './certifications';
 import { AppShell, type NavItem } from './components/layout/app-shell';
-import { EmptyState } from './components/ui/empty-state';
 import { Toaster } from './components/ui/sonner';
 import { EditQuestions } from './cover-letter-form';
 import { ApplicationQuestions } from './cover-letter-questions';
 import { type DashboardPaths, DashboardScreen } from './dashboard';
 import type { EducationPaths } from './education-data';
 import { EditEducation, EducationList, NewEducation } from './educations';
-import { type Health, healthText } from './health';
+import type { Health } from './health';
 import { createQueryClient } from './lib/query';
 import type { ProjectPaths } from './project-data';
 import { EditProject, NewProject, ProjectList } from './projects';
+import { SettingsScreen } from './settings';
 import { AccountActions, SignInGate } from './sign-in';
 import type { SkillPaths } from './skill-data';
 import { EditSkill, NewSkill, SkillList } from './skills';
@@ -141,42 +141,6 @@ function useHealth() {
   return health;
 }
 
-function Page({
-  title,
-  description,
-  health,
-  children,
-}: {
-  title: string;
-  description: string;
-  health: Health;
-  children?: ReactNode;
-}) {
-  return (
-    <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h1 id="page-title">{title}</h1>
-        <p className="text-body text-muted-foreground">{description}</p>
-        {health.state === 'error' ? (
-          <p role="alert" className="text-body-sm text-destructive">
-            {healthText(health)}
-          </p>
-        ) : (
-          <p role="status" className="text-caption text-muted-foreground">
-            {healthText(health)}
-          </p>
-        )}
-      </header>
-      {children ?? (
-        <EmptyState
-          title="No features yet"
-          description="Features are registered as GitHub issue cards and added one at a time."
-        />
-      )}
-    </section>
-  );
-}
-
 function AppRoutes() {
   const health = useHealth();
   return (
@@ -233,16 +197,7 @@ function AppRoutes() {
               path={pages.editQuestions}
               element={<EditQuestions paths={applicationPaths} />}
             />
-            <Route
-              path={pages.settings}
-              element={
-                <Page
-                  title="Settings"
-                  description="App settings and data management"
-                  health={health}
-                />
-              }
-            />
+            <Route path={pages.settings} element={<SettingsScreen health={health} />} />
             <Route path="*" element={<Navigate to={pages.today} replace />} />
           </Routes>
         </AppShell>
