@@ -14,7 +14,6 @@ test(
   async (t) => {
     await lockPortfolio(t);
     const pool = new Pool({ connectionString: url });
-    t.after(() => pool.end());
     const chosen = await pool.query<{ id: number }>(
       `INSERT INTO projects (name, start_date, summary) VALUES ('Shared project', '2024-01-01', 'visible') RETURNING id`,
     );
@@ -32,6 +31,8 @@ test(
       ]);
       await pool.query('DELETE FROM educations WHERE id = $1', [education.rows[0]?.id]);
     });
+    // Hooks run in the order they were added, so the pool closes after the cleanup above.
+    t.after(() => pool.end());
 
     await withApi(pool, async (call) => {
       const created = await call('/api/share-links', {
