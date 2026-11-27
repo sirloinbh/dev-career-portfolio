@@ -9,7 +9,9 @@ import { registerCareerRoutes } from './routes/careers.js';
 import { registerCertificationRoutes } from './routes/certifications.js';
 import { registerCoverLetterQuestionRoutes } from './routes/cover-letter-questions.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
+import { importPath, registerDataTransferRoutes } from './routes/data.js';
 import { registerEducationRoutes } from './routes/educations.js';
+import { registerInterviewRoutes } from './routes/interviews.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerSkillRoutes } from './routes/skills.js';
 import { setInt8Parser } from './standard/db.js';
@@ -38,7 +40,9 @@ export function createApp(
   app.use(requestLog);
   // Before the body parser and every route, so a refused request costs neither parsing nor a query.
   apiRateLimit(app, { limitPerMinute: options.requestsPerMinute });
-  app.use(express.json({ limit: '256kb' }));
+  const smallJson = express.json({ limit: '256kb' });
+  // The data import accepts a whole export, so it has its own larger limit (#222).
+  app.use((req, res, next) => (req.path === importPath ? next() : smallJson(req, res, next)));
   // #106: the shared sign-in guards every /api route except /api/health, before any route registers.
   if (options.auth) app.use('/api', options.auth);
   app.get('/api/me', meHandler);
@@ -59,7 +63,9 @@ export function createApp(
   registerCertificationRoutes(app, pool);
   registerApplicationRoutes(app, pool, today);
   registerCoverLetterQuestionRoutes(app, pool);
+  registerInterviewRoutes(app, pool);
   registerDashboardRoutes(app, pool, today);
+  registerDataTransferRoutes(app, pool);
   // #711: shared-ai calls the AI tools here with a signed token. Outside /api, so the proxy never reaches it.
   registerToolRoutes(app, {
     app: 'dev-career-portfolio',
