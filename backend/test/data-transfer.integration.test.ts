@@ -65,6 +65,10 @@ async function seed(pool: Pool) {
             ((SELECT id FROM applications LIMIT 1), '강점은?', NULL, NULL, 1)`,
   );
   await pool.query(
+    `INSERT INTO interviews (application_id, round, scheduled_at, format, questions)
+     VALUES ((SELECT id FROM applications LIMIT 1), 1, '2026-12-10T05:00:00Z', 'video', '자기소개를 해 주세요')`,
+  );
+  await pool.query(
     `INSERT INTO application_status_history (application_id, from_status, status)
      VALUES ((SELECT id FROM applications LIMIT 1), NULL, 'drafting')`,
   );
