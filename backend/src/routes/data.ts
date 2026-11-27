@@ -12,7 +12,7 @@ export const exportVersion = 1;
 export const importPath = '/api/data/import';
 
 // Every table that holds the user's records, in an order where a table comes after the tables it points
-// to (projects.career_id -> careers, project_skills -> projects and skills, cover_letter_questions and application_status_history -> applications). A new
+// to (projects.career_id -> careers, project_skills -> projects and skills, cover_letter_questions, interviews and application_status_history -> applications). A new
 // table must be added here; the integration test fails until it is (or until it is listed as skipped).
 export const dataTables = [
   { name: 'app_settings', order: 'key', identity: false },
@@ -22,6 +22,7 @@ export const dataTables = [
   { name: 'skills', order: 'id', identity: true },
   { name: 'certifications', order: 'id', identity: true },
   { name: 'applications', order: 'id', identity: true },
+  { name: 'interviews', order: 'id', identity: true },
   { name: 'cover_letter_questions', order: 'id', identity: true },
   { name: 'application_status_history', order: 'id', identity: true },
   { name: 'project_skills', order: 'project_id, skill_id', identity: false },
