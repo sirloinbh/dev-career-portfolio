@@ -10,6 +10,7 @@ import { importFile } from './routes/data.js';
 import { educationInput } from './routes/educations.js';
 import { interviewInput } from './routes/interviews.js';
 import { projectInput } from './routes/projects.js';
+import { shareLinkInput } from './routes/share.js';
 import { skillInput } from './routes/skills.js';
 import { buildOpenApi, type Operation } from './standard/openapi.js';
 
@@ -190,6 +191,23 @@ export const operations: Record<string, Operation> = {
   'PUT /api/applications/:id/projects': {
     summary: 'Replace the whole list of projects an application highlights',
     body: ['ApplicationProjects', applicationProjectsInput],
+    status: [200, 400, 404],
+  },
+
+  'GET /api/share/:token': {
+    summary:
+      'Public, no sign-in: the items a share link names, read-only. 404 for an unknown, malformed or revoked token',
+    status: [200, 404],
+    public: true,
+  },
+  'GET /api/share-links': { summary: 'List the share links (never the tokens)', status: [200] },
+  'POST /api/share-links': {
+    summary: 'Create a share link for chosen items; the answer holds the token once',
+    body: ['ShareLink', shareLinkInput],
+    status: [201, 400],
+  },
+  'POST /api/share-links/:id/revoke': {
+    summary: 'Revoke a share link so it opens nothing',
     status: [200, 400, 404],
   },
 };

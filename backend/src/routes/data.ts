@@ -37,7 +37,7 @@ const binaryColumns: Record<string, string> = { attachments: 'data' };
 
 // Tables that are not records of the user: the audit log is history of tool calls, and
 // schema_migrations belongs to the migration runner. Neither is exported or replaced.
-export const skippedTables = ['audit_log', 'schema_migrations'] as const;
+export const skippedTables = ['audit_log', 'schema_migrations', 'share_links'] as const;
 
 const cell = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 const row = z.record(z.string(), z.union([cell, z.array(cell)]), {
