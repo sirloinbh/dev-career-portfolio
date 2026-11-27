@@ -4,6 +4,7 @@ import type { Pool } from 'pg';
 import { types } from 'pg';
 
 import { tools } from './ai-tools.js';
+import { registerApplicationProjectRoutes } from './routes/application-projects.js';
 import { registerApplicationRoutes } from './routes/applications.js';
 import { registerCareerRoutes } from './routes/careers.js';
 import { registerCertificationRoutes } from './routes/certifications.js';
@@ -64,6 +65,7 @@ export function createApp(
   registerApplicationRoutes(app, pool, today);
   registerCoverLetterQuestionRoutes(app, pool);
   registerInterviewRoutes(app, pool);
+  registerApplicationProjectRoutes(app, pool);
   registerDashboardRoutes(app, pool, today);
   registerDataTransferRoutes(app, pool);
   // #711: shared-ai calls the AI tools here with a signed token. Outside /api, so the proxy never reaches it.
