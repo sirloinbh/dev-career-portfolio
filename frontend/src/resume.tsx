@@ -1,9 +1,13 @@
 import { Download, Printer } from 'lucide-react';
 import { useState } from 'react';
 
+import { applicationList } from './application-data';
+import { applicationProjectsApi } from './application-projects-data';
 import { type Career, careerList } from './career-data';
 import { type Certification, certificationList } from './certification-data';
 import { Button } from './components/ui/button';
+import { Label } from './components/ui/label';
+import { NativeSelect } from './components/ui/native-select';
 import { Notice } from './components/ui/notice';
 import { SkeletonList } from './components/ui/skeleton';
 import { type Education, educationList } from './education-data';
@@ -63,8 +67,27 @@ export function ResumeScreen() {
   const educations = useListQuery(educationList);
   const certifications = useListQuery(certificationList);
   const skills = useListQuery(skillList);
+  const { rows: applications } = useListQuery(applicationList);
   const [picked, setPicked] = useState<Partial<Record<ResumeSectionKey, readonly number[]>>>({});
   const [note, setNote] = useState('');
+  const [startNote, setStartNote] = useState('');
+
+  /** Checks only the projects the application highlights; the other sections keep their checks. */
+  async function startFrom(applicationId: string) {
+    setStartNote('');
+    if (applicationId === '') return;
+    try {
+      const { projectIds } = await applicationProjectsApi.read(applicationId);
+      setPicked((current) => ({ ...current, projects: projectIds }));
+      setStartNote(
+        projectIds.length === 0
+          ? 'This application has no highlighted projects yet, so no project is checked.'
+          : `Checked the ${String(projectIds.length)} highlighted ${projectIds.length === 1 ? 'project' : 'projects'}.`,
+      );
+    } catch {
+      setStartNote('Could not load the highlighted projects of that application.');
+    }
+  }
 
   const queries = [careers, projects, educations, certifications, skills];
   const failed = queries.find((q) => q.query.isError);
@@ -123,6 +146,28 @@ export function ResumeScreen() {
     content = (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
         <div className="flex flex-col gap-4">
+          {applications && applications.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="resume-start">Start from an application</Label>
+              <NativeSelect
+                id="resume-start"
+                defaultValue=""
+                onChange={(e) => void startFrom(e.target.value)}
+              >
+                <option value="">Choose an application</option>
+                {applications.map((application) => (
+                  <option key={application.id} value={application.id}>
+                    {application.companyName}
+                  </option>
+                ))}
+              </NativeSelect>
+              {startNote ? (
+                <p role="status" className="text-caption text-muted-foreground">
+                  {startNote}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {resumeSectionKeys.map((key) => {
             const items = all[key];
             const label = labels[key] as (row: unknown) => string;

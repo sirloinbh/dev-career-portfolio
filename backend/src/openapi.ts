@@ -1,6 +1,7 @@
 // The API's operation table. The document is built by the managed standard/openapi.ts from Zod schemas
 // (z.toJSONSchema). `npm run openapi -w backend` writes docs/openapi.json; a test fails when it is out of date or
 // when the table and the registered routes differ.
+import { applicationProjectsInput } from './routes/application-projects.js';
 import { applicationInput } from './routes/applications.js';
 import { careerInput } from './routes/careers.js';
 import { certificationInput } from './routes/certifications.js';
@@ -155,6 +156,16 @@ export const operations: Record<string, Operation> = {
   'DELETE /api/applications/:id/interviews/:interviewId': {
     summary: 'Delete one interview of an application',
     status: [204, 400, 404],
+  },
+
+  'GET /api/applications/:id/projects': {
+    summary: 'List the ids of the projects an application highlights, newest project first',
+    status: [200, 400, 404],
+  },
+  'PUT /api/applications/:id/projects': {
+    summary: 'Replace the whole list of projects an application highlights',
+    body: ['ApplicationProjects', applicationProjectsInput],
+    status: [200, 400, 404],
   },
 };
 

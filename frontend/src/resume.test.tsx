@@ -68,6 +68,20 @@ function serve() {
         '/api/projects': { projects },
         '/api/skills': { skills },
         '/api/educations': { educations: [] },
+        '/api/applications': {
+          applications: [
+            {
+              id: 5,
+              companyName: 'Cloud Data',
+              position: null,
+              postingUrl: null,
+              deadline: null,
+              status: 'drafting',
+              memo: null,
+            },
+          ],
+        },
+        '/api/applications/5/projects': { projectIds: [7] },
         '/api/certifications': { certifications: [] },
       };
       return Promise.resolve(new Response(JSON.stringify(body[url] ?? {})));
@@ -104,6 +118,21 @@ test('the preview shows only the items that are checked', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Select no Projects' }));
   expect(within(preview).queryByRole('region', { name: 'Projects' })).not.toBeInTheDocument();
   expect(within(preview).getByRole('region', { name: 'Career' })).toBeInTheDocument();
+});
+
+test('starting from an application checks only the projects it highlights', async () => {
+  const preview = await openResume();
+  // A second project that the application does not highlight.
+  expect(within(preview).getByRole('heading', { name: 'Settlement' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Select all Projects' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Settlement' }));
+  expect(within(preview).queryByRole('region', { name: 'Projects' })).not.toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText('Start from an application'), { target: { value: '5' } });
+  await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Settlement' })).toBeChecked());
+  expect(screen.getByText('Checked the 1 highlighted project.')).toBeInTheDocument();
+  // The other sections keep their checks.
+  expect(screen.getByRole('checkbox', { name: 'Hanbit Soft' })).toBeChecked();
 });
 
 test('with nothing checked the actions are disabled and the preview says so', async () => {
