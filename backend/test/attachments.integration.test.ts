@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { Pool } from 'pg';
 
 import { createApp } from '../src/app.js';
-import { jpeg, pdf, png, upload } from './attachment-upload.js';
+import { jpeg, pdf, png, upload, webp } from './attachment-upload.js';
 import { listenForFetch, lockPortfolio, testDatabaseUrl, withApi } from './helpers.js';
 
 const url = testDatabaseUrl();
@@ -42,6 +42,12 @@ test(
       name: 'a.jpg',
       bytes: jpeg,
     });
+    const webpUpload = await upload(pool, `/api/projects/${String(projId)}/attachments`, {
+      name: 'phone.webp',
+      bytes: webp,
+    });
+    assert.equal(webpUpload.status, 201);
+    const webpId = (webpUpload.data.attachment as { id: number }).id;
     const firstId = (first.data.attachment as { id: number }).id;
 
     // A missing owner is a 404 and stores nothing.
@@ -62,6 +68,7 @@ test(
         [
           ['shot.png', png.length],
           ['a.jpg', jpeg.length],
+          ['phone.webp', webp.length],
         ],
       );
       assert.equal((await call('/api/projects/999999/attachments')).status, 404);
@@ -78,6 +85,13 @@ test(
       assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
       assert.match(response.headers.get('content-disposition') ?? '', /^attachment;/);
       assert.deepEqual(Buffer.from(await response.arrayBuffer()), pdf);
+
+      // The WebP is stored and served with its own type (the 019 CHECK allows it).
+      const webpResponse = await fetch(
+        `http://127.0.0.1:${String(port)}/api/attachments/${String(webpId)}`,
+      );
+      assert.equal(webpResponse.headers.get('content-type'), 'image/webp');
+      assert.deepEqual(Buffer.from(await webpResponse.arrayBuffer()), webp);
     } finally {
       server.close();
     }

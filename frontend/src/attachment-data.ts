@@ -18,7 +18,8 @@ export type AttachmentOwner = 'certifications' | 'projects';
 export const maxAttachmentBytes = 5 * 1024 * 1024;
 
 /** What the file picker offers; the server still checks the file's real type. */
-export const attachmentAccept = 'application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg';
+export const attachmentAccept =
+  'application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp';
 
 export const attachmentsPath = (owner: AttachmentOwner, id: string) =>
   `/api/${owner}/${id}/attachments`;
