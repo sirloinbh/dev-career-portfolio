@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import type { Pool } from 'pg';
 
 import { cleanFilename, maxAttachmentBytes, sniffType } from '../src/routes/attachments.js';
-import { jpeg, pdf, png, upload } from './attachment-upload.js';
+import { jpeg, pdf, png, upload, webp } from './attachment-upload.js';
 
 // A pool whose owner exists and whose insert echoes the stored values.
 function fakePool(inserts: unknown[][]) {
@@ -20,10 +20,17 @@ function fakePool(inserts: unknown[][]) {
   } as unknown as Pool;
 }
 
-test('the type comes from the first bytes: PDF, PNG and JPEG only', () => {
+test('the type comes from the first bytes: PDF, PNG, JPEG and WebP only', () => {
   assert.equal(sniffType(pdf), 'application/pdf');
   assert.equal(sniffType(png), 'image/png');
   assert.equal(sniffType(jpeg), 'image/jpeg');
+  assert.equal(sniffType(webp), 'image/webp');
+  // A RIFF file that is not WebP (a WAV) and a name-only claim are refused.
+  assert.equal(
+    sniffType(Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WAVE')])),
+    undefined,
+  );
+  assert.equal(sniffType(Buffer.from('RIFF')), undefined);
   assert.equal(sniffType(Buffer.from('MZ executable')), undefined);
   assert.equal(sniffType(Buffer.alloc(0)), undefined);
 });
@@ -47,6 +54,17 @@ test('an upload is stored with the sniffed type and a Korean name intact', async
   assert.equal((data.attachment as { contentType: string }).contentType, 'application/pdf');
 });
 
+test('a WebP upload is stored as image/webp', async () => {
+  const inserts: unknown[][] = [];
+  const { status, data } = await upload(fakePool(inserts), '/api/projects/3/attachments', {
+    name: 'phone.webp',
+    bytes: webp,
+  });
+  assert.equal(status, 201);
+  assert.deepEqual(inserts[0]?.slice(0, 4), [3, 'phone.webp', 'image/webp', webp.length]);
+  assert.equal((data.attachment as { contentType: string }).contentType, 'image/webp');
+});
+
 test('a wrong type is refused even when the name says PDF', async () => {
   const inserts: unknown[][] = [];
   const { status, data } = await upload(fakePool(inserts), '/api/projects/3/attachments', {
@@ -54,7 +72,7 @@ test('a wrong type is refused even when the name says PDF', async () => {
     bytes: Buffer.from('MZ not a pdf'),
   });
   assert.equal(status, 400);
-  assert.equal(data.error, 'File must be a PDF, PNG or JPEG');
+  assert.equal(data.error, 'File must be a PDF, PNG, JPEG or WebP');
   assert.equal(inserts.length, 0);
 });
 

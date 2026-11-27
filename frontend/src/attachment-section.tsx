@@ -127,8 +127,8 @@ export function AttachmentSection({ owner, id }: { owner: AttachmentOwner; id: s
         </Button>
       </div>
       <p className="text-caption break-keep text-muted-foreground">
-        PDF, PNG or JPEG, up to 5 MB each. Files are saved at once and are not part of the form
-        above.
+        PDF, PNG, JPEG or WebP, up to 5 MB each. Files are saved at once and are not part of the
+        form above.
       </p>
       <p role="alert" className="text-body-sm text-destructive">
         {problem}

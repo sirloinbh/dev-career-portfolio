@@ -8,11 +8,11 @@ import { HttpError, parseId } from '../standard/http.js';
 
 export const maxAttachmentBytes = 5 * 1024 * 1024;
 
-type AttachmentType = 'application/pdf' | 'image/png' | 'image/jpeg';
+type AttachmentType = 'application/pdf' | 'image/png' | 'image/jpeg' | 'image/webp';
 
 /**
  * The type comes from the file's first bytes, never from the name or the type the browser sent, so a renamed file
- * cannot slip in and the stored type is always one of the three the download is allowed to serve.
+ * cannot slip in and the stored type is always one of the four the download is allowed to serve.
  */
 export function sniffType(bytes: Buffer): AttachmentType | undefined {
   if (bytes.subarray(0, 5).toString('latin1') === '%PDF-') return 'application/pdf';
@@ -20,6 +20,13 @@ export function sniffType(bytes: Buffer): AttachmentType | undefined {
     return 'image/png';
   }
   if (bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) return 'image/jpeg';
+  // WebP is a RIFF container: "RIFF", a 4-byte size, then "WEBP".
+  if (
+    bytes.subarray(0, 4).toString('latin1') === 'RIFF' &&
+    bytes.subarray(8, 12).toString('latin1') === 'WEBP'
+  ) {
+    return 'image/webp';
+  }
   return undefined;
 }
 
@@ -107,7 +114,7 @@ export function registerAttachmentRoutes(app: Express, pool: Pool) {
       const file = req.file;
       if (!file || file.size === 0) throw new HttpError(400, 'Choose a file to upload');
       const type = sniffType(file.buffer);
-      if (!type) throw new HttpError(400, 'File must be a PDF, PNG or JPEG');
+      if (!type) throw new HttpError(400, 'File must be a PDF, PNG, JPEG or WebP');
       await ownerExists(id);
       const { rows } = await pool.query(
         `INSERT INTO attachments (${owner.column}, filename, content_type, size_bytes, data)

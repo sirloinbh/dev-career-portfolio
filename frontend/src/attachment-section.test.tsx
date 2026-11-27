@@ -103,7 +103,7 @@ test('a file over 5 MB is refused in the browser without a request', async () =>
 });
 
 test("the server's refusal is shown", async () => {
-  serve([], 400, 'File must be a PDF, PNG or JPEG');
+  serve([], 400, 'File must be a PDF, PNG, JPEG or WebP');
   renderSection();
   await screen.findByText('No files attached yet.');
   await userEvent
@@ -112,7 +112,7 @@ test("the server's refusal is shown", async () => {
       screen.getByLabelText('Choose a file to attach'),
       new File(['x'], 'a.png', { type: 'image/png' }),
     );
-  expect(await screen.findByText('File must be a PDF, PNG or JPEG')).toBeInTheDocument();
+  expect(await screen.findByText('File must be a PDF, PNG, JPEG or WebP')).toBeInTheDocument();
 });
 
 test('a file is deleted after a confirmation', async () => {

@@ -461,7 +461,7 @@
           "200": {
             "description": "Success",
             "content": {
-              "application/pdf, image/png or image/jpeg": {
+              "application/pdf, image/png, image/jpeg or image/webp": {
                 "schema": {
                   "type": "string"
                 }
@@ -2037,7 +2037,7 @@
         }
       },
       "post": {
-        "summary": "Attach a file to a certification: multipart form with one \"file\" field, PDF, PNG or JPEG, at most 5 MB",
+        "summary": "Attach a file to a certification: multipart form with one \"file\" field, PDF, PNG, JPEG or WebP, at most 5 MB",
         "parameters": [
           {
             "name": "id",
@@ -2494,7 +2494,7 @@
         }
       },
       "post": {
-        "summary": "Attach a file to a project: multipart form with one \"file\" field, PDF, PNG or JPEG, at most 5 MB",
+        "summary": "Attach a file to a project: multipart form with one \"file\" field, PDF, PNG, JPEG or WebP, at most 5 MB",
         "parameters": [
           {
             "name": "id",
