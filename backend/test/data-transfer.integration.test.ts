@@ -80,6 +80,13 @@ async function seed(pool: Pool) {
     `INSERT INTO application_projects (application_id, project_id)
      VALUES ((SELECT id FROM applications LIMIT 1), (SELECT id FROM projects LIMIT 1))`,
   );
+  // Binary bytes that are not valid UTF-8 must survive the base64 round trip (#227).
+  const bytes = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x00, 0xff, 0xfe, 0x80]);
+  await pool.query(
+    `INSERT INTO attachments (certification_id, filename, content_type, size_bytes, data)
+     VALUES ((SELECT id FROM certifications LIMIT 1), '자격증.pdf', 'application/pdf', $1, $2)`,
+    [bytes.length, bytes],
+  );
 }
 
 const exportAll = async (call: Call) => {
@@ -118,6 +125,7 @@ test(
       assert.equal(before.version, 1);
       assert.equal(before.tables.educations?.[0]?.school, '한국대학교');
       assert.equal(before.tables.cover_letter_questions?.length, 2);
+      assert.equal(before.tables.attachments?.[0]?.data, 'JVBERi0A//6A');
       for (const table of dataTables) {
         assert.ok((before.tables[table.name]?.length ?? 0) > 0, `${table.name} has a seeded row`);
       }

@@ -21,25 +21,26 @@ Settings can download every record as one JSON file (`GET /api/data/export`) and
     "cover_letter_questions": [],
     "application_status_history": [],
     "project_skills": [],
-    "application_projects": []
+    "application_projects": [],
+    "attachments": []
   }
 }
 ```
 
 - `format` and `version` identify the file. A file with another format or version is refused. A change to the columns or their meaning needs a new `version`.
 - `tables` has one key per table, in the order a table comes after the tables it points to. Each value is a list of rows. A row is an object whose keys are the database column names (`snake_case`) and whose values are the stored values: text, numbers, `true`/`false`, `null`, lists of text (`projects.technologies`), dates as `YYYY-MM-DD`, timestamps as ISO 8601 text. Ids and links (`projects.career_id`, `cover_letter_questions.application_id`, `interviews.application_id`, `application_projects.project_id`) are kept as they are, so links survive the round trip.
+- Attachments (#227): the `attachments` table is exported like any other, except that the `data` column (the file's bytes, `bytea`) is written as **base64 text**, so one export file restores every uploaded file. On import, `data` must be valid base64 text (anything else is a 400) and is turned back into bytes. Each file is at most 5 MB (about 6.7 MB as base64).
 - Text is UTF-8 JSON, so Korean text survives unchanged.
 
 ## What is not in the file
 
 - `audit_log` (history of tool calls) and `schema_migrations` (the migration runner's own table).
-- Attachments: not stored yet. The attachments issue decides how they are backed up.
 
 ## Import rules
 
 1. The file is parsed and checked with Zod first: format, version, that every table is a list of rows, and that every row is an object. Then each row's keys must be exactly the table's columns (no unknown, none missing).
 2. One transaction empties every table (`TRUNCATE ... RESTART IDENTITY`), inserts the rows (the database's own constraints still apply), and moves each id sequence past the highest imported id. Any error, including a row the database refuses, rolls the whole transaction back.
-3. The request body limit for this one route is 20 MB (other routes: 256 kB).
+3. The request body limit for this one route is 100 MB (other routes: 256 kB).
 
 ## Adding a table
 

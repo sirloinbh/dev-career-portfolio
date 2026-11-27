@@ -1,7 +1,8 @@
 import { Award, Pencil, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useParams } from 'react-router';
 
+import { AttachmentSection } from './attachment-section';
 import {
   type Certification,
   certificationApi,
@@ -21,6 +22,7 @@ import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
+import { isValidId } from './entity-id';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
@@ -253,14 +255,18 @@ export function NewCertification({ paths }: { paths: CertificationPaths }) {
 }
 
 export function EditCertification({ paths }: { paths: CertificationPaths }) {
+  const { id = '' } = useParams();
   return (
-    <EditItemPage
-      paths={paths}
-      texts={{ noun: 'certification', backLabel: 'Certification list' }}
-      list={certificationList}
-      toForm={toCertificationForm}
-      update={(item, form) => certificationApi.update(item.id, toCertificationInput(form))}
-      Fields={CertificationFields}
-    />
+    <div className="flex flex-col gap-6">
+      <EditItemPage
+        paths={paths}
+        texts={{ noun: 'certification', backLabel: 'Certification list' }}
+        list={certificationList}
+        toForm={toCertificationForm}
+        update={(item, form) => certificationApi.update(item.id, toCertificationInput(form))}
+        Fields={CertificationFields}
+      />
+      {isValidId(id) ? <AttachmentSection owner="certifications" id={id} /> : null}
+    </div>
   );
 }

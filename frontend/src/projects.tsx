@@ -1,13 +1,15 @@
 import { FolderKanban, Pencil, Trash2 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useParams } from 'react-router';
 
+import { AttachmentSection } from './attachment-section';
 import { type Career, careerList } from './career-data';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
+import { isValidId } from './entity-id';
 import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
@@ -381,14 +383,18 @@ export function NewProject({ paths }: { paths: ProjectPaths }) {
 }
 
 export function EditProject({ paths }: { paths: ProjectPaths }) {
+  const { id = '' } = useParams();
   return (
-    <EditItemPage
-      paths={paths}
-      texts={{ noun: 'project', backLabel: 'Project list' }}
-      list={projectList}
-      toForm={toProjectForm}
-      update={(item, form) => projectApi.update(item.id, toProjectInput(form))}
-      Fields={ProjectFields}
-    />
+    <div className="flex flex-col gap-6">
+      <EditItemPage
+        paths={paths}
+        texts={{ noun: 'project', backLabel: 'Project list' }}
+        list={projectList}
+        toForm={toProjectForm}
+        update={(item, form) => projectApi.update(item.id, toProjectInput(form))}
+        Fields={ProjectFields}
+      />
+      {isValidId(id) ? <AttachmentSection owner="projects" id={id} /> : null}
+    </div>
   );
 }

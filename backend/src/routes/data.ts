@@ -27,7 +27,13 @@ export const dataTables = [
   { name: 'application_status_history', order: 'id', identity: true },
   { name: 'project_skills', order: 'project_id, skill_id', identity: false },
   { name: 'application_projects', order: 'application_id, project_id', identity: false },
+  // After certifications and projects. Its bytes travel as base64 text (#227, see binaryColumns).
+  { name: 'attachments', order: 'id', identity: true },
 ] as const;
+
+// bytea columns. to_jsonb would write them as "\\x..." hex; the file carries base64 instead, which is the common
+// text form for bytes and a third smaller.
+const binaryColumns: Record<string, string> = { attachments: 'data' };
 
 // Tables that are not records of the user: the audit log is history of tool calls, and
 // schema_migrations belongs to the migration runner. Neither is exported or replaced.
@@ -64,8 +70,12 @@ async function exportTables(pool: Pool) {
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     const tables: Record<string, Rows> = {};
     for (const table of dataTables) {
+      const binary = binaryColumns[table.name];
+      const record = binary
+        ? `to_jsonb(t) || jsonb_build_object('${binary}', encode(t.${binary}, 'base64'))`
+        : 'to_jsonb(t)';
       const { rows: result } = await client.query<{ rows: Rows }>(
-        `SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY ${table.order}), '[]'::jsonb) AS rows
+        `SELECT coalesce(jsonb_agg(${record} ORDER BY ${table.order}), '[]'::jsonb) AS rows
          FROM ${table.name} t`,
       );
       tables[table.name] = result[0]?.rows ?? [];
@@ -112,6 +122,25 @@ async function checkColumns(pool: Pool, tables: Record<string, Rows>) {
   }
 }
 
+const base64Text = /^[A-Za-z0-9+/]*={0,2}$/;
+
+/** Turns a bytea column's base64 text into the hex form jsonb_populate_recordset reads. */
+function fromBase64(table: string, records: Rows): Rows {
+  const column = binaryColumns[table];
+  if (!column) return records;
+  return records.map((record, index) => {
+    const value = record[column];
+    // Base64 text has a length that is a multiple of 4 (padded); Buffer.from alone would skip bad characters.
+    if (typeof value !== 'string' || value.length % 4 !== 0 || !base64Text.test(value)) {
+      throw new HttpError(
+        400,
+        `Table ${table}, row ${String(index + 1)}: ${column} must be base64 text`,
+      );
+    }
+    return { ...record, [column]: `\\x${Buffer.from(value, 'base64').toString('hex')}` };
+  });
+}
+
 async function replaceAll(pool: Pool, tables: Record<string, Rows>) {
   const client = await pool.connect();
   let current = '';
@@ -124,7 +153,7 @@ async function replaceAll(pool: Pool, tables: Record<string, Rows>) {
     const imported: Record<string, number> = {};
     for (const table of dataTables) {
       current = table.name;
-      const records = tables[table.name] ?? [];
+      const records = fromBase64(table.name, tables[table.name] ?? []);
       imported[table.name] = records.length;
       if (records.length > 0) {
         // jsonb_populate_recordset turns each JSON value into the column's own type, and the
@@ -171,7 +200,7 @@ export function registerDataTransferRoutes(app: Express, pool: Pool) {
 
   // A whole export is bigger than the 256 kB every other route accepts, so this route has its own
   // limit. app.ts leaves this path out of the shared parser, and the sign-in check runs before this.
-  app.post(importPath, express.json({ limit: '20mb' }), async (req, res) => {
+  app.post(importPath, express.json({ limit: '100mb' }), async (req, res) => {
     const file = importFile.parse(req.body);
     const tables = file.tables as Record<string, Rows>;
     await checkColumns(pool, tables);

@@ -61,4 +61,6 @@ test('export format constants name every record table once', () => {
   assert.ok(names.indexOf('applications') < names.indexOf('application_status_history'));
   assert.ok(names.indexOf('projects') < names.indexOf('project_skills'));
   assert.ok(names.indexOf('skills') < names.indexOf('project_skills'));
+  assert.ok(names.indexOf('certifications') < names.indexOf('attachments'));
+  assert.ok(names.indexOf('projects') < names.indexOf('attachments'));
 });
