@@ -4,12 +4,12 @@ Part of sirloinbh/project-standards#1177.
 
 ## Change
 
-| Local copy (removed) | Shared component now used |
-|---|---|
-| `page-header.tsx` (`PageHeader`, `BackLink`) | `components/ui/page-header` (`backTo`; the extra lines that were children now follow the header) |
-| `out-link.tsx`, `web-link.ts` | `ExternalLink`, `safeWebUrl` |
-| `formatDate`, `serviceToday` in `service-date.ts` | `lib/format` (`daysUntil` stays here) |
-| `download()` in `resume.tsx` | `downloadBlob` |
+| Local copy (removed)                              | Shared component now used                                                                        |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `page-header.tsx` (`PageHeader`, `BackLink`)      | `components/ui/page-header` (`backTo`; the extra lines that were children now follow the header) |
+| `out-link.tsx`, `web-link.ts`                     | `ExternalLink`, `safeWebUrl`                                                                     |
+| `formatDate`, `serviceToday` in `service-date.ts` | `lib/format` (`daysUntil` stays here)                                                            |
+| `download()` in `resume.tsx`                      | `downloadBlob`                                                                                   |
 
 ## Visible differences
 
