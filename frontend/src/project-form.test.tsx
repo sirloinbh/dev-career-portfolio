@@ -290,7 +290,7 @@ test('clearing the end date of a finished project makes it Ongoing', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const item = await screen.findByRole('listitem', { name: '사내 위키 검색' });
   expect(api.calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ endDate: null });
-  expect(item).toHaveTextContent('March 2, 2021 – Present');
+  expect(item).toHaveTextContent('Mar 2, 2021 – Present');
 });
 
 test('cancelling the delete dialog keeps the project', async () => {

@@ -2,12 +2,12 @@ import type { ComponentType } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import { Notice } from './components/ui/notice';
+import { PageHeader } from './components/ui/page-header';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import { invalidAddressText, isValidId } from './entity-id';
 import { errorText } from './lib/use-notice';
 import { type ListQuery, useListQuery, useRefreshList } from './list-query';
-import { BackLink, PageHeader } from './page-header';
 
 // The New and Edit screens of every portfolio item share this shell (#144): the back link, the title, the
 // loading, error, not-found and invalid-address states of the Edit screen, and the save-then-go-to-the-list step.
@@ -59,8 +59,11 @@ export function NewItemPage<Form>({
   };
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <BackLink to={paths.list} label={texts.backLabel} />
-      <PageHeader title={`Add ${texts.noun}`} description={description} />
+      <PageHeader
+        title={`Add ${texts.noun}`}
+        description={description}
+        backTo={{ to: paths.list, label: texts.backLabel }}
+      />
       <Fields initial={initial} submitLabel="Add" cancelTo={paths.list} onSubmit={onSubmit} />
     </section>
   );
@@ -100,8 +103,11 @@ export function EditItemPage<Form, Item extends { id: number }>({
   };
   return (
     <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
-      <BackLink to={paths.list} label={texts.backLabel} />
-      <PageHeader title={`Edit ${texts.noun}`} description="Change what you need, then save." />
+      <PageHeader
+        title={`Edit ${texts.noun}`}
+        description="Change what you need, then save."
+        backTo={{ to: paths.list, label: texts.backLabel }}
+      />
       {/* Always mounted, so screen readers hear the text appear and go. */}
       <p role="status" className="sr-only">
         {loading ? `Loading ${texts.noun}` : ''}

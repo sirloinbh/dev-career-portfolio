@@ -1,7 +1,7 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { formatDate } from './lib/format';
 import { listQuery } from './list-query';
-import { formatDate } from './service-date';
 
 // Projects (#33 API, #42 list, #43 form): API calls and display rules. The screens are in
 // projects.tsx.

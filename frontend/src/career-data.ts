@@ -1,7 +1,7 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { formatDate } from './lib/format';
 import { listQuery } from './list-query';
-import { formatDate } from './service-date';
 
 // Work history (#32 API, #40 list, #41 form): API calls and display rules. The screens are in
 // careers.tsx.
@@ -34,7 +34,7 @@ export const employmentTypeLabels: Record<EmploymentType, string> = {
 /** A job with no end date is the one still held. */
 export const isCurrent = (career: Pick<Career, 'endDate'>) => career.endDate === null;
 
-/** "March 2, 2020 – December 29, 2023", or "January 2, 2024 – Present" while the job is held. */
+/** "Mar 2, 2020 – Dec 29, 2023", or "Jan 2, 2024 – Present" while the job is held. */
 export function careerPeriodText(career: Pick<Career, 'startDate' | 'endDate'>) {
   return `${formatDate(career.startDate)} – ${career.endDate ? formatDate(career.endDate) : 'Present'}`;
 }

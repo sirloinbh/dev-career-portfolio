@@ -8,7 +8,7 @@ import {
   isExpired,
   issuerText,
 } from './certification-data';
-import { serviceToday } from './service-date';
+import { serviceToday } from './lib/format';
 import { findLive, getLive } from './test/live';
 
 // All certifications here are made up for the test.
@@ -104,9 +104,7 @@ test('certifications are listed in the API order with issuer, score and dates', 
 
   const first = item('TOEIC');
   expect(within(first).getByText('ETS · 905점')).toBeInTheDocument();
-  expect(
-    within(first).getByText('Earned March 9, 2025 · Expires March 8, 2027'),
-  ).toBeInTheDocument();
+  expect(within(first).getByText('Earned Mar 9, 2025 · Expires Mar 8, 2027')).toBeInTheDocument();
   // The memo sits under its own label.
   expect(within(first).getByRole('term')).toHaveTextContent('Notes');
   expect(within(first).getByRole('definition')).toHaveTextContent('스피킹은 별도 응시 예정');
@@ -119,7 +117,7 @@ test('a certification without an expiry date shows "No expiry" instead of a date
   openCertifications();
   await screen.findByRole('list', { name: 'Certification list' });
   const row = item('정보처리기사');
-  expect(within(row).getByText('Earned August 30, 2023 · No expiry')).toBeInTheDocument();
+  expect(within(row).getByText('Earned Aug 30, 2023 · No expiry')).toBeInTheDocument();
   // No score: the issuer stands alone, with no trailing separator. No memo: no empty label.
   expect(within(row).getByText('한국산업인력공단')).toBeInTheDocument();
   expect(within(row).queryByRole('term')).not.toBeInTheDocument();

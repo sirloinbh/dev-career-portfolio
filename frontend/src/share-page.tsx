@@ -4,8 +4,8 @@ import { useParams } from 'react-router';
 import { careerPeriodText } from './career-data';
 import { Spinner } from './components/ui/spinner';
 import { degreeLabels, statusLabels } from './education-data';
+import { formatDate } from './lib/format';
 import { projectPeriodText } from './project-data';
-import { formatDate } from './service-date';
 import { shareApi, type SharedPortfolio, shareKindTitles } from './share-data';
 
 // The public read-only page (#236). It sits outside the sign-in gate and calls only GET /api/share/:token.

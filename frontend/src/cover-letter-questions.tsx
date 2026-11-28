@@ -15,14 +15,14 @@ import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { EmptyState } from './components/ui/empty-state';
 import { Notice } from './components/ui/notice';
+import { PageHeader } from './components/ui/page-header';
 import { SkeletonList } from './components/ui/skeleton';
 import { answerLengthText, type CoverLetterQuestion, useQuestions } from './cover-letter-data';
 import { invalidAddressText, isValidId } from './entity-id';
 import { InterviewSection } from './interview-section';
+import { serviceToday } from './lib/format';
 import { errorText } from './lib/use-notice';
 import { useListQuery } from './list-query';
-import { BackLink, PageHeader } from './page-header';
-import { serviceToday } from './service-date';
 
 /** Status, position, and deadline of the application the questions belong to. */
 function ApplicationSummary({ application }: { application: Application }) {
@@ -81,18 +81,17 @@ export function ApplicationQuestions({ paths }: { paths: ApplicationPaths }) {
 
   return (
     <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
-      <BackLink to={paths.list} label="Application list" />
       <PageHeader
+        backTo={{ to: paths.list, label: 'Application list' }}
         title={application?.companyName ?? 'Cover letter questions'}
         description="Cover letter questions and answers for this application, in the order they were saved."
-      >
-        {application ? <ApplicationSummary application={application} /> : null}
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {loading ? 'Loading questions' : ''}
-          {loaded ? `${String(list.length)} ${list.length === 1 ? 'question' : 'questions'}` : ''}
-        </p>
-      </PageHeader>
+      />
+      {application ? <ApplicationSummary application={application} /> : null}
+      {/* Always mounted, so screen readers hear the text change from loading to the count. */}
+      <p role="status" className="sr-only">
+        {loading ? 'Loading questions' : ''}
+        {loaded ? `${String(list.length)} ${list.length === 1 ? 'question' : 'questions'}` : ''}
+      </p>
       {missing || !valid ? null : <StatusHistory applicationId={id} enabled />}
       {missing || !valid ? null : <InterviewSection applicationId={id} />}
       {missing || !valid ? null : <ApplicationProjects applicationId={id} />}

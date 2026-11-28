@@ -5,14 +5,15 @@ import { applicationList } from './application-data';
 import { applicationProjectsApi } from './application-projects-data';
 import { type Career, careerList } from './career-data';
 import { type Certification, certificationList } from './certification-data';
+import { downloadBlob } from './components/file-field/download-blob';
 import { Button } from './components/ui/button';
 import { Label } from './components/ui/label';
 import { NativeSelect } from './components/ui/native-select';
 import { Notice } from './components/ui/notice';
+import { PageHeader } from './components/ui/page-header';
 import { SkeletonList } from './components/ui/skeleton';
 import { type Education, educationList } from './education-data';
 import { useListQuery } from './list-query';
-import { PageHeader } from './page-header';
 import { type Project, projectList } from './project-data';
 import {
   buildResume,
@@ -50,15 +51,6 @@ function selectionOf(
     certifications: pick('certifications'),
     skills: pick('skills'),
   };
-}
-
-function download(markdown: string) {
-  const url = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'resume.md';
-  link.click();
-  URL.revokeObjectURL(url);
 }
 
 export function ResumeScreen() {
@@ -226,7 +218,9 @@ export function ResumeScreen() {
             <Button
               type="button"
               disabled={empty}
-              onClick={() => download(resumeMarkdown(sections))}
+              onClick={() =>
+                downloadBlob('resume.md', 'text/markdown;charset=utf-8', resumeMarkdown(sections))
+              }
             >
               <Download aria-hidden />
               Download Markdown

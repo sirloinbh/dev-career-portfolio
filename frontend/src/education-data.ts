@@ -1,8 +1,8 @@
 import { toNumber } from './form-fields';
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { formatDate } from './lib/format';
 import { listQuery } from './list-query';
-import { formatDate } from './service-date';
 
 // Education history (#31 API, #38 list, #39 form): API calls and display rules. The screens are in
 // educations.tsx.

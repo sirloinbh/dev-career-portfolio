@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 
 import { Button } from './components/ui/button';
 import { EmptyState } from './components/ui/empty-state';
+import { PageHeader } from './components/ui/page-header';
 import { SkeletonList } from './components/ui/skeleton';
 import { deleteItem } from './delete-item';
 import { entryCount } from './entry-count';
@@ -17,7 +18,6 @@ import {
   type ListTools,
   toViewParams,
 } from './list-view';
-import { PageHeader } from './page-header';
 
 // One list screen for every entity (#145): load, skeleton, error notices, empty state, and delete then focus.
 
@@ -94,13 +94,12 @@ export function ItemListPage<Row extends { id: number | string }>({
 
   return (
     <section aria-labelledby="page-title" aria-busy={firstLoad} className="flex flex-col gap-6">
-      <PageHeader title={title} description={description} headingRef={heading}>
-        {/* Always mounted, so screen readers hear the text change from loading to the count. */}
-        <p role="status" className="sr-only">
-          {firstLoad ? `Loading ${noun}` : ''}
-          {hasRows ? entryCount(rows.length) : ''}
-        </p>
-      </PageHeader>
+      <PageHeader title={title} description={description} headingRef={heading} />
+      {/* Always mounted, so screen readers hear the text change from loading to the count. */}
+      <p role="status" className="sr-only">
+        {firstLoad ? `Loading ${noun}` : ''}
+        {hasRows ? entryCount(rows.length) : ''}
+      </p>
       <Button asChild className="w-fit">
         <Link to={addTo}>
           <Plus aria-hidden />

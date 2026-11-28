@@ -27,10 +27,10 @@ import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
+import { serviceToday } from './lib/format';
 import { cn } from './lib/utils';
 import { useKnownValues } from './list-query';
 import { certificationTools } from './list-tools';
-import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
 

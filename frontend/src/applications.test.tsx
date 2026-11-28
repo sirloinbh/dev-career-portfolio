@@ -100,26 +100,24 @@ test('applications keep the API order and show status, position, deadline and me
   expect(within(first).getByText('Drafting')).toBeInTheDocument();
   expect(within(first).getByText('백엔드 개발')).toBeInTheDocument();
   // 2026-11-08 is three days after "today" in Seoul (UTC is still 11-04, which would say four).
-  expect(within(first).getByText('Due November 8, 2026 · D-3')).toBeInTheDocument();
+  expect(within(first).getByText('Due Nov 8, 2026 · D-3')).toBeInTheDocument();
   expect(within(first).getByRole('term')).toHaveTextContent('Notes');
   expect(within(first).getByRole('definition')).toHaveTextContent('포트폴리오 링크 첨부');
 
-  expect(
-    within(item('한빛소프트')).getByText('Due November 5, 2026 · Due today'),
-  ).toBeInTheDocument();
+  expect(within(item('한빛소프트')).getByText('Due Nov 5, 2026 · Due today')).toBeInTheDocument();
   expect(within(item('새벽커머스')).getByText('No deadline')).toBeInTheDocument();
   // Submitted and rejected applications show the date alone, without a countdown.
   expect(within(item('바다물류')).getByText('Submitted')).toBeInTheDocument();
-  expect(within(item('바다물류')).getByText('Due November 1, 2026')).toBeInTheDocument();
+  expect(within(item('바다물류')).getByText('Due Nov 1, 2026')).toBeInTheDocument();
   expect(within(item('숲게임즈')).getByText('Rejected')).toBeInTheDocument();
-  expect(within(item('숲게임즈')).getByText('Due January 10, 2025')).toBeInTheDocument();
+  expect(within(item('숲게임즈')).getByText('Due Jan 10, 2025')).toBeInTheDocument();
 });
 
 test('the posting link opens in a new tab and names its company', async () => {
   serve({ status: 200, body: { applications: [near, open] } });
   openApplications();
   const link = await screen.findByRole('link', {
-    name: 'Job posting of 구름데이터 (opens in a new tab)',
+    name: /^Job posting\s+of\s+구름데이터\s+\(opens in a new tab\)$/,
   });
   expect(link).toHaveAttribute('href', 'https://careers.example.com/jobs/12');
   expect(link).toHaveAttribute('target', '_blank');
@@ -183,13 +181,11 @@ test('the loading state is announced and marks the page busy', () => {
 test('display rules: deadline countdown and day counts', () => {
   const drafting = (deadline: string | null) => ({ deadline, status: 'drafting' as const });
   expect(deadlineText(drafting(null), '2026-11-05')).toBe('No deadline');
-  expect(deadlineText(drafting('2026-11-06'), '2026-11-05')).toBe('Due November 6, 2026 · D-1');
-  expect(deadlineText(drafting('2026-11-05'), '2026-11-05')).toBe(
-    'Due November 5, 2026 · Due today',
-  );
-  expect(deadlineText(drafting('2026-11-04'), '2026-11-05')).toBe('Due November 4, 2026 · Overdue');
+  expect(deadlineText(drafting('2026-11-06'), '2026-11-05')).toBe('Due Nov 6, 2026 · D-1');
+  expect(deadlineText(drafting('2026-11-05'), '2026-11-05')).toBe('Due Nov 5, 2026 · Due today');
+  expect(deadlineText(drafting('2026-11-04'), '2026-11-05')).toBe('Due Nov 4, 2026 · Overdue');
   expect(deadlineText({ deadline: '2026-11-04', status: 'rejected' }, '2026-11-05')).toBe(
-    'Due November 4, 2026',
+    'Due Nov 4, 2026',
   );
   // Across a month end, a year end and a leap day.
   expect(daysUntil('2026-12-01', '2026-11-30')).toBe(1);

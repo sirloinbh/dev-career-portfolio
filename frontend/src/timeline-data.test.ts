@@ -92,7 +92,7 @@ test('a running item ends today in the service time zone and is marked ongoing',
   expect(current).toMatchObject({
     end: today,
     ongoing: true,
-    periodText: 'January 2, 2024 – Present',
+    periodText: 'Jan 2, 2024 – Present',
   });
 });
 
