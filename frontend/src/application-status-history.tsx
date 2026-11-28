@@ -8,8 +8,8 @@ import {
 } from './application-data';
 import { Badge } from './components/ui/badge';
 import { SkeletonList } from './components/ui/skeleton';
+import { formatDate } from './lib/format';
 import { errorText } from './lib/use-notice';
-import { formatDate } from './service-date';
 
 // The stage changes of one application (#229), oldest first. Read-only: a change is made by editing the
 // application and choosing another status.

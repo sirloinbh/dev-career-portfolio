@@ -26,10 +26,10 @@ import {
   toInterviewInput,
   useInterviews,
 } from './interview-data';
+import { formatDate, serviceToday } from './lib/format';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { useRefreshList } from './list-query';
-import { formatDate, serviceToday } from './service-date';
 
 // The interviews of one application (#230), on the application page: a list by date with an add and edit form in place.
 

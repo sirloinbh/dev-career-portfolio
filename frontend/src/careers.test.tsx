@@ -99,7 +99,7 @@ test('a job still held shows "Current"; a finished one does not', async () => {
   const held = within(list).getByRole('listitem', { name: '한빛소프트' });
   expect(badgeOf(held)).toBe('Current');
   expect(held).toHaveTextContent('플랫폼팀 · 선임 · Full-time');
-  expect(held).toHaveTextContent('January 2, 2024 – Present');
+  expect(held).toHaveTextContent('Jan 2, 2024 – Present');
   // Each label is the term of its own text, so a screen reader can tell the blocks apart.
   expect(
     within(held)
@@ -116,7 +116,7 @@ test('a job still held shows "Current"; a finished one does not', async () => {
   expect(badgeOf(finished)).toBeUndefined();
   expect(finished).not.toHaveTextContent('Current');
   expect(finished).toHaveTextContent('Intern');
-  expect(finished).toHaveTextContent('July 1, 2019 – December 31, 2019');
+  expect(finished).toHaveTextContent('Jul 1, 2019 – Dec 31, 2019');
   // Blank duties and achievements leave no empty labels behind.
   expect(finished).not.toHaveTextContent('Duties');
   expect(finished).not.toHaveTextContent('Achievements');
@@ -167,10 +167,10 @@ test('an unreachable server is shown in English', async () => {
 
 test('period and role text', () => {
   expect(careerPeriodText({ startDate: '2020-03-02', endDate: '2023-12-29' })).toBe(
-    'March 2, 2020 – December 29, 2023',
+    'Mar 2, 2020 – Dec 29, 2023',
   );
   expect(careerPeriodText({ startDate: '2024-01-02', endDate: null })).toBe(
-    'January 2, 2024 – Present',
+    'Jan 2, 2024 – Present',
   );
   expect(roleText({ department: '백엔드팀', position: null, employmentType: 'contract' })).toBe(
     '백엔드팀 · Contract',
@@ -303,7 +303,7 @@ test('a career lists the projects linked to it, and a project with no link appea
       'href',
       '/projects/7/edit',
     );
-    expect(linked).toHaveTextContent('February 1, 2024 – Present');
+    expect(linked).toHaveTextContent('Feb 1, 2024 – Present');
     // The other career has no linked project, so it shows no Projects block.
     expect(
       within(within(list).getByRole('listitem', { name: '새벽랩' })).queryByText('Projects'),

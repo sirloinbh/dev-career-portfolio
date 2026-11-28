@@ -11,12 +11,12 @@ import {
 } from './application-data';
 import { Button } from './components/ui/button';
 import { EmptyState } from './components/ui/empty-state';
+import { PageHeader } from './components/ui/page-header';
 import { SkeletonList } from './components/ui/skeleton';
 import { ItemUl } from './item-list-page';
 import { LoadErrorNotice } from './item-list-page-notice';
+import { serviceToday } from './lib/format';
 import { useListQuery } from './list-query';
-import { PageHeader } from './page-header';
-import { serviceToday } from './service-date';
 
 // The start page (#245): the applications that need attention now. It reads the same list as the
 // Cover letters page, so a change made there shows here at once.
@@ -75,14 +75,13 @@ export function TodayPage({ paths }: { paths: ApplicationPaths }) {
       <PageHeader
         title="Today"
         description={`Applications still in drafting that are overdue, due today, or due in the next ${String(todayWindowDays)} days.`}
-      >
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading applications' : ''}
-          {groups
-            ? `${String(count)} ${count === 1 ? 'application' : 'applications'} need attention`
-            : ''}
-        </p>
-      </PageHeader>
+      />
+      <p role="status" className="sr-only">
+        {firstLoad ? 'Loading applications' : ''}
+        {groups
+          ? `${String(count)} ${count === 1 ? 'application' : 'applications'} need attention`
+          : ''}
+      </p>
       <Button asChild className="w-fit">
         <Link to={paths.create}>
           <Plus aria-hidden />

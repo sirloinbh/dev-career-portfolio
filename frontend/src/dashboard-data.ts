@@ -1,4 +1,4 @@
-import { formatDate } from './service-date';
+import { formatDate } from './lib/format';
 
 // Dashboard (#221): the shape of GET /api/dashboard and the display rules. The screen is in dashboard.tsx.
 

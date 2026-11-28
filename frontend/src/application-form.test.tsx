@@ -192,7 +192,7 @@ test('every field is sent as typed, and the status comes from the list', async (
     memo: '',
   });
   expect(item).toHaveTextContent('Submitted');
-  expect(item).toHaveTextContent('Due November 1, 2026');
+  expect(item).toHaveTextContent('Due Nov 1, 2026');
 });
 
 test('the deadline hint says an empty date means no deadline', async () => {
@@ -254,7 +254,7 @@ test('an application is edited with its saved values filled in', async () => {
   const item = await screen.findByRole('listitem', { name: '구름데이터' });
   expect(item).toHaveTextContent('Submitted');
   // Submitted shows the date alone, without the countdown.
-  expect(item).toHaveTextContent('Due November 20, 2026');
+  expect(item).toHaveTextContent('Due Nov 20, 2026');
   expect(item).not.toHaveTextContent('D-15');
 });
 

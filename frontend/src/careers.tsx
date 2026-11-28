@@ -28,11 +28,11 @@ import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
+import { serviceToday } from './lib/format';
 import { cn } from './lib/utils';
 import { useKnownValues, useListQuery } from './list-query';
 import { careerTools } from './list-tools';
 import { type Project, projectList, projectPeriodText } from './project-data';
-import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
 

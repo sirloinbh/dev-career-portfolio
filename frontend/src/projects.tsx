@@ -4,6 +4,8 @@ import { Link, useParams } from 'react-router';
 
 import { AttachmentSection } from './attachment-section';
 import { type Career, careerList } from './career-data';
+import { ExternalLink } from './components/external-link/external-link';
+import { safeWebUrl } from './components/external-link/web-link';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
@@ -17,7 +19,6 @@ import { ItemListPage, ItemUl } from './item-list-page';
 import { cn } from './lib/utils';
 import { useKnownValues, useListQuery } from './list-query';
 import { projectTools } from './list-tools';
-import { OutLink } from './out-link';
 import {
   emptyProjectForm,
   isRunning,
@@ -36,7 +37,6 @@ import { ProjectSkillPicker } from './project-skill-picker';
 import { skillList } from './skill-data';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
-import { webLink } from './web-link';
 
 /** Technology names as tags. A long unspaced name wraps instead of widening the page at 390px. */
 function Technologies({ names }: { names: string[] }) {
@@ -70,8 +70,8 @@ function ProjectItem({
 }) {
   const titleId = `project-${project.id}`;
   const roleText = projectRoleText(project, careerCompany);
-  const repository = webLink(project.repositoryUrl);
-  const service = webLink(project.serviceUrl);
+  const repository = project.repositoryUrl ? safeWebUrl(project.repositoryUrl) : null;
+  const service = project.serviceUrl ? safeWebUrl(project.serviceUrl) : null;
   return (
     <li aria-labelledby={titleId} className="flex flex-col gap-2 p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -93,9 +93,15 @@ function ProjectItem({
       {repository || service ? (
         <div className="flex flex-wrap gap-x-4">
           {repository ? (
-            <OutLink href={repository} label="Repository" owner={project.name} />
+            <ExternalLink href={repository}>
+              Repository <span className="sr-only">of {project.name}</span>
+            </ExternalLink>
           ) : null}
-          {service ? <OutLink href={service} label="Service" owner={project.name} /> : null}
+          {service ? (
+            <ExternalLink href={service}>
+              Service <span className="sr-only">of {project.name}</span>
+            </ExternalLink>
+          ) : null}
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2 pt-1">

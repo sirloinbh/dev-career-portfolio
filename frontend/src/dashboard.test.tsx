@@ -66,19 +66,19 @@ test('the dashboard shows counts, deadlines, expiries and recent changes with li
 
   const deadlines = screen.getByRole('region', { name: 'Upcoming deadlines' });
   expect(within(deadlines).getByText(/구름데이터 · 백엔드 개발/)).toBeInTheDocument();
-  expect(within(deadlines).getByText('November 16, 2026 · Today')).toBeInTheDocument();
-  expect(within(deadlines).getByText('November 20, 2026 · D-4')).toBeInTheDocument();
+  expect(within(deadlines).getByText('Nov 16, 2026 · Today')).toBeInTheDocument();
+  expect(within(deadlines).getByText('Nov 20, 2026 · D-4')).toBeInTheDocument();
 
   const interviews = screen.getByRole('region', { name: 'Upcoming interviews' });
   expect(within(interviews).getByText('바다물류 · Round 2')).toBeInTheDocument();
-  expect(within(interviews).getByText('November 18, 2026 · D-2 · 14:30')).toBeInTheDocument();
+  expect(within(interviews).getByText('Nov 18, 2026 · D-2 · 14:30')).toBeInTheDocument();
   expect(within(interviews).getByRole('link')).toHaveAttribute('href', '/applications/2');
 
   const expiring = screen.getByRole('region', { name: 'Expiring certifications' });
-  expect(within(expiring).getByText('Expires December 1, 2026 · D-15')).toBeInTheDocument();
+  expect(within(expiring).getByText('Expires Dec 1, 2026 · D-15')).toBeInTheDocument();
   const recent = screen.getByRole('region', { name: 'Recently changed' });
   // 20:00 UTC on the 15th is already the 16th in Seoul.
-  expect(within(recent).getByText('Skills · November 16, 2026')).toBeInTheDocument();
+  expect(within(recent).getByText('Skills · Nov 16, 2026')).toBeInTheDocument();
   expect(within(recent).getByRole('link', { name: /TypeScript/ })).toHaveAttribute(
     'href',
     '/skills',

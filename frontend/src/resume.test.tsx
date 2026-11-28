@@ -107,7 +107,7 @@ test('the preview shows only the items that are checked', async () => {
   // Everything starts checked.
   expect(within(preview).getByRole('heading', { name: 'Old Corp' })).toBeInTheDocument();
   expect(
-    within(preview).getByText('March 2, 2020 – Present · Senior · Full-time'),
+    within(preview).getByText('Mar 2, 2020 – Present · Senior · Full-time'),
   ).toBeInTheDocument();
   expect(preview).toHaveTextContent('Technologies: TypeScript');
 

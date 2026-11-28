@@ -17,6 +17,8 @@ import {
   toApplicationForm,
   toApplicationInput,
 } from './application-data';
+import { ExternalLink } from './components/external-link/external-link';
+import { safeWebUrl } from './components/external-link/web-link';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { ConfirmDialog } from './components/ui/confirm-dialog';
@@ -27,14 +29,12 @@ import { controlClass } from './form-fields';
 import { typedDate, useServerForm } from './form-state';
 import { EditItemPage, NewItemPage } from './item-form-page';
 import { ItemListPage, ItemUl } from './item-list-page';
+import { serviceToday } from './lib/format';
 import { cn } from './lib/utils';
 import { useKnownValues } from './list-query';
 import { applicationTools } from './list-tools';
-import { OutLink } from './out-link';
-import { serviceToday } from './service-date';
 import { TextBlocks } from './text-blocks';
 import { TextControl } from './text-control';
-import { webLink } from './web-link';
 
 function ApplicationItem({
   application,
@@ -48,7 +48,7 @@ function ApplicationItem({
   onDelete: (application: Application) => Promise<void>;
 }) {
   const titleId = `application-${application.id}`;
-  const posting = webLink(application.postingUrl);
+  const posting = application.postingUrl ? safeWebUrl(application.postingUrl) : null;
   return (
     <li aria-labelledby={titleId} className="flex flex-col gap-2 p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -67,7 +67,9 @@ function ApplicationItem({
       <TextBlocks entries={[['Notes', application.memo]]} />
       {posting ? (
         <div className="flex flex-wrap gap-x-4">
-          <OutLink href={posting} label="Job posting" owner={application.companyName} />
+          <ExternalLink href={posting}>
+            Job posting <span className="sr-only">of {application.companyName}</span>
+          </ExternalLink>
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2 pt-1">

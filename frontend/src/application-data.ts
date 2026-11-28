@@ -1,8 +1,9 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { formatDate } from './lib/format';
 import { apiKey, useApiQuery } from './lib/query';
 import { listQuery } from './list-query';
-import { daysUntil, formatDate } from './service-date';
+import { daysUntil } from './service-date';
 
 // Applications, shown as "Application" under the Cover letters menu (#36 API, #48 list, #49 form): API
 // calls and display rules. The screens are in applications.tsx. One row is one job applied for at one company.

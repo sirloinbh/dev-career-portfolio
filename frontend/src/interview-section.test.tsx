@@ -158,7 +158,7 @@ test('an interview is edited and deleted after a confirmation', async () => {
   const section = await openPage();
   const item = await within(section).findByRole('listitem', { name: 'Round 1 · Phone' });
   expect(item).toHaveTextContent('Done');
-  expect(item).toHaveTextContent('November 2, 2026 · 10:00');
+  expect(item).toHaveTextContent('Nov 2, 2026 · 10:00');
   expect(item).toHaveTextContent('자기소개를 해 주세요');
   expect(item).toHaveTextContent('답변이 길었다');
 

@@ -4,13 +4,13 @@ import { Link } from 'react-router';
 import { careerList } from './career-data';
 import { Badge } from './components/ui/badge';
 import { EmptyState } from './components/ui/empty-state';
+import { PageHeader } from './components/ui/page-header';
 import { SkeletonList } from './components/ui/skeleton';
 import { educationList } from './education-data';
 import { LoadErrorNotice } from './item-list-page-notice';
+import { serviceToday } from './lib/format';
 import { useListQuery } from './list-query';
-import { PageHeader } from './page-header';
 import { projectList } from './project-data';
-import { serviceToday } from './service-date';
 import { buildTimeline, type TimelineEntry, type TimelineKind } from './timeline-data';
 
 // The timeline (#240): careers, education, and projects on one time axis, newest first. It reads the same three lists
@@ -90,12 +90,11 @@ export function TimelinePage({ paths }: { paths: TimelinePaths }) {
       <PageHeader
         title="Timeline"
         description="Careers, education, and projects on one time axis, newest first. Items that overlap sit side by side."
-      >
-        <p role="status" className="sr-only">
-          {firstLoad ? 'Loading the timeline' : ''}
-          {clusters ? `${String(count)} ${count === 1 ? 'entry' : 'entries'}` : ''}
-        </p>
-      </PageHeader>
+      />
+      <p role="status" className="sr-only">
+        {firstLoad ? 'Loading the timeline' : ''}
+        {clusters ? `${String(count)} ${count === 1 ? 'entry' : 'entries'}` : ''}
+      </p>
       {firstLoad ? <SkeletonList rows={3} /> : null}
       <LoadErrorNotice
         failed={failed ? { error: failed.error } : undefined}

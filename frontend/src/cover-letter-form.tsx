@@ -8,6 +8,7 @@ import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
+import { PageHeader } from './components/ui/page-header';
 import { SkeletonList } from './components/ui/skeleton';
 import { toast } from './components/ui/sonner';
 import {
@@ -30,7 +31,6 @@ import { useServerForm } from './form-state';
 import { errorText } from './lib/use-notice';
 import { cn } from './lib/utils';
 import { useListQuery, useRefreshList } from './list-query';
-import { BackLink, PageHeader } from './page-header';
 
 const emptyDraft = (key: number): QuestionDraft => ({
   key,
@@ -310,8 +310,8 @@ export function EditQuestions({ paths }: { paths: ApplicationPaths }) {
   const missing = valid && questions.isError && questions.error.status === 404;
   return (
     <section aria-labelledby="page-title" aria-busy={loading} className="flex flex-col gap-6">
-      <BackLink to={paths.questions(id)} label="Questions" />
       <PageHeader
+        backTo={{ to: paths.questions(id), label: 'Questions' }}
         title={application ? `Edit questions: ${application.companyName}` : 'Edit questions'}
         description="Write the questions and answers, put them in order, then save them all at once."
       />

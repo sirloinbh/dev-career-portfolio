@@ -134,7 +134,7 @@ test('a new career with no end date is sent as a job still held and listed as Cu
   });
   const list = await screen.findByRole('list', { name: 'Career list' });
   const item = within(list).getByRole('listitem', { name: '구름데이터' });
-  expect(item).toHaveTextContent('January 2, 2024 – Present');
+  expect(item).toHaveTextContent('Jan 2, 2024 – Present');
   expect(item).toHaveTextContent('선임 개발자 · Contract');
 });
 
@@ -199,7 +199,7 @@ test('clearing the end date of a past job makes it Current', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   const item = await screen.findByRole('listitem', { name: '한빛소프트' });
   expect(api.calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ endDate: null });
-  expect(item).toHaveTextContent('February 11, 2019 – Present');
+  expect(item).toHaveTextContent('Feb 11, 2019 – Present');
 });
 
 test('cancelling the delete dialog keeps the career', async () => {

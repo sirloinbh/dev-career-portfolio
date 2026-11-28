@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { EmptyState } from './components/ui/empty-state';
+import { PageHeader } from './components/ui/page-header';
 import { SkeletonList } from './components/ui/skeleton';
 import {
   type Dashboard,
@@ -13,9 +14,9 @@ import {
   sectionLabels,
 } from './dashboard-data';
 import { type Health, healthText } from './health';
+import { formatDate, serviceToday } from './lib/format';
 import { apiKey, useApiQuery } from './lib/query';
-import { PageHeader } from './page-header';
-import { daysUntil, formatDate, serviceToday } from './service-date';
+import { daysUntil } from './service-date';
 
 export type DashboardPaths = Record<DashboardSection, string>;
 
@@ -43,18 +44,17 @@ export function DashboardScreen({ paths, health }: { paths: DashboardPaths; heal
       <PageHeader
         title="Dashboard"
         description="A personal portfolio service for organizing your career, projects, and skill growth"
+      />
+      <p
+        role={health.state === 'error' ? 'alert' : 'status'}
+        className={
+          health.state === 'error'
+            ? 'text-body-sm text-destructive'
+            : 'text-caption text-muted-foreground'
+        }
       >
-        <p
-          role={health.state === 'error' ? 'alert' : 'status'}
-          className={
-            health.state === 'error'
-              ? 'text-body-sm text-destructive'
-              : 'text-caption text-muted-foreground'
-          }
-        >
-          {healthText(health)}
-        </p>
-      </PageHeader>
+        {healthText(health)}
+      </p>
       {query.isPending ? <SkeletonList rows={3} /> : null}
       {query.isError ? (
         <p role="alert" className="text-body-sm text-destructive">

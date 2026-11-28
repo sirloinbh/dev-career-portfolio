@@ -137,7 +137,7 @@ test('a new certification with no expiry date is sent as null and listed as No e
   });
   const list = await screen.findByRole('list', { name: 'Certification list' });
   const item = within(list).getByRole('listitem', { name: '정보처리기사' });
-  expect(item).toHaveTextContent('Earned August 20, 2021 · No expiry');
+  expect(item).toHaveTextContent('Earned Aug 20, 2021 · No expiry');
   expect(item).toHaveTextContent('실기 2회 응시');
   expect(await screen.findByText("Added '정보처리기사'")).toBeInTheDocument();
 });
@@ -212,7 +212,7 @@ test('clearing the expiry date makes the certification No expiry', async () => {
   expect(api.calls.find((call) => call.method === 'PUT')?.body).toMatchObject({
     expiryDate: null,
   });
-  expect(item).toHaveTextContent('Earned March 9, 2025 · No expiry');
+  expect(item).toHaveTextContent('Earned Mar 9, 2025 · No expiry');
 });
 
 test('editing a certification at a malformed address says the address is not valid', async () => {

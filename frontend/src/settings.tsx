@@ -7,11 +7,11 @@ import { ConfirmDialog } from './components/ui/confirm-dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Notice } from './components/ui/notice';
+import { PageHeader } from './components/ui/page-header';
 import { type Health, healthText } from './health';
 import { requestJson } from './lib/api';
+import { serviceToday } from './lib/format';
 import { useNotice } from './lib/use-notice';
-import { PageHeader } from './page-header';
-import { serviceToday } from './service-date';
 import {
   downloadJson,
   exportFileName,
@@ -87,18 +87,17 @@ export function SettingsScreen({ health }: { health: Health }) {
 
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
-      <PageHeader title="Settings" description="App settings and data management">
-        <p
-          role={health.state === 'error' ? 'alert' : 'status'}
-          className={
-            health.state === 'error'
-              ? 'text-body-sm text-destructive'
-              : 'text-caption text-muted-foreground'
-          }
-        >
-          {healthText(health)}
-        </p>
-      </PageHeader>
+      <PageHeader title="Settings" description="App settings and data management" />
+      <p
+        role={health.state === 'error' ? 'alert' : 'status'}
+        className={
+          health.state === 'error'
+            ? 'text-body-sm text-destructive'
+            : 'text-caption text-muted-foreground'
+        }
+      >
+        {healthText(health)}
+      </p>
 
       <section aria-labelledby="export-title" className="flex flex-col gap-3">
         <h2 id="export-title">Export all data</h2>

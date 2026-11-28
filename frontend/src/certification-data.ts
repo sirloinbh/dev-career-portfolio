@@ -1,7 +1,7 @@
 import { flatFieldOf } from './form-state';
 import { requestJson } from './lib/api';
+import { formatDate } from './lib/format';
 import { listQuery } from './list-query';
-import { formatDate } from './service-date';
 
 // Certifications (#35 API, #46 list, #47 form): API calls and display rules. The screens are in
 // certifications.tsx.

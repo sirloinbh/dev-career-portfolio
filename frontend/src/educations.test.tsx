@@ -92,13 +92,13 @@ test('each education shows its status, degree, period, grade and memo', async ()
   const enrolled = within(list).getByRole('listitem', { name: '한빛대학원' });
   expect(badgeOf(enrolled)).toBe('Enrolled');
   expect(enrolled).toHaveTextContent('Master · 소프트웨어공학');
-  expect(enrolled).toHaveTextContent('March 4, 2024 –');
+  expect(enrolled).toHaveTextContent('Mar 4, 2024 –');
   expect(enrolled).not.toHaveTextContent('GPA');
 
   const done = within(list).getByRole('listitem', { name: '한빛대학교' });
   expect(badgeOf(done)).toBe('Graduated');
   expect(done).not.toHaveTextContent('Enrolled');
-  expect(done).toHaveTextContent('March 2, 2015 – February 20, 2019 · GPA 3.75 / 4.5');
+  expect(done).toHaveTextContent('Mar 2, 2015 – Feb 20, 2019 · GPA 3.75 / 4.5');
   expect(done).toHaveTextContent('Graduated 작품: 일정 관리 앱');
 });
 
@@ -146,20 +146,20 @@ test('an unreachable server is shown in English', async () => {
 
 test('period and grade text', () => {
   expect(periodText({ status: 'graduated', startDate: '2015-03-02', endDate: '2019-02-20' })).toBe(
-    'March 2, 2015 – February 20, 2019',
+    'Mar 2, 2015 – Feb 20, 2019',
   );
   expect(periodText({ status: 'enrolled', startDate: '2024-03-04', endDate: null })).toBe(
-    'March 4, 2024 –',
+    'Mar 4, 2024 –',
   );
   expect(periodText({ status: 'on_leave', startDate: '2024-03-04', endDate: null })).toBe(
-    'March 4, 2024 –',
+    'Mar 4, 2024 –',
   );
   // Finished without a recorded end: no open "–" that would read as still going.
   expect(periodText({ status: 'graduated', startDate: '2012-03-02', endDate: null })).toBe(
-    'March 2, 2012',
+    'Mar 2, 2012',
   );
   expect(periodText({ status: 'dropped_out', startDate: '2019-03-02', endDate: null })).toBe(
-    'March 2, 2019',
+    'Mar 2, 2019',
   );
   expect(gpaText({ gpa: 95, gpaScale: 100 })).toBe('GPA 95 / 100');
   expect(gpaText({ gpa: null, gpaScale: null })).toBe('');

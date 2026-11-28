@@ -92,7 +92,7 @@ test('only the chosen items are built, and sections with nothing chosen are left
   const [entry] = sections[0].entries;
   expect(entry.heading).toBe('Settlement <v2> & more');
   // The linked career gives the company; an unknown skill id is ignored.
-  expect(entry.meta).toEqual(['May 1, 2024 – December 31, 2024', 'Hanbit Soft · Lead']);
+  expect(entry.meta).toEqual(['May 1, 2024 – Dec 31, 2024', 'Hanbit Soft · Lead']);
   expect(entry.tags).toEqual(['TypeScript']);
   expect(entry.blocks).toEqual([
     { label: 'Summary', text: 'Moved month-end settlement to a batch' },
@@ -109,7 +109,7 @@ test('Markdown has one heading per section and entry, and skips blocks that were
       '',
       '### Hanbit Soft',
       '',
-      '_March 2, 2020 – Present · Backend · Senior · Full-time_',
+      '_Mar 2, 2020 – Present · Backend · Senior · Full-time_',
       '',
       '**Duties**',
       '',
@@ -119,7 +119,7 @@ test('Markdown has one heading per section and entry, and skips blocks that were
       '',
       '### Seoul Univ',
       '',
-      '_Bachelor, CS · Graduated · March 2, 2012 – February 20, 2016 · GPA 3.8 / 4.5_',
+      '_Bachelor, CS · Graduated · Mar 2, 2012 – Feb 20, 2016 · GPA 3.8 / 4.5_',
       '',
     ].join('\n'),
   );
